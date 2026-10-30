@@ -18,10 +18,13 @@ namespace Oopsmeinfecto
         [SerializeField] private HUDController _hud;
         [SerializeField] private DefeatPresentationController _defeat;
         [SerializeField] private TurnManager _turn;
+        [SerializeField] private LevelMusicAudio _music;
 
         private GameState _state;
         private LevelDefinition _currentLevel;
         private int _levelIndex = 1;
+
+        public LevelMusicAudio Music => _music;
 
         private bool _generating;
         private Task<GenerationResult> _generationTask;
@@ -74,11 +77,24 @@ namespace Oopsmeinfecto
 
             if (_turn == null) _turn = GetComponent<TurnManager>();
             if (_turn == null) _turn = gameObject.AddComponent<TurnManager>();
+
+            if (_music == null) _music = GetComponentInChildren<LevelMusicAudio>();
+            if (_music == null) _music = FindAnyObjectByType<LevelMusicAudio>();
+            if (_music == null)
+            {
+                var musicChild = new GameObject("Music");
+                musicChild.transform.SetParent(transform, false);
+                _music = musicChild.AddComponent<LevelMusicAudio>();
+            }
         }
 
         private void Start()
         {
             _levelIndex = 1;
+            if (_music != null && !_music.IsPlaying)
+            {
+                _music.PlayRandomTrack();
+            }
             BeginLevel(_levelIndex, MixSeed(_tuning.baseSeed, _levelIndex));
         }
 

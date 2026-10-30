@@ -201,7 +201,10 @@ namespace Oopsmeinfecto
             Debug.Log("SMOKE_RESULT PASS");
             _finished = true;
 #if UNITY_EDITOR
-            EditorApplication.Exit(0);
+            if (Application.isBatchMode)
+            {
+                EditorApplication.Exit(0);
+            }
 #endif
         }
 
@@ -217,7 +220,10 @@ namespace Oopsmeinfecto
             _finished = true;
             Debug.LogError("SMOKE_RESULT FAIL " + message);
 #if UNITY_EDITOR
-            EditorApplication.Exit(1);
+            if (Application.isBatchMode)
+            {
+                EditorApplication.Exit(1);
+            }
 #endif
             throw new InvalidOperationException("smoke failed: " + message);
         }
@@ -237,6 +243,11 @@ namespace Oopsmeinfecto
 
         static SmokeLauncher()
         {
+            if (!Application.isBatchMode)
+            {
+                SessionState.SetBool(PendingKey, false);
+                return;
+            }
             if (!SessionState.GetBool(PendingKey, false)) return;
             Debug.Log("SMOKE_WAIT resumed after domain reload");
             EditorApplication.update += StartWhenReady;
@@ -290,7 +301,10 @@ namespace Oopsmeinfecto
             if (EditorApplication.timeSinceStartup - start < 900.0) return;
             SessionState.SetBool(PendingKey, false);
             Debug.LogError("SMOKE_RESULT FAIL watchdog timeout");
-            EditorApplication.Exit(2);
+            if (Application.isBatchMode)
+            {
+                EditorApplication.Exit(2);
+            }
         }
     }
 #endif
