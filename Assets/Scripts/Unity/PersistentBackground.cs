@@ -51,10 +51,36 @@ namespace Oopsmeinfecto
         public int CurrentFrame => _frameIndex;
         public string GifResourcePath => _gifResourcePath;
 
+        /// <summary>
+        /// Guarantees the background exists in every scene, including future levels that do not
+        /// have a GlobalBackground object authored in the editor.
+        /// </summary>
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
+        private static void EnsureBackgroundExists()
+        {
+            if (!Application.isPlaying) return;
+            if (Instance != null) return;
+            if (FindAnyObjectByType<PersistentBackground>() != null) return;
+
+            var backgroundObject = new GameObject("GlobalBackground");
+            backgroundObject.transform.position = new Vector3(0f, 0f, 10f);
+            backgroundObject.transform.localScale = new Vector3(1.65f, 1.65f, 1f);
+
+            // Placeholder first frame so the background is visible while the GIF decodes.
+            var renderer = backgroundObject.AddComponent<SpriteRenderer>();
+            renderer.sprite = Resources.Load<Sprite>("Backgrounds/Background Esoacui");
+
+            // Awake applies the "Background" sorting layer (with a safe fallback).
+            backgroundObject.AddComponent<PersistentBackground>();
+        }
+
         private void Awake()
         {
             if (Instance != null && Instance != this)
             {
+                // A scene copy appeared while the persistent one is alive. Hide it right away so
+                // it never overlaps the animated background for a frame, then destroy it.
+                gameObject.SetActive(false);
                 Destroy(gameObject);
                 return;
             }
