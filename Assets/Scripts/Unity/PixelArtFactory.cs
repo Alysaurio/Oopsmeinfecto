@@ -20,15 +20,55 @@ namespace Oopsmeinfecto
         private static Sprite _arrow;
         private static Material _spriteMaterial;
 
-        public static Sprite WhiteSprite => _white ??= CreateSolidSprite(1, Color.white);
-        public static Sprite FloorA => _floorA ??= CreateFloor("FloorA", 255, 220, 240);
-        public static Sprite FloorB => _floorB ??= CreateFloor("FloorB", 235, 205, 225);
-        public static Sprite WallSprite => _wall ??= CreateWall();
-        public static Sprite DamageSprite => _damage ??= CreateDamage();
-        public static Sprite SwitchSprite => _switch ??= CreateSwitch();
-        public static Sprite PlayerSprite => _player ??= CreatePlayer();
-        public static Sprite ZombieSprite => _zombie ??= CreateZombie();
-        public static Sprite ArrowSprite => _arrow ??= CreateArrow();
+        // IMPORTANT: these caches must use Unity's overloaded == null check, not ??=.
+        // The project runs with "Enter Play Mode Options" + Disable Domain Reload, so the
+        // static fields survive between Play sessions while the runtime sprites are destroyed
+        // when Play mode stops. A plain reference check (??=) would keep returning the
+        // destroyed sprite and every SpriteRenderer would render nothing (world invisible).
+        public static Sprite WhiteSprite
+        {
+            get { if (_white == null) _white = CreateSolidSprite(1, Color.white); return _white; }
+        }
+
+        public static Sprite FloorA
+        {
+            get { if (_floorA == null) _floorA = CreateFloor("FloorA", 255, 220, 240); return _floorA; }
+        }
+
+        public static Sprite FloorB
+        {
+            get { if (_floorB == null) _floorB = CreateFloor("FloorB", 235, 205, 225); return _floorB; }
+        }
+
+        public static Sprite WallSprite
+        {
+            get { if (_wall == null) _wall = CreateWall(); return _wall; }
+        }
+
+        public static Sprite DamageSprite
+        {
+            get { if (_damage == null) _damage = CreateDamage(); return _damage; }
+        }
+
+        public static Sprite SwitchSprite
+        {
+            get { if (_switch == null) _switch = CreateSwitch(); return _switch; }
+        }
+
+        public static Sprite PlayerSprite
+        {
+            get { if (_player == null) _player = CreatePlayer(); return _player; }
+        }
+
+        public static Sprite ZombieSprite
+        {
+            get { if (_zombie == null) _zombie = CreateZombie(); return _zombie; }
+        }
+
+        public static Sprite ArrowSprite
+        {
+            get { if (_arrow == null) _arrow = CreateArrow(); return _arrow; }
+        }
 
         public static Material SpriteMaterial
         {
@@ -43,6 +83,25 @@ namespace Oopsmeinfecto
                 }
                 return _spriteMaterial;
             }
+        }
+
+        /// <summary>
+        /// Clears the caches at the start of every Play session. With domain reload disabled the
+        /// statics keep pointing at objects destroyed when the previous session ended.
+        /// </summary>
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        private static void ResetCaches()
+        {
+            _white = null;
+            _floorA = null;
+            _floorB = null;
+            _wall = null;
+            _damage = null;
+            _switch = null;
+            _player = null;
+            _zombie = null;
+            _arrow = null;
+            _spriteMaterial = null;
         }
 
         private static Sprite CreateSolidSprite(int size, Color color)
