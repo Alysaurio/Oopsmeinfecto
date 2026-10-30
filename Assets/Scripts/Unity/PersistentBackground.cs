@@ -11,9 +11,11 @@ namespace Oopsmeinfecto
     /// on the "Background" sorting layer, behind the level and the HUD.
     /// </summary>
     [DisallowMultipleComponent]
+    [ExecuteInEditMode]
     public sealed class PersistentBackground : MonoBehaviour
     {
         private const string DefaultGifResourcePath = "Backgrounds/Background Esoacui.gif";
+        private const string UnlitMaterialResourcePath = "Backgrounds/BackgroundUnlit";
         private const float PixelsPerUnit = 100f;
         private const float CoverageMargin = 1.04f;
         private const float MinimumFrameDelay = 0.02f;
@@ -60,7 +62,9 @@ namespace Oopsmeinfecto
         {
             if (!Application.isPlaying) return;
             if (Instance != null) return;
-            if (FindAnyObjectByType<PersistentBackground>() != null) return;
+            // Also check if a "GlobalBackground" GameObject already exists in the scene (editor-authored).
+            var existing = GameObject.Find("GlobalBackground");
+            if (existing != null) return;
 
             var backgroundObject = new GameObject("GlobalBackground");
             backgroundObject.transform.position = new Vector3(0f, 0f, 10f);
@@ -70,7 +74,7 @@ namespace Oopsmeinfecto
             var renderer = backgroundObject.AddComponent<SpriteRenderer>();
             renderer.sprite = Resources.Load<Sprite>("Backgrounds/Background Esoacui");
 
-            // Awake applies the "Background" sorting layer (with a safe fallback).
+            // Awake applies the "Background" sorting layer (with a safe fallback) and the unlit material.
             backgroundObject.AddComponent<PersistentBackground>();
         }
 
@@ -87,13 +91,14 @@ namespace Oopsmeinfecto
 
             Instance = this;
             _isPrimary = true;
-            DontDestroyOnLoad(gameObject);
+            if (Application.isPlaying) DontDestroyOnLoad(gameObject);
 
             if (_renderer == null) _renderer = GetComponent<SpriteRenderer>();
             if (_renderer == null) _renderer = gameObject.AddComponent<SpriteRenderer>();
 
             if (string.IsNullOrEmpty(_gifResourcePath)) _gifResourcePath = DefaultGifResourcePath;
 
+            ApplyMaterial();
             ApplySorting();
             BeginDecode();
         }
@@ -124,6 +129,18 @@ namespace Oopsmeinfecto
             _renderer.sortingLayerName = hasBackgroundLayer ? "Background" : "Default";
             _renderer.sortingOrder = hasBackgroundLayer ? (int)BackgroundSortingOrder : -1000;
             _renderer.color = Color.white;
+        }
+
+        /// <summary>
+        /// The project uses URP 2D, where the default sprite material is lit. The "Background"
+        /// sorting layer is not targeted by the scene's Global Light 2D, so a lit sprite would
+        /// render black. Force an unlit material so the GIF is always visible.
+        /// </summary>
+        private void ApplyMaterial()
+        {
+            var material = Resources.Load<Material>(UnlitMaterialResourcePath);
+            if (material == null) material = PixelArtFactory.SpriteMaterial;
+            if (material != null) _renderer.sharedMaterial = material;
         }
 
         private void BeginDecode()
@@ -346,11 +363,12 @@ namespace Oopsmeinfecto
             if (_camera == null) _camera = Camera.main;
             if (_camera == null) return;
 
-            float visibleHeight = _camera.orthographicSize * 2f;
-            float visibleWidth = visibleHeight * _camera.aspect;
+            // Always cover the FULL screen in world units, ignoring camera.rect (which may leave
+            // margins for HUD). The background must be behind everything, including the HUD area.
+            float fullScreenHeight = _camera.orthographicSize * 2f;
+            float fullScreenWidth = fullScreenHeight * _camera.aspect;
 
-            // Use the animated texture size when ready, otherwise the placeholder sprite so the
-            // background covers the camera from the first frame of Play mode.
+            // Use the animated texture size when ready, otherwise the placeholder sprite.
             float spriteWidth = 12.8f;
             float spriteHeight = 6.4f;
             if (_animation != null)
@@ -365,9 +383,48 @@ namespace Oopsmeinfecto
                 if (spriteSize.y > 0.01f) spriteHeight = spriteSize.y;
             }
 
-            float scale = Mathf.Max(visibleWidth / spriteWidth, visibleHeight / spriteHeight) * CoverageMargin;
+            float scale = Mathf.Max(fullScreenWidth / spriteWidth, fullScreenHeight / spriteHeight) * CoverageMargin;
 
             Vector3 cameraPosition = _camera.transform.position;
+            transform.position = new Vector3(cameraPosition.x, cameraPosition.y, transform.position.z);
+            transform.localScale = new Vector3(scale, scale, 1f);
+        }
+
+        /// <summary>
+        /// Called in the Editor so the placeholder sprite is visible without entering Play mode.
+        /// </summary>
+        private void OnValidate()
+        {
+            if (!Application.isPlaying)
+            {
+                if (_renderer == null) _renderer = GetComponent<SpriteRenderer>();
+                ApplyMaterial();
+                ApplySorting();
+                FitToCameraEditor();
+            }
+        }
+
+        private void FitToCameraEditor()
+        {
+            var cam = Camera.main;
+            if (cam == null) return;
+
+            // Full screen coverage in editor too.
+            float fullScreenHeight = cam.orthographicSize * 2f;
+            float fullScreenWidth = fullScreenHeight * cam.aspect;
+
+            float spriteWidth = 12.8f;
+            float spriteHeight = 6.4f;
+            if (_renderer != null && _renderer.sprite != null)
+            {
+                Vector3 spriteSize = _renderer.sprite.bounds.size;
+                if (spriteSize.x > 0.01f) spriteWidth = spriteSize.x;
+                if (spriteSize.y > 0.01f) spriteHeight = spriteSize.y;
+            }
+
+            float scale = Mathf.Max(fullScreenWidth / spriteWidth, fullScreenHeight / spriteHeight) * CoverageMargin;
+
+            Vector3 cameraPosition = cam.transform.position;
             transform.position = new Vector3(cameraPosition.x, cameraPosition.y, transform.position.z);
             transform.localScale = new Vector3(scale, scale, 1f);
         }
