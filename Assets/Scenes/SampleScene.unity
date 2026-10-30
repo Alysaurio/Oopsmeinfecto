@@ -1760,7 +1760,7 @@ MonoBehaviour:
   - {fileID: 8300000, guid: bdc04ad92cd4d034c8eb0ad49bae2631, type: 3}
   - {fileID: 8300000, guid: cd16b6da792769e4090521c6a56711bd, type: 3}
   - {fileID: 8300000, guid: e1e0b5c445f623940908188c2fc09839, type: 3}
-  _volume: 0.4
+  _volume: 0.025
   _playOnStart: 1
   _avoidImmediateRepeat: 1
 --- !u!82 &2075761745
