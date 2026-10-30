@@ -17,6 +17,9 @@ namespace Oopsmeinfecto
         private Action _onVictory;
         private Action<DefeatReason> _onDefeat;
 
+        [Header("Audio")]
+        [SerializeField] private PlayerMoveAudio _moveAudio;
+
         private bool _active;
         private float _repeatTimer;
         private Direction? _heldDirection;
@@ -35,6 +38,8 @@ namespace Oopsmeinfecto
             _tuning = tuning;
             _onVictory = onVictory;
             _onDefeat = onDefeat;
+
+            if (_moveAudio == null) _moveAudio = FindAnyObjectByType<PlayerMoveAudio>();
 
             _active = state != null && state.Phase == GamePhase.HumanControlled;
             _repeatTimer = 0f;
@@ -131,6 +136,7 @@ namespace Oopsmeinfecto
         private void PerformManualMove(Direction direction)
         {
             var result = _state.TryManualMove(direction);
+            if (result.Moved) PlayMoveSound();
 
             if (result.Outcome == TurnOutcome.Blocked)
             {
@@ -153,6 +159,7 @@ namespace Oopsmeinfecto
             _autoTimer = Mathf.Max(0.03f, _tuning.autoStepInterval);
 
             var result = _state.AdvancePlaybackStep();
+            if (result.Moved) PlayMoveSound();
             _renderer.SyncFromState(_state);
             _hud.SetHistories(_state.Player.History, _state.Zombie.History);
 
@@ -222,6 +229,11 @@ namespace Oopsmeinfecto
                     _onDefeat?.Invoke(DefeatReason.PlaybackExhausted);
                     break;
             }
+        }
+
+        private void PlayMoveSound()
+        {
+            if (_moveAudio != null) _moveAudio.PlayRandomMove();
         }
 
         private static Direction? ReadPressedDirection(Keyboard keyboard)
