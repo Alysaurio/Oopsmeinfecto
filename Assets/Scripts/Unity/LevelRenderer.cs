@@ -9,6 +9,9 @@ namespace Oopsmeinfecto
     /// </summary>
     public sealed class LevelRenderer : MonoBehaviour
     {
+        [Header("Scene references")]
+        [SerializeField] private Transform _sceneContentRoot;
+
         private GameTuning _tuning;
         private LevelDefinition _level;
         private Camera _camera;
@@ -30,10 +33,20 @@ namespace Oopsmeinfecto
 
         public void Clear()
         {
-            if (_contentRoot != null)
+            if (_contentRoot != null && _contentRoot != _sceneContentRoot)
             {
                 _contentRoot.gameObject.SetActive(false);
                 Destroy(_contentRoot.gameObject);
+            }
+
+            if (_sceneContentRoot != null)
+            {
+                for (int i = _sceneContentRoot.childCount - 1; i >= 0; i--)
+                {
+                    var child = _sceneContentRoot.GetChild(i).gameObject;
+                    child.SetActive(false);
+                    Destroy(child);
+                }
             }
 
             _contentRoot = null;
@@ -52,9 +65,12 @@ namespace Oopsmeinfecto
             _tuning = tuning;
             _camera = camera;
 
-            _contentRoot = new GameObject("Level Content").transform;
+            _contentRoot = _sceneContentRoot != null
+                ? _sceneContentRoot
+                : new GameObject("Level Content").transform;
             _contentRoot.SetParent(transform, false);
             _contentRoot.localPosition = Vector3.zero;
+            _contentRoot.gameObject.SetActive(true);
 
             BuildBoard();
             BuildEntities();

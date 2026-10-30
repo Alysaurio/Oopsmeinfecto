@@ -11,12 +11,13 @@ namespace Oopsmeinfecto
     [DefaultExecutionOrder(-100)]
     public sealed class GameFlowController : MonoBehaviour
     {
-        private GameTuning _tuning;
-        private Camera _camera;
-        private LevelRenderer _renderer;
-        private HUDController _hud;
-        private DefeatPresentationController _defeat;
-        private TurnManager _turn;
+        [Header("Scene references")]
+        [SerializeField] private GameTuning _tuning;
+        [SerializeField] private Camera _camera;
+        [SerializeField] private LevelRenderer _renderer;
+        [SerializeField] private HUDController _hud;
+        [SerializeField] private DefeatPresentationController _defeat;
+        [SerializeField] private TurnManager _turn;
 
         private GameState _state;
         private LevelDefinition _currentLevel;
@@ -40,14 +41,14 @@ namespace Oopsmeinfecto
                 return;
             }
 
-            _tuning = Resources.Load<GameTuning>("GameTuning");
+            if (_tuning == null) _tuning = Resources.Load<GameTuning>("GameTuning");
             if (_tuning == null)
             {
                 _tuning = ScriptableObject.CreateInstance<GameTuning>();
                 _tuning.name = "GameTuning (runtime defaults)";
             }
 
-            _camera = Camera.main;
+            if (_camera == null) _camera = Camera.main;
             if (_camera == null)
             {
                 var cameraObject = new GameObject("Main Camera");
@@ -60,18 +61,18 @@ namespace Oopsmeinfecto
             _camera.clearFlags = CameraClearFlags.SolidColor;
             _camera.backgroundColor = _tuning.cameraBackground;
 
-            _renderer = GetComponent<LevelRenderer>();
+            if (_renderer == null) _renderer = GetComponent<LevelRenderer>();
             if (_renderer == null) _renderer = gameObject.AddComponent<LevelRenderer>();
 
-            _hud = GetComponent<HUDController>();
+            if (_hud == null) _hud = GetComponent<HUDController>();
             if (_hud == null) _hud = gameObject.AddComponent<HUDController>();
             _hud.Build(_tuning);
 
-            _defeat = GetComponent<DefeatPresentationController>();
+            if (_defeat == null) _defeat = GetComponent<DefeatPresentationController>();
             if (_defeat == null) _defeat = gameObject.AddComponent<DefeatPresentationController>();
             _defeat.Build(_tuning);
 
-            _turn = GetComponent<TurnManager>();
+            if (_turn == null) _turn = GetComponent<TurnManager>();
             if (_turn == null) _turn = gameObject.AddComponent<TurnManager>();
         }
 

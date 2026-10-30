@@ -3,7 +3,8 @@ using UnityEngine;
 namespace Oopsmeinfecto
 {
     /// <summary>
-    /// The scene can stay empty: entering Play mode creates the game controller automatically.
+    /// Safety net for scenes that do not contain the game hierarchy. The real scene owns a
+    /// persistent "Game" root with the controllers, so this bootstrap normally does nothing.
     /// If a controller already exists in the scene, it is left untouched.
     /// </summary>
     public static class GameBootstrap

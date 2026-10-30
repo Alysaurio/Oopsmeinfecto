@@ -10,8 +10,12 @@ namespace Oopsmeinfecto
     /// </summary>
     public sealed class DefeatPresentationController : MonoBehaviour
     {
+        [Header("Scene references")]
+        [SerializeField] private Canvas _sceneCanvas;
+
         private GameTuning _tuning;
         private GameObject _canvasObject;
+        private bool _ownsCanvas;
         private CanvasGroup _group;
         private Image _overlay;
         private Text _title;
@@ -28,20 +32,23 @@ namespace Oopsmeinfecto
         {
             _tuning = tuning;
 
-            if (_canvasObject != null) Destroy(_canvasObject);
-
-            _canvasObject = new GameObject("Defeat Canvas", typeof(Canvas), typeof(CanvasScaler), typeof(CanvasGroup));
-            var canvas = _canvasObject.GetComponent<Canvas>();
-            canvas.renderMode = RenderMode.ScreenSpaceOverlay;
-            canvas.sortingOrder = 300;
-
-            var scaler = _canvasObject.GetComponent<CanvasScaler>();
-            scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
-            scaler.referenceResolution = new Vector2(1920f, 1080f);
-            scaler.screenMatchMode = CanvasScaler.ScreenMatchMode.MatchWidthOrHeight;
-            scaler.matchWidthOrHeight = 0.5f;
+            if (_sceneCanvas != null)
+            {
+                _canvasObject = _sceneCanvas.gameObject;
+                _ownsCanvas = false;
+                ClearChildren(_canvasObject.transform);
+                ConfigureCanvas(_sceneCanvas, 300);
+            }
+            else
+            {
+                _canvasObject = new GameObject("Defeat Canvas", typeof(Canvas), typeof(CanvasScaler),
+                    typeof(GraphicRaycaster), typeof(CanvasGroup));
+                _ownsCanvas = true;
+                ConfigureCanvas(_canvasObject.GetComponent<Canvas>(), 300);
+            }
 
             _group = _canvasObject.GetComponent<CanvasGroup>();
+            if (_group == null) _group = _canvasObject.AddComponent<CanvasGroup>();
             _group.alpha = 0f;
             _group.blocksRaycasts = true;
             _group.interactable = true;
@@ -72,6 +79,35 @@ namespace Oopsmeinfecto
                 new Vector2(0f, -92f), new Vector2(1300f, 34f));
 
             _canvasObject.SetActive(false);
+        }
+
+        private static void ConfigureCanvas(Canvas canvas, int sortingOrder)
+        {
+            canvas.renderMode = RenderMode.ScreenSpaceOverlay;
+            canvas.sortingOrder = sortingOrder;
+
+            var scaler = canvas.GetComponent<CanvasScaler>();
+            if (scaler == null) scaler = canvas.gameObject.AddComponent<CanvasScaler>();
+            scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
+            scaler.referenceResolution = new Vector2(1920f, 1080f);
+            scaler.screenMatchMode = CanvasScaler.ScreenMatchMode.MatchWidthOrHeight;
+            scaler.matchWidthOrHeight = 0.5f;
+
+            if (canvas.GetComponent<GraphicRaycaster>() == null)
+                canvas.gameObject.AddComponent<GraphicRaycaster>();
+            if (canvas.GetComponent<CanvasGroup>() == null)
+                canvas.gameObject.AddComponent<CanvasGroup>();
+        }
+
+        private static void ClearChildren(Transform parent)
+        {
+            for (int i = parent.childCount - 1; i >= 0; i--)
+            {
+                var child = parent.GetChild(i).gameObject;
+                child.SetActive(false);
+                if (Application.isPlaying) Destroy(child);
+                else DestroyImmediate(child);
+            }
         }
 
         public void Play(string title, string subtitle, float duration, Action onComplete)
@@ -195,7 +231,7 @@ namespace Oopsmeinfecto
 
         private void OnDestroy()
         {
-            if (_canvasObject != null) Destroy(_canvasObject);
+            if (_ownsCanvas && _canvasObject != null) Destroy(_canvasObject);
         }
     }
 }

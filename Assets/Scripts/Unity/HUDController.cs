@@ -12,9 +12,13 @@ namespace Oopsmeinfecto
     {
         private const int SlotCount = 7;
 
+        [Header("Scene references")]
+        [SerializeField] private Canvas _sceneCanvas;
+
         private GameTuning _tuning;
         private Font _font;
         private GameObject _canvasObject;
+        private bool _ownsCanvas;
 
         private Text _levelLabel;
         private Text _statusLabel;
@@ -41,24 +45,53 @@ namespace Oopsmeinfecto
             _tuning = tuning;
             _font = LoadFont();
 
-            if (_canvasObject != null) Destroy(_canvasObject);
-
-            _canvasObject = new GameObject("HUD Canvas", typeof(Canvas), typeof(CanvasScaler));
-            var canvas = _canvasObject.GetComponent<Canvas>();
-            canvas.renderMode = RenderMode.ScreenSpaceOverlay;
-            canvas.sortingOrder = 100;
-
-            var scaler = _canvasObject.GetComponent<CanvasScaler>();
-            scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
-            scaler.referenceResolution = new Vector2(1920f, 1080f);
-            scaler.screenMatchMode = CanvasScaler.ScreenMatchMode.MatchWidthOrHeight;
-            scaler.matchWidthOrHeight = 0.5f;
+            if (_sceneCanvas != null)
+            {
+                _canvasObject = _sceneCanvas.gameObject;
+                _ownsCanvas = false;
+                ClearChildren(_canvasObject.transform);
+                ConfigureCanvas(_sceneCanvas, 100);
+            }
+            else
+            {
+                _canvasObject = new GameObject("HUD Canvas", typeof(Canvas), typeof(CanvasScaler),
+                    typeof(GraphicRaycaster));
+                _ownsCanvas = true;
+                ConfigureCanvas(_canvasObject.GetComponent<Canvas>(), 100);
+            }
 
             var root = _canvasObject.GetComponent<RectTransform>();
             BuildTopLeft(root);
             BuildHint(root);
             BuildHistoryPanel(root);
             BuildLoadingOverlay(root);
+        }
+
+        private static void ConfigureCanvas(Canvas canvas, int sortingOrder)
+        {
+            canvas.renderMode = RenderMode.ScreenSpaceOverlay;
+            canvas.sortingOrder = sortingOrder;
+
+            var scaler = canvas.GetComponent<CanvasScaler>();
+            if (scaler == null) scaler = canvas.gameObject.AddComponent<CanvasScaler>();
+            scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
+            scaler.referenceResolution = new Vector2(1920f, 1080f);
+            scaler.screenMatchMode = CanvasScaler.ScreenMatchMode.MatchWidthOrHeight;
+            scaler.matchWidthOrHeight = 0.5f;
+
+            if (canvas.GetComponent<GraphicRaycaster>() == null)
+                canvas.gameObject.AddComponent<GraphicRaycaster>();
+        }
+
+        private static void ClearChildren(Transform parent)
+        {
+            for (int i = parent.childCount - 1; i >= 0; i--)
+            {
+                var child = parent.GetChild(i).gameObject;
+                child.SetActive(false);
+                if (Application.isPlaying) Destroy(child);
+                else DestroyImmediate(child);
+            }
         }
 
         private void BuildTopLeft(RectTransform root)
@@ -402,7 +435,7 @@ namespace Oopsmeinfecto
 
         private void OnDestroy()
         {
-            if (_canvasObject != null) Destroy(_canvasObject);
+            if (_ownsCanvas && _canvasObject != null) Destroy(_canvasObject);
         }
     }
 }
