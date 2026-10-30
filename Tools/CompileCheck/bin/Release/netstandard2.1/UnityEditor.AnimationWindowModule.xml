@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<doc>
+  <members>
+    <assembly>
+      <name>UnityEditor.AnimationWindowModule</name>
+    </assembly>
+    <member name="T:UnityEditor.AnimationWindow">
+      <summary>
+        <para>Use the AnimationWindow class to select and edit Animation clips.</para>
+      </summary>
+    </member>
+    <member name="P:UnityEditor.AnimationWindow.animationClip">
+      <summary>
+        <para>The animation clip selected in the Animation window.</para>
+      </summary>
+    </member>
+    <member name="P:UnityEditor.AnimationWindow.canPreview">
+      <summary>
+        <para>True if Animation window can enable preview mode. False otherwise. (Read Only)</para>
+      </summary>
+    </member>
+    <member name="P:UnityEditor.AnimationWindow.canRecord">
+      <summary>
+        <para>True if Animation window can enable recording mode. False otherwise. (Read Only)</para>
+      </summary>
+    </member>
+    <member name="P:UnityEditor.AnimationWindow.frame">
+      <summary>
+        <para>The frame number at which the Animation window playhead is located.</para>
+      </summary>
+    </member>
+    <member name="P:UnityEditor.AnimationWindow.playing">
+      <summary>
+        <para>This property toggles animation playback in the Animation window.</para>
+      </summary>
+    </member>
+    <member name="P:UnityEditor.AnimationWindow.previewing">
+      <summary>
+        <para>This property toggles previewing in the Animation window.</para>
+      </summary>
+    </member>
+    <member name="P:UnityEditor.AnimationWindow.recording">
+      <summary>
+        <para>This property toggles recording in the Animation window.</para>
+      </summary>
+    </member>
+    <member name="P:UnityEditor.AnimationWindow.time">
+      <summary>
+        <para>The time value at which the Animation window playhead is located.</para>
+      </summary>
+    </member>
+  </members>
+</doc>

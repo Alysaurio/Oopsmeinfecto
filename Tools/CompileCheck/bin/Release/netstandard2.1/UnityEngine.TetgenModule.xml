@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<doc>
+  <members>
+    <assembly>
+      <name>UnityEngine.TetgenModule</name>
+    </assembly>
+    <member name="A:UnityEngine.TetgenModule">
+      <summary>
+        <para>The Tetgen module includes APIs and tools that facilitate the Tetrahedralization of Light Probes in Unity.</para>
+      </summary>
+    </member>
+  </members>
+</doc>

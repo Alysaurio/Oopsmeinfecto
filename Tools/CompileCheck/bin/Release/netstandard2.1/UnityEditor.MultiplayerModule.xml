@@ -1,0 +1,252 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<doc>
+  <members>
+    <assembly>
+      <name>UnityEditor.MultiplayerModule</name>
+    </assembly>
+    <member name="T:Unity.Multiplayer.Editor.EditorMultiplayerRolesManager">
+      <summary>
+        <para>
+ Provides an api for managing multiplayer roles in the editor.
+ </para>
+      </summary>
+    </member>
+    <member name="?:Unity.Multiplayer.Editor.EditorMultiplayerRolesManager.ActiveMultiplayerRoleChanged(System.Action)">
+      <summary>
+        <para>
+ Event that is invoked when the active multiplayer role mask changes.
+ </para>
+      </summary>
+      <param name="value"></param>
+    </member>
+    <member name="P:Unity.Multiplayer.Editor.EditorMultiplayerRolesManager.ActiveMultiplayerRoleMask">
+      <summary>
+        <para>
+ Gets or sets the active multiplayer role mask.
+ </para>
+      </summary>
+    </member>
+    <member name="T:Unity.Multiplayer.Editor.EditorMultiplayerRolesManager.AutomaticSelection">
+      <summary>
+        <para>
+ Provides an api for automatically stripping specific component types for the multiplayer roles.
+ </para>
+      </summary>
+    </member>
+    <member name="M:Unity.Multiplayer.Editor.EditorMultiplayerRolesManager.AutomaticSelection.GetCustomComponents">
+      <summary>
+        <para>
+ Gets the list of custom components that are automatically selected for the entire project.
+ </para>
+      </summary>
+      <returns>
+        <para>Returns a Dictionary where the key is the component Type and the value is the MultiplayerRoleFlags.</para>
+      </returns>
+    </member>
+    <member name="M:Unity.Multiplayer.Editor.EditorMultiplayerRolesManager.AutomaticSelection.GetMultiplayerRoleMaskForComponentType(System.Type)">
+      <summary>
+        <para>
+ Gets the multiplayer role mask for a component type.
+ </para>
+      </summary>
+      <param name="type">The component type.</param>
+      <returns>
+        <para>Returns the multiplayer role mask of the component type.</para>
+      </returns>
+    </member>
+    <member name="T:Unity.Multiplayer.Editor.EditorMultiplayerRolesManager.AutomaticSelection.Server">
+      <summary>
+        <para>
+ Provides an api for automatically stripping common component types for the server multiplayer role.
+ </para>
+      </summary>
+    </member>
+    <member name="P:Unity.Multiplayer.Editor.EditorMultiplayerRolesManager.AutomaticSelection.Server.StripAudioComponents">
+      <summary>
+        <para>
+ Strips common audio components for the server multiplayer role.
+ </para>
+      </summary>
+    </member>
+    <member name="P:Unity.Multiplayer.Editor.EditorMultiplayerRolesManager.AutomaticSelection.Server.StripRenderingComponents">
+      <summary>
+        <para>
+ Strips common rendering components for the server multiplayer role.
+ </para>
+      </summary>
+    </member>
+    <member name="P:Unity.Multiplayer.Editor.EditorMultiplayerRolesManager.AutomaticSelection.Server.StripUIComponents">
+      <summary>
+        <para>
+ Strips common UI components for the server multiplayer role.
+ </para>
+      </summary>
+    </member>
+    <member name="M:Unity.Multiplayer.Editor.EditorMultiplayerRolesManager.AutomaticSelection.SetCustomComponents(System.Collections.Generic.Dictionary`2&lt;System.Type,Unity.Multiplayer.MultiplayerRoleFlags&gt;)">
+      <summary>
+        <para>
+ Sets the list of custom components that are automatically selected for the entire project.
+ </para>
+      </summary>
+      <param name="customComponents">A Dictionary where the key is the component Type and the value is the MultiplayerRoleFlags.</param>
+    </member>
+    <member name="M:Unity.Multiplayer.Editor.EditorMultiplayerRolesManager.AutomaticSelection.SetMultiplayerRoleMaskForComponentType(System.Type,Unity.Multiplayer.MultiplayerRoleFlags)">
+      <summary>
+        <para>
+ Sets the multiplayer role mask for a component type.
+ </para>
+      </summary>
+      <param name="type">The component type.</param>
+      <param name="mask">The multiplayer role mask to assing to the component type.</param>
+    </member>
+    <member name="P:Unity.Multiplayer.Editor.EditorMultiplayerRolesManager.EnableMultiplayerRoles">
+      <summary>
+        <para>
+ Enables multiplayer roles for the project.
+ </para>
+      </summary>
+    </member>
+    <member name="P:Unity.Multiplayer.Editor.EditorMultiplayerRolesManager.EnableSafetyChecks">
+      <summary>
+        <para>
+ Enables safety checks for multiplayer roles.
+ When entering play mode or building scenes, the editor will check and warn about any stripped GameObject or Component that is
+ referenced by other objects and that can potentially cause null reference errors.
+ </para>
+      </summary>
+    </member>
+    <member name="M:Unity.Multiplayer.Editor.EditorMultiplayerRolesManager.GetMultiplayerRoleForBuildProfile(UnityEditor.Build.Profile.BuildProfile)">
+      <summary>
+        <para>
+ Gets the multiplayer role that is going to be used for the provided build profile.
+ </para>
+      </summary>
+      <param name="profile">The build profile to get the multiplayer role maks for.</param>
+      <returns>
+        <para>Returns the multiplayer role mask for the provided build profile.</para>
+      </returns>
+    </member>
+    <member name="M:Unity.Multiplayer.Editor.EditorMultiplayerRolesManager.GetMultiplayerRoleForBuildTarget(UnityEditor.Build.NamedBuildTarget)">
+      <summary>
+        <para>
+ Gets the multiplayer role mask that is going to be used for the provided build target.
+ </para>
+      </summary>
+      <param name="namedBuildTarget">The build target to get the multiplayer role mask for.</param>
+      <returns>
+        <para>Returns the multiplayer role mask for the provided build target.</para>
+      </returns>
+    </member>
+    <member name="M:Unity.Multiplayer.Editor.EditorMultiplayerRolesManager.GetMultiplayerRoleForClassicTarget(UnityEditor.BuildTarget)">
+      <summary>
+        <para>
+ Gets the multiplayer role that is going to be used for the provided build target.
+ </para>
+      </summary>
+      <param name="buildTarget">The build target to get the multiplayer role mask for.</param>
+      <returns>
+        <para>Returns the multiplayer role mask for the provided build target.</para>
+      </returns>
+    </member>
+    <member name="M:Unity.Multiplayer.Editor.EditorMultiplayerRolesManager.GetMultiplayerRoleForClassicTarget(UnityEditor.BuildTarget,UnityEditor.StandaloneBuildSubtarget)">
+      <summary>
+        <para>
+ Gets the multiplayer role that is going to be used for the provided build target and subtarget.
+ </para>
+      </summary>
+      <param name="buildTarget">The build target to get the multiplayer role mask for.</param>
+      <param name="subtarget">The subtarget to get the multiplayer role mask for.</param>
+      <returns>
+        <para>Returns the multiplayer role mask for the provided build target and subtarget.</para>
+      </returns>
+    </member>
+    <member name="M:Unity.Multiplayer.Editor.EditorMultiplayerRolesManager.GetMultiplayerRoleMaskForComponent(UnityEngine.Component)">
+      <summary>
+        <para>
+ Gets the multiplayer role mask for a Component.
+ </para>
+      </summary>
+      <param name="component">The Component.</param>
+      <returns>
+        <para>Returns the multiplayer role mask for the provided Component.</para>
+      </returns>
+    </member>
+    <member name="M:Unity.Multiplayer.Editor.EditorMultiplayerRolesManager.GetMultiplayerRoleMaskForGameObject(UnityEngine.GameObject)">
+      <summary>
+        <para>
+ Gets the multiplayer role mask for a GameObject.
+ </para>
+      </summary>
+      <param name="gameObject">The GameObject.</param>
+      <returns>
+        <para>Returns the multiplayer role mask for the provided GameObject.</para>
+      </returns>
+    </member>
+    <member name="M:Unity.Multiplayer.Editor.EditorMultiplayerRolesManager.GetMultiplayerRoleStringForBuildProfile(UnityEditor.Build.Profile.BuildProfile)">
+      <summary>
+        <para>
+ Gets the multiplayer role string that is going to be used for the provided build profile.
+ </para>
+      </summary>
+      <param name="profile">The build profile to get the multiplayer role string for.</param>
+      <returns>
+        <para>Returns the multiplayer role string for the provided build profile.</para>
+      </returns>
+    </member>
+    <member name="M:Unity.Multiplayer.Editor.EditorMultiplayerRolesManager.SetMultiplayerRoleForBuildProfile(UnityEditor.Build.Profile.BuildProfile,Unity.Multiplayer.MultiplayerRoleFlags)">
+      <summary>
+        <para>
+ Sets the multiplayer role mask that is going to be used for the provided build profile.
+ </para>
+      </summary>
+      <param name="profile">The build profile to set the multiplayer role mask for.</param>
+      <param name="mask">The multiplayer role mask to assing to the build profile.</param>
+    </member>
+    <member name="M:Unity.Multiplayer.Editor.EditorMultiplayerRolesManager.SetMultiplayerRoleForBuildTarget(UnityEditor.Build.NamedBuildTarget,Unity.Multiplayer.MultiplayerRoleFlags)">
+      <summary>
+        <para>
+ Sets the multiplayer role mask that is going to be used for the provided build target.
+ </para>
+      </summary>
+      <param name="namedBuildTarget">The build target to set the multiplayer role mask for.</param>
+      <param name="mask">The multiplayer role mask to assing to the build target.</param>
+    </member>
+    <member name="M:Unity.Multiplayer.Editor.EditorMultiplayerRolesManager.SetMultiplayerRoleForClassicTarget(UnityEditor.BuildTarget,Unity.Multiplayer.MultiplayerRoleFlags)">
+      <summary>
+        <para>
+ Sets the multiplayer role that is going to be used for the provided build target.
+ </para>
+      </summary>
+      <param name="buildTarget">The build target to set the multiplayer role mask for.</param>
+      <param name="mask">The multiplayer role mask to assing to the build target.</param>
+    </member>
+    <member name="M:Unity.Multiplayer.Editor.EditorMultiplayerRolesManager.SetMultiplayerRoleForClassicTarget(UnityEditor.BuildTarget,UnityEditor.StandaloneBuildSubtarget,Unity.Multiplayer.MultiplayerRoleFlags)">
+      <summary>
+        <para>
+ Sets the multiplayer role that is going to be used for the provided build target and subtarget.
+ </para>
+      </summary>
+      <param name="buildTarget">The build target to set the multiplayer role mask for.</param>
+      <param name="subtarget">The subtarget to set the multiplayer role mask for.</param>
+      <param name="mask">The multiplayer role mask to assing to the build target and subtarget.</param>
+    </member>
+    <member name="M:Unity.Multiplayer.Editor.EditorMultiplayerRolesManager.SetMultiplayerRoleMaskForComponent(UnityEngine.Component,Unity.Multiplayer.MultiplayerRoleFlags)">
+      <summary>
+        <para>
+ Sets the multiplayer role mask for a Component.
+ </para>
+      </summary>
+      <param name="component">The Component to set the multiplayer role mask to.</param>
+      <param name="mask">The multiplayer role mask to assing to the Component.</param>
+    </member>
+    <member name="M:Unity.Multiplayer.Editor.EditorMultiplayerRolesManager.SetMultiplayerRoleMaskForGameObject(UnityEngine.GameObject,Unity.Multiplayer.MultiplayerRoleFlags)">
+      <summary>
+        <para>
+ Sets the multiplayer role mask for a GameObject.
+ </para>
+      </summary>
+      <param name="gameObject">The GameObject to set the multiplayer role mask to.</param>
+      <param name="mask">The multiplayer role mask to assing to the GameObject.</param>
+    </member>
+  </members>
+</doc>

@@ -1,0 +1,141 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<doc>
+  <members>
+    <assembly>
+      <name>UnityEngine.MultiplayerModule</name>
+    </assembly>
+    <member name="T:Unity.Multiplayer.MultiplayerRole">
+      <summary>
+        <para>
+ The role of the application in a multiplayer game.
+ </para>
+      </summary>
+    </member>
+    <member name="F:Unity.Multiplayer.MultiplayerRole.Client">
+      <summary>
+        <para>
+ Indicates that the application is running as a client.
+ </para>
+      </summary>
+    </member>
+    <member name="F:Unity.Multiplayer.MultiplayerRole.Server">
+      <summary>
+        <para>
+ Indicates that the application is running as a dedicated server.
+ </para>
+      </summary>
+    </member>
+    <member name="T:Unity.Multiplayer.MultiplayerRoleFlags">
+      <summary>
+        <para>
+ Flags for the role of the application in a multiplayer game.
+ </para>
+      </summary>
+    </member>
+    <member name="F:Unity.Multiplayer.MultiplayerRoleFlags.Client">
+      <summary>
+        <para>
+ Flag for the client role.
+ </para>
+      </summary>
+    </member>
+    <member name="F:Unity.Multiplayer.MultiplayerRoleFlags.ClientAndServer">
+      <summary>
+        <para>
+ Flag for both the client and server roles.
+ </para>
+      </summary>
+    </member>
+    <member name="F:Unity.Multiplayer.MultiplayerRoleFlags.Server">
+      <summary>
+        <para>
+ Flag for the server role.
+ </para>
+      </summary>
+    </member>
+    <member name="T:Unity.Multiplayer.MultiplayerRoleRestrictedAttribute">
+      <summary>
+        <para>
+ Marks a MonoBehaviour as multiplayer role restricted so it cannot be
+ stripped in Server or Client platforms.
+ </para>
+      </summary>
+    </member>
+    <member name="T:Unity.Multiplayer.MultiplayerRolesManager">
+      <summary>
+        <para>
+ Provides an api for managing multiplayer roles in runtime.
+ </para>
+      </summary>
+    </member>
+    <member name="P:Unity.Multiplayer.MultiplayerRolesManager.ActiveMultiplayerRoleMask">
+      <summary>
+        <para>
+ Gets the active multiplayer role mask.
+ </para>
+      </summary>
+    </member>
+    <member name="M:Unity.Multiplayer.MultiplayerRolesManager.GetMultiplayerRoleMaskForComponent(UnityEngine.Component)">
+      <summary>
+        <para>
+ Gets the multiplayer role mask for a Component.
+ </para>
+      </summary>
+      <param name="component">The Component.</param>
+      <returns>
+        <para>Returns the multiplayer role mask for the provided Component.</para>
+      </returns>
+    </member>
+    <member name="M:Unity.Multiplayer.MultiplayerRolesManager.GetMultiplayerRoleMaskForGameObject(UnityEngine.GameObject)">
+      <summary>
+        <para>
+ Gets the multiplayer role mask for a GameObject.
+ </para>
+      </summary>
+      <param name="gameObject">The GameObject.</param>
+      <returns>
+        <para>Returns the multiplayer role mask for the provided GameObject.</para>
+      </returns>
+    </member>
+    <member name="T:Unity.Multiplayer.PlayMode.CurrentPlayer">
+      <summary>
+        <para>
+ Utility class to access information about the multiplayer play mode player while in playmode.
+ </para>
+      </summary>
+    </member>
+    <member name="P:Unity.Multiplayer.PlayMode.CurrentPlayer.IsMainEditor">
+      <summary>
+        <para>
+ Indicates if the currently running player is the main editor.
+ </para>
+      </summary>
+    </member>
+    <member name="M:Unity.Multiplayer.PlayMode.CurrentPlayer.ReadOnlyTags">
+      <summary>
+        <para>
+ Returns the tag(s) assigned to the currently running player.
+ </para>
+      </summary>
+      <returns>
+        <para>Returns the array of assigned tags</para>
+      </returns>
+    </member>
+    <member name="P:Unity.Multiplayer.PlayMode.CurrentPlayer.Tags">
+      <summary>
+        <para>
+ Returns the tag(s) assigned to the currently running player.
+ This property is read-only and should be used to access the tags without modifying them.
+ </para>
+      </summary>
+      <returns>
+        <para>Returns the array of assigned tags</para>
+      </returns>
+    </member>
+    <member name="A:UnityEngine.MultiplayerModule">
+      <summary>
+        <para>Provides core multiplayer functionality, such as Dedicated Server, Multiplayer Roles, and Content Stripping functionality.</para>
+      </summary>
+    </member>
+  </members>
+</doc>

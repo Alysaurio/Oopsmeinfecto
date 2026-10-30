@@ -1,0 +1,176 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<doc>
+  <members>
+    <assembly>
+      <name>UnityEditor.AIModule</name>
+    </assembly>
+    <member name="T:UnityEditor.AI.NavMeshBuilder">
+      <summary>
+        <para>Navigation mesh builder interface.</para>
+      </summary>
+    </member>
+    <member name="P:UnityEditor.AI.NavMeshBuilder.isRunning">
+      <summary>
+        <para>Returns true if an asynchronous build is still running.</para>
+      </summary>
+    </member>
+    <member name="M:UnityEditor.AI.NavMeshBuilder.BuildNavMesh">
+      <summary>
+        <para>Build the Navmesh.</para>
+      </summary>
+    </member>
+    <member name="M:UnityEditor.AI.NavMeshBuilder.BuildNavMeshAsync">
+      <summary>
+        <para>Build the Navmesh asynchronously.</para>
+      </summary>
+    </member>
+    <member name="M:UnityEditor.AI.NavMeshBuilder.BuildNavMeshForMultipleScenes(System.String[])">
+      <summary>
+        <para>Builds the combined NavMesh for the contents of multiple Scenes.</para>
+      </summary>
+      <param name="paths">Array of paths to Scenes that are used for building the navmesh.</param>
+    </member>
+    <member name="M:UnityEditor.AI.NavMeshBuilder.Cancel">
+      <summary>
+        <para>Cancels an asynchronous update of the specified NavMesh data.</para>
+      </summary>
+      <param name="data">The data associated with asynchronous updating.</param>
+    </member>
+    <member name="M:UnityEditor.AI.NavMeshBuilder.Cancel">
+      <summary>
+        <para>Cancel NavMesh construction.</para>
+      </summary>
+    </member>
+    <member name="M:UnityEditor.AI.NavMeshBuilder.ClearAllNavMeshes">
+      <summary>
+        <para>Clear all Navmeshes.</para>
+      </summary>
+    </member>
+    <member name="M:UnityEditor.AI.NavMeshBuilder.CollectSourcesInStage(UnityEngine.Bounds,System.Int32,UnityEngine.AI.NavMeshCollectGeometry,System.Int32,System.Collections.Generic.List`1&lt;UnityEngine.AI.NavMeshBuildMarkup&gt;,UnityEngine.SceneManagement.Scene,System.Collections.Generic.List`1&lt;UnityEngine.AI.NavMeshBuildSource&gt;)">
+      <summary>
+        <para>Collects renderers or physics colliders, and terrains within a volume.</para>
+      </summary>
+      <param name="includedWorldBounds">The queried objects must overlap these bounds to be included in the results.</param>
+      <param name="includedLayerMask">Specifies which layers are included in the query.</param>
+      <param name="geometry">Which type of geometry to collect - e.g. physics colliders.</param>
+      <param name="defaultArea">Area type to assign to results, unless modified by NavMeshMarkup.</param>
+      <param name="markups">List of markups which allows finer control over how objects are collected.</param>
+      <param name="stageProxy">Results are selected only from the stage to which this scene belongs.</param>
+      <param name="results">List where results are stored, the list is cleared at the beginning of the call.</param>
+    </member>
+    <member name="M:UnityEditor.AI.NavMeshBuilder.CollectSourcesInStage(UnityEngine.Bounds,System.Int32,UnityEngine.AI.NavMeshCollectGeometry,System.Int32,System.Boolean,System.Collections.Generic.List`1&lt;UnityEngine.AI.NavMeshBuildMarkup&gt;,System.Boolean,UnityEngine.SceneManagement.Scene,System.Collections.Generic.List`1&lt;UnityEngine.AI.NavMeshBuildSource&gt;)">
+      <summary>
+        <para>Collects renderers or physics colliders, and terrains within a volume.</para>
+      </summary>
+      <param name="includedWorldBounds">The queried objects must overlap these bounds to be included in the results.</param>
+      <param name="includedLayerMask">Specifies which layers are included in the query.</param>
+      <param name="geometry">Which type of geometry to collect - e.g. physics colliders.</param>
+      <param name="defaultArea">Area type to assign to results, unless modified by NavMeshMarkup.</param>
+      <param name="generateLinksByDefault">If true, all the source will be considered for generating links. Otherwise, only the marked sources will be considered.</param>
+      <param name="markups">List of markups which allows finer control over how objects are collected.</param>
+      <param name="includeOnlyMarkedObjects">Specifies if only objects with markups are collected.</param>
+      <param name="stageProxy">Results are selected only from the stage to which this scene belongs.</param>
+      <param name="results">List where results are stored, the list is cleared at the beginning of the call.</param>
+    </member>
+    <member name="M:UnityEditor.AI.NavMeshBuilder.CollectSourcesInStage(UnityEngine.Transform,System.Int32,UnityEngine.AI.NavMeshCollectGeometry,System.Int32,System.Collections.Generic.List`1&lt;UnityEngine.AI.NavMeshBuildMarkup&gt;,UnityEngine.SceneManagement.Scene,System.Collections.Generic.List`1&lt;UnityEngine.AI.NavMeshBuildSource&gt;)">
+      <summary>
+        <para>Collects renderers or physics colliders, and terrains within a transform hierarchy.</para>
+      </summary>
+      <param name="root">If not null, consider only root and its children in the query; if null, includes everything loaded.</param>
+      <param name="includedLayerMask">Specifies which layers are included in the query.</param>
+      <param name="geometry">Which type of geometry to collect - e.g. physics colliders.</param>
+      <param name="defaultArea">Area type to assign to results, unless modified by NavMeshMarkup.</param>
+      <param name="markups">List of markups which allows finer control over how objects are collected.</param>
+      <param name="stageProxy">Results are selected only from the stage to which this scene belongs.</param>
+      <param name="results">List where results are stored, the list is cleared at the beginning of the call.</param>
+    </member>
+    <member name="M:UnityEditor.AI.NavMeshBuilder.CollectSourcesInStage(UnityEngine.Transform,System.Int32,UnityEngine.AI.NavMeshCollectGeometry,System.Int32,System.Boolean,System.Collections.Generic.List`1&lt;UnityEngine.AI.NavMeshBuildMarkup&gt;,System.Boolean,UnityEngine.SceneManagement.Scene,System.Collections.Generic.List`1&lt;UnityEngine.AI.NavMeshBuildSource&gt;)">
+      <summary>
+        <para>Collects renderers or physics colliders, and terrains within a transform hierarchy.</para>
+      </summary>
+      <param name="root">If not null, consider only root and its children in the query; if null, includes everything loaded.</param>
+      <param name="includedLayerMask">Specifies which layers are included in the query.</param>
+      <param name="geometry">Which type of geometry to collect - e.g. physics colliders.</param>
+      <param name="defaultArea">Area type to assign to results, unless modified by NavMeshMarkup.</param>
+      <param name="generateLinksByDefault">If true, all the source will be considered for generating links. Otherwise, only the marked sources will be considered.</param>
+      <param name="markups">List of markups which allows finer control over how objects are collected.</param>
+      <param name="includeOnlyMarkedObjects">Specifies if only objects with markups are collected.</param>
+      <param name="stageProxy">Results are selected only from the stage to which this scene belongs.</param>
+      <param name="results">List where results are stored, the list is cleared at the beginning of the call.</param>
+    </member>
+    <member name="T:UnityEditor.AI.NavMeshEditorHelpers">
+      <summary>
+        <para>NavMesh utility functionality effective only in the Editor.</para>
+      </summary>
+    </member>
+    <member name="M:UnityEditor.AI.NavMeshEditorHelpers.CollectSourcesInStage(UnityEngine.Bounds,System.Int32,UnityEngine.AI.NavMeshCollectGeometry,System.Int32,System.Collections.Generic.List`1&lt;UnityEngine.AI.NavMeshBuildMarkup&gt;,UnityEngine.SceneManagement.Scene,System.Collections.Generic.List`1&lt;UnityEngine.AI.NavMeshBuildSource&gt;)">
+      <summary>
+        <para>Collects renderers or physics colliders, and terrains within a volume.</para>
+      </summary>
+      <param name="includedWorldBounds">The queried objects must overlap these bounds to be included in the results.</param>
+      <param name="includedLayerMask">Specifies which layers are included in the query.</param>
+      <param name="geometry">Which type of geometry to collect - e.g. physics colliders.</param>
+      <param name="defaultArea">Area type to assign to results, unless modified by NavMeshMarkup.</param>
+      <param name="markups">List of markups which allows finer control over how objects are collected.</param>
+      <param name="stageProxy">Results are selected only from the stage to which this scene belongs.</param>
+      <param name="results">List where results are stored, the list is cleared at the beginning of the call.</param>
+    </member>
+    <member name="M:UnityEditor.AI.NavMeshEditorHelpers.CollectSourcesInStage(UnityEngine.Bounds,System.Int32,UnityEngine.AI.NavMeshCollectGeometry,System.Int32,System.Boolean,System.Collections.Generic.List`1&lt;UnityEngine.AI.NavMeshBuildMarkup&gt;,System.Boolean,UnityEngine.SceneManagement.Scene,System.Collections.Generic.List`1&lt;UnityEngine.AI.NavMeshBuildSource&gt;)">
+      <summary>
+        <para>Collects renderers or physics colliders, and terrains within a volume.</para>
+      </summary>
+      <param name="includedWorldBounds">The queried objects must overlap these bounds to be included in the results.</param>
+      <param name="includedLayerMask">Specifies which layers are included in the query.</param>
+      <param name="geometry">Which type of geometry to collect - e.g. physics colliders.</param>
+      <param name="defaultArea">Area type to assign to results, unless modified by NavMeshMarkup.</param>
+      <param name="generateLinksByDefault">If true, all the source will be considered for generating links. Otherwise, only the marked sources will be considered.</param>
+      <param name="markups">List of markups which allows finer control over how objects are collected.</param>
+      <param name="includeOnlyMarkedObjects">Specifies if only objects with markups are collected.</param>
+      <param name="stageProxy">Results are selected only from the stage to which this scene belongs.</param>
+      <param name="results">List where results are stored, the list is cleared at the beginning of the call.</param>
+    </member>
+    <member name="M:UnityEditor.AI.NavMeshEditorHelpers.CollectSourcesInStage(UnityEngine.Transform,System.Int32,UnityEngine.AI.NavMeshCollectGeometry,System.Int32,System.Collections.Generic.List`1&lt;UnityEngine.AI.NavMeshBuildMarkup&gt;,UnityEngine.SceneManagement.Scene,System.Collections.Generic.List`1&lt;UnityEngine.AI.NavMeshBuildSource&gt;)">
+      <summary>
+        <para>Collects renderers or physics colliders, and terrains within a transform hierarchy.</para>
+      </summary>
+      <param name="root">If not null, consider only root and its children in the query; if null, includes everything loaded.</param>
+      <param name="includedLayerMask">Specifies which layers are included in the query.</param>
+      <param name="geometry">Which type of geometry to collect - e.g. physics colliders.</param>
+      <param name="defaultArea">Area type to assign to results, unless modified by NavMeshMarkup.</param>
+      <param name="markups">List of markups which allows finer control over how objects are collected.</param>
+      <param name="stageProxy">Results are selected only from the stage to which this scene belongs.</param>
+      <param name="results">List where results are stored, the list is cleared at the beginning of the call.</param>
+    </member>
+    <member name="M:UnityEditor.AI.NavMeshEditorHelpers.CollectSourcesInStage(UnityEngine.Transform,System.Int32,UnityEngine.AI.NavMeshCollectGeometry,System.Int32,System.Boolean,System.Collections.Generic.List`1&lt;UnityEngine.AI.NavMeshBuildMarkup&gt;,System.Boolean,UnityEngine.SceneManagement.Scene,System.Collections.Generic.List`1&lt;UnityEngine.AI.NavMeshBuildSource&gt;)">
+      <summary>
+        <para>Collects renderers or physics colliders, and terrains within a transform hierarchy.</para>
+      </summary>
+      <param name="root">If not null, consider only root and its children in the query; if null, includes everything loaded.</param>
+      <param name="includedLayerMask">Specifies which layers are included in the query.</param>
+      <param name="geometry">Which type of geometry to collect - e.g. physics colliders.</param>
+      <param name="defaultArea">Area type to assign to results, unless modified by NavMeshMarkup.</param>
+      <param name="generateLinksByDefault">If true, all the source will be considered for generating links. Otherwise, only the marked sources will be considered.</param>
+      <param name="markups">List of markups which allows finer control over how objects are collected.</param>
+      <param name="includeOnlyMarkedObjects">Specifies if only objects with markups are collected.</param>
+      <param name="stageProxy">Results are selected only from the stage to which this scene belongs.</param>
+      <param name="results">List where results are stored, the list is cleared at the beginning of the call.</param>
+    </member>
+    <member name="M:UnityEditor.AI.NavMeshEditorHelpers.DrawBuildDebug(UnityEngine.AI.NavMeshData,UnityEngine.AI.NavMeshBuildDebugFlags)">
+      <summary>
+        <para>Displays in the Editor the precise intermediate data used during the build process of the specified NavMesh.</para>
+      </summary>
+      <param name="navMeshData">NavMesh object for which debug data has been deliberately collected during the build process.</param>
+      <param name="flags">Bitmask that designates the types of data to show at one time.</param>
+    </member>
+    <member name="T:UnityEditor.AI.NavMeshVisualizationSettings">
+      <summary>
+        <para>Represents the visualization state of the navigation debug graphics.</para>
+      </summary>
+    </member>
+    <member name="P:UnityEditor.AI.NavMeshVisualizationSettings.showNavigation">
+      <summary>
+        <para>A count of how many users requesting navigation debug graphics to be enabled.</para>
+      </summary>
+    </member>
+  </members>
+</doc>

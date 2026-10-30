@@ -1,0 +1,418 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<doc>
+  <members>
+    <assembly>
+      <name>UnityEditor.HierarchyModule</name>
+    </assembly>
+    <member name="T:Unity.Hierarchy.Editor.HierarchyGameObjectHandler">
+      <summary>
+        <para>
+ Provides a hierarchy node type handler for GameObject instances in a Unity.Hierarchy.HierarchyView.
+ </para>
+      </summary>
+    </member>
+    <member name="M:Unity.Hierarchy.Editor.HierarchyGameObjectHandler.GetEntityId(Unity.Hierarchy.HierarchyNode&amp;)">
+      <summary>
+        <para>
+ Gets the EntityId of the GameObject that corresponds to the specified Unity.Hierarchy.HierarchyNode.
+ </para>
+      </summary>
+      <param name="node">The Unity.Hierarchy.HierarchyNode to get the GameObjectEntityId for.</param>
+      <returns>
+        <para>The EntityId of the GameObject that corresponds to the specified Unity.Hierarchy.HierarchyNode.</para>
+      </returns>
+    </member>
+    <member name="M:Unity.Hierarchy.Editor.HierarchyGameObjectHandler.GetGameObject(Unity.Hierarchy.HierarchyNode&amp;)">
+      <summary>
+        <para>
+ Gets the GameObject that corresponds to the specified Unity.Hierarchy.HierarchyNode.
+ </para>
+      </summary>
+      <param name="node">The Unity.Hierarchy.HierarchyNode to get the GameObject for.</param>
+      <returns>
+        <para>The GameObject that corresponds to the specified Unity.Hierarchy.HierarchyNode.</para>
+      </returns>
+    </member>
+    <member name="M:Unity.Hierarchy.Editor.HierarchyGameObjectHandler.GetNodeType">
+      <summary>
+        <para>
+ Gets the Unity.Hierarchy.HierarchyNodeType for this Unity.Hierarchy.Editor.HierarchyGameObjectHandler.
+ </para>
+      </summary>
+      <returns>
+        <para>The Unity.Hierarchy.HierarchyNodeType for GameObject nodes.</para>
+      </returns>
+    </member>
+    <member name="M:Unity.Hierarchy.Editor.HierarchyGameObjectHandler.GetOrCreateNode(UnityEngine.EntityId)">
+      <summary>
+        <para>
+ Gets or creates the Unity.Hierarchy.HierarchyNode that corresponds to the specified GameObjectEntityId.
+ </para>
+      </summary>
+      <param name="entityId">The EntityId of the GameObject to get the Unity.Hierarchy.HierarchyNode for.</param>
+      <returns>
+        <para>The Unity.Hierarchy.HierarchyNode that corresponds to the specified EntityId.</para>
+      </returns>
+    </member>
+    <member name="M:Unity.Hierarchy.Editor.HierarchyGameObjectHandler.GetOrCreateNode(UnityEngine.GameObject)">
+      <summary>
+        <para>
+ Gets or creates the Unity.Hierarchy.HierarchyNode that corresponds to the specified GameObject.
+ </para>
+      </summary>
+      <param name="gameObject">The GameObject to get the Unity.Hierarchy.HierarchyNode for.</param>
+      <returns>
+        <para>The Unity.Hierarchy.HierarchyNode that corresponds to the specified GameObject.</para>
+      </returns>
+    </member>
+    <member name="T:Unity.Hierarchy.Editor.HierarchySceneHandler">
+      <summary>
+        <para>
+ Provides a hierarchy node type handler for SceneManagement.Scene instances in a Unity.Hierarchy.HierarchyView.
+ </para>
+      </summary>
+    </member>
+    <member name="M:Unity.Hierarchy.Editor.HierarchySceneHandler.GetNodeType">
+      <summary>
+        <para>
+ Gets the Unity.Hierarchy.HierarchyNodeType for this Unity.Hierarchy.Editor.HierarchySceneHandler.
+ </para>
+      </summary>
+      <returns>
+        <para>The Unity.Hierarchy.HierarchyNodeType for SceneManagement.Scene nodes.</para>
+      </returns>
+    </member>
+    <member name="M:Unity.Hierarchy.Editor.HierarchySceneHandler.GetOrCreateNode(UnityEngine.SceneManagement.Scene)">
+      <summary>
+        <para>
+ Gets or creates the Unity.Hierarchy.HierarchyNode that corresponds to the specified SceneManagement.Scene.
+ </para>
+      </summary>
+      <param name="scene">The SceneManagement.Scene to get the Unity.Hierarchy.HierarchyNode for.</param>
+      <returns>
+        <para>The Unity.Hierarchy.HierarchyNode that corresponds to the specified SceneManagement.Scene.</para>
+      </returns>
+    </member>
+    <member name="M:Unity.Hierarchy.Editor.HierarchySceneHandler.GetScene(Unity.Hierarchy.HierarchyNode&amp;)">
+      <summary>
+        <para>
+ Gets the SceneManagement.Scene that corresponds to the specified Unity.Hierarchy.HierarchyNode.
+ </para>
+      </summary>
+      <param name="node">The Unity.Hierarchy.HierarchyNode to get the SceneManagement.Scene for.</param>
+      <returns>
+        <para>The SceneManagement.Scene that corresponds to the specified Unity.Hierarchy.HierarchyNode.</para>
+      </returns>
+    </member>
+    <member name="T:Unity.Hierarchy.Editor.HierarchySubSceneAuthoringHandler">
+      <summary>
+        <para>
+ Provides a Unity.Hierarchy.HierarchyNodeTypeHandler for subscenes.
+ </para>
+      </summary>
+    </member>
+    <member name="M:Unity.Hierarchy.Editor.HierarchySubSceneAuthoringHandler.GetEntityId(Unity.Hierarchy.HierarchyNode&amp;)">
+      <summary>
+        <para>
+ Gets the EntityId of the GameObject that represents the subscene for the specified Unity.Hierarchy.HierarchyNode.
+ </para>
+      </summary>
+      <param name="node">The Unity.Hierarchy.HierarchyNode to get the EntityId for.</param>
+      <returns>
+        <para>The EntityId of the GameObject that represents the subscene.</para>
+      </returns>
+    </member>
+    <member name="M:Unity.Hierarchy.Editor.HierarchySubSceneAuthoringHandler.GetGameObject(Unity.Hierarchy.HierarchyNode&amp;)">
+      <summary>
+        <para>
+ Gets the GameObject that represents the subscene for the specified Unity.Hierarchy.HierarchyNode.
+ </para>
+      </summary>
+      <param name="node">The Unity.Hierarchy.HierarchyNode to get the GameObject for.</param>
+      <returns>
+        <para>The GameObject that represents the subscene.</para>
+      </returns>
+    </member>
+    <member name="M:Unity.Hierarchy.Editor.HierarchySubSceneAuthoringHandler.GetNodeType">
+      <summary>
+        <para>
+ Gets the Unity.Hierarchy.HierarchyNodeType registered for this Unity.Hierarchy.Editor.HierarchySubSceneAuthoringHandler.
+ </para>
+      </summary>
+      <returns>
+        <para>The Unity.Hierarchy.HierarchyNodeType for this handler.</para>
+      </returns>
+    </member>
+    <member name="M:Unity.Hierarchy.Editor.HierarchySubSceneAuthoringHandler.GetOrCreateNode(UnityEngine.EntityId)">
+      <summary>
+        <para>
+ Gets or creates the Unity.Hierarchy.HierarchyNode for the subscene with the specified EntityId.
+ </para>
+      </summary>
+      <param name="entityId">The EntityId of the subscene to find or create a node for.</param>
+      <returns>
+        <para>The Unity.Hierarchy.HierarchyNode for the specified subscene.</para>
+      </returns>
+    </member>
+    <member name="M:Unity.Hierarchy.Editor.HierarchySubSceneAuthoringHandler.GetOrCreateNode(UnityEngine.GameObject)">
+      <summary>
+        <para>
+ Gets or creates the Unity.Hierarchy.HierarchyNode for the subscene represented by the specified GameObject.
+ </para>
+      </summary>
+      <param name="gameObject">The GameObject that represents the subscene.</param>
+      <returns>
+        <para>The Unity.Hierarchy.HierarchyNode for the specified subscene, or Unity.Hierarchy.HierarchyNode.Null if the GameObject is null.</para>
+      </returns>
+    </member>
+    <member name="M:Unity.Hierarchy.Editor.HierarchySubSceneAuthoringHandler.GetOrCreateNode(UnityEngine.SceneManagement.Scene)">
+      <summary>
+        <para>
+ Gets or creates the Unity.Hierarchy.HierarchyNode for the specified subscene.
+ </para>
+      </summary>
+      <param name="scene">The SceneManagement.Scene associated with the subscene.</param>
+      <returns>
+        <para>The Unity.Hierarchy.HierarchyNode for the specified subscene.</para>
+      </returns>
+    </member>
+    <member name="M:Unity.Hierarchy.Editor.HierarchySubSceneAuthoringHandler.GetScene(Unity.Hierarchy.HierarchyNode&amp;)">
+      <summary>
+        <para>
+ Gets the SceneManagement.Scene associated with the subscene for the specified Unity.Hierarchy.HierarchyNode.
+ </para>
+      </summary>
+      <param name="node">The Unity.Hierarchy.HierarchyNode to get the SceneManagement.Scene for.</param>
+      <returns>
+        <para>The SceneManagement.Scene associated with the subscene.</para>
+      </returns>
+    </member>
+    <member name="T:Unity.Hierarchy.Editor.HierarchyViewCellDescriptorAttribute">
+      <summary>
+        <para>
+ Specifies that a method creates a Unity.Hierarchy.HierarchyViewCellDescriptor for a specific Unity.Hierarchy.HierarchyViewColumn. 
+ </para>
+      </summary>
+    </member>
+    <member name="P:Unity.Hierarchy.Editor.HierarchyViewCellDescriptorAttribute.ColumnHint">
+      <summary>
+        <para>
+ The column identifier or column header title to register this cell to.
+ </para>
+      </summary>
+    </member>
+    <member name="M:Unity.Hierarchy.Editor.HierarchyViewCellDescriptorAttribute.#ctor(System.String,System.Type)">
+      <summary>
+        <para>
+ Creates a new Unity.Hierarchy.Editor.HierarchyViewCellDescriptorAttribute.
+ </para>
+      </summary>
+      <param name="columnHint">The column identifier or column header title to register the cell descriptor to.</param>
+      <param name="handler">The Unity.Hierarchy.HierarchyNodeTypeHandler type used to manage the nodes for this cell. If null, the cell manipulates Unity.Hierarchy.HierarchyNode instances directly.</param>
+    </member>
+    <member name="M:Unity.Hierarchy.Editor.HierarchyViewCellDescriptorAttribute.CustomizeDescriptor(Unity.Hierarchy.HierarchyViewCellDescriptor)">
+      <summary>
+        <para>
+ Defines the required signature for methods decorated with Unity.Hierarchy.Editor.HierarchyViewCellDescriptorAttribute. Implement this method to populate the Unity.Hierarchy.HierarchyViewCellDescriptor.
+ </para>
+      </summary>
+      <param name="cell">The Unity.Hierarchy.HierarchyViewCellDescriptor to populate.</param>
+    </member>
+    <member name="P:Unity.Hierarchy.Editor.HierarchyViewCellDescriptorAttribute.Handler">
+      <summary>
+        <para>
+ Gets the Unity.Hierarchy.HierarchyNodeTypeHandler type used to manage the nodes for this cell. Only one cell descriptor per handler type can be registered in a column.
+ </para>
+      </summary>
+    </member>
+    <member name="T:Unity.Hierarchy.Editor.HierarchyViewColumnDescriptorAttribute">
+      <summary>
+        <para>
+ Attribute used to register a new Hierarchy column. 
+ </para>
+      </summary>
+    </member>
+    <member name="P:Unity.Hierarchy.Editor.HierarchyViewColumnDescriptorAttribute.ColumnId">
+      <summary>
+        <para>
+ Column Id. Must be unique in the HiearchyWindow.
+ </para>
+      </summary>
+    </member>
+    <member name="M:Unity.Hierarchy.Editor.HierarchyViewColumnDescriptorAttribute.CreateDescriptor(Unity.Hierarchy.HierarchyViewColumnDescriptor)">
+      <summary>
+        <para>
+ Required signature for the function decorated by [HierarchyColumnDescriptor]. This function can be used to populate the columnDescriptor
+ </para>
+      </summary>
+      <param name="columnDesc"></param>
+    </member>
+    <member name="M:Unity.Hierarchy.Editor.HierarchyViewColumnDescriptorAttribute.#ctor(System.String)">
+      <summary>
+        <para>
+ Attribute constructor.
+ </para>
+      </summary>
+      <param name="columnId">Column Id. Must be unique in the HiearchyWindow.</param>
+    </member>
+    <member name="T:Unity.Hierarchy.Editor.HierarchyWindow">
+      <summary>
+        <para>
+ Represents the Hierarchy Window in the Unity Editor. Use this class to customize the Hierarchy window, register node type handlers, and handle view events.
+ </para>
+      </summary>
+    </member>
+    <member name="?:Unity.Hierarchy.Editor.HierarchyWindow.BindView(Unity.Hierarchy.Editor.HierarchyWindow/BindViewEventHandler)">
+      <summary>
+        <para>
+ Raised when a Unity.Hierarchy.HierarchyView is bound to the Hierarchy window.
+ Typically used to load additional stylesheets and add styles to Unity.Hierarchy.HierarchyView.StyleContainer.
+ </para>
+      </summary>
+      <param name="value"></param>
+    </member>
+    <member name="T:Unity.Hierarchy.Editor.HierarchyWindow.BindViewEventHandler">
+      <summary>
+        <para>
+ Delegate type for the Unity.Hierarchy.Editor.HierarchyWindow.BindView event.
+ </para>
+      </summary>
+      <param name="window">The Unity.Hierarchy.Editor.HierarchyWindow that fired the event.</param>
+      <param name="view">The Unity.Hierarchy.HierarchyView being bound.</param>
+    </member>
+    <member name="?:Unity.Hierarchy.Editor.HierarchyWindow.BindViewItem(Unity.Hierarchy.Editor.HierarchyWindow/BindViewItemEventHandler)">
+      <summary>
+        <para>
+ Raised when a Unity.Hierarchy.HierarchyViewItem is bound to a Unity.Hierarchy.HierarchyView. Use this event to customize the view item.
+ </para>
+      </summary>
+      <param name="value"></param>
+    </member>
+    <member name="T:Unity.Hierarchy.Editor.HierarchyWindow.BindViewItemEventHandler">
+      <summary>
+        <para>
+ Delegate type for the Unity.Hierarchy.Editor.HierarchyWindow.BindViewItem event.
+ </para>
+      </summary>
+      <param name="window">The Unity.Hierarchy.Editor.HierarchyWindow that fired the event.</param>
+      <param name="view">The Unity.Hierarchy.HierarchyView that owns the item.</param>
+      <param name="item">The Unity.Hierarchy.HierarchyViewItem being bound.</param>
+    </member>
+    <member name="M:Unity.Hierarchy.Editor.HierarchyWindow.#ctor">
+      <summary>
+        <para>
+ Creates a new Unity.Hierarchy.Editor.HierarchyWindow.
+ </para>
+      </summary>
+    </member>
+    <member name="?:Unity.Hierarchy.Editor.HierarchyWindow.GetTooltip(Unity.Hierarchy.Editor.HierarchyWindow/GetTooltipEventHandler)">
+      <summary>
+        <para>
+ Customize the tooltip that displays when the mouse hovers the node name label.
+ </para>
+      </summary>
+      <param name="value"></param>
+    </member>
+    <member name="T:Unity.Hierarchy.Editor.HierarchyWindow.GetTooltipEventHandler">
+      <summary>
+        <para>
+ Delegate type for the Unity.Hierarchy.Editor.HierarchyWindow.GetTooltip event.
+ </para>
+      </summary>
+      <param name="window">The Unity.Hierarchy.Editor.HierarchyWindow that fired the event.</param>
+      <param name="view">The Unity.Hierarchy.HierarchyView requesting the tooltip.</param>
+      <param name="item">The Unity.Hierarchy.HierarchyViewItem the tooltip is being requested for.</param>
+      <param name="tooltip">A Text.StringBuilder to append tooltip text to.</param>
+      <param name="filtering">Whether the Unity.Hierarchy.HierarchyView is currently filtering nodes.</param>
+    </member>
+    <member name="?:Unity.Hierarchy.Editor.HierarchyWindow.InitializingView(System.Action`1&lt;UnityEngine.UIElements.VisualElement&gt;)">
+      <summary>
+        <para>
+ Raised when the Unity.Hierarchy.HierarchyView is initializing, typically
+ allowing callers to load additional stylesheets and add styles to Unity.Hierarchy.HierarchyView.StyleContainer.
+ </para>
+      </summary>
+      <param name="value"></param>
+    </member>
+    <member name="?:Unity.Hierarchy.Editor.HierarchyWindow.PopulateContextMenu(Unity.Hierarchy.Editor.HierarchyWindow/PopulateContextMenuEventHandler)">
+      <summary>
+        <para>
+ Raised when a right click is handled on a node or on the background of the Unity.Hierarchy.HierarchyView.
+ </para>
+      </summary>
+      <param name="value"></param>
+    </member>
+    <member name="T:Unity.Hierarchy.Editor.HierarchyWindow.PopulateContextMenuEventHandler">
+      <summary>
+        <para>
+ Delegate type for the Unity.Hierarchy.Editor.HierarchyWindow.PopulateContextMenu event.
+ </para>
+      </summary>
+      <param name="window">The Unity.Hierarchy.Editor.HierarchyWindow that fired the event.</param>
+      <param name="view">The Unity.Hierarchy.HierarchyView handling the context menu request.</param>
+      <param name="item">The Unity.Hierarchy.HierarchyViewItem the context menu is being created for, or null when invoked from the background.</param>
+      <param name="menu">The UIElements.DropdownMenu being populated.</param>
+    </member>
+    <member name="M:Unity.Hierarchy.Editor.HierarchyWindow.SetSearchText(System.String)">
+      <summary>
+        <para>
+ Sets the search filter text in the Unity.Hierarchy.Editor.HierarchyWindow.
+ </para>
+      </summary>
+      <param name="query">The filter query text.</param>
+    </member>
+    <member name="?:Unity.Hierarchy.Editor.HierarchyWindow.UnbindView(Unity.Hierarchy.Editor.HierarchyWindow/UnbindViewEventHandler)">
+      <summary>
+        <para>
+ Raised when a Unity.Hierarchy.HierarchyView is about to be unbound from the Unity.Hierarchy.Editor.HierarchyWindow.
+ Typically used to cleanup resources associated with the view.
+ </para>
+      </summary>
+      <param name="value"></param>
+    </member>
+    <member name="T:Unity.Hierarchy.Editor.HierarchyWindow.UnbindViewEventHandler">
+      <summary>
+        <para>
+ Delegate type for the Unity.Hierarchy.Editor.HierarchyWindow.UnbindView event.
+ </para>
+      </summary>
+      <param name="window">The Unity.Hierarchy.Editor.HierarchyWindow that fired the event.</param>
+      <param name="view">The Unity.Hierarchy.HierarchyView being unbound.</param>
+    </member>
+    <member name="?:Unity.Hierarchy.Editor.HierarchyWindow.UnbindViewItem(Unity.Hierarchy.Editor.HierarchyWindow/UnbindViewItemEventHandler)">
+      <summary>
+        <para>
+ Raised when a Unity.Hierarchy.HierarchyViewItem is unbound from a Unity.Hierarchy.HierarchyView. Use this event to clean up the view item.
+ Note that hierarchy view items are recycled by their handler, so unbinding doesn't mean destruction. For performance reasons, the recommended best practice is
+ to not undo styles or modifications done during binding in this unbind event.
+ </para>
+      </summary>
+      <param name="value"></param>
+    </member>
+    <member name="T:Unity.Hierarchy.Editor.HierarchyWindow.UnbindViewItemEventHandler">
+      <summary>
+        <para>
+ Delegate type for the Unity.Hierarchy.Editor.HierarchyWindow.UnbindViewItem event.
+ </para>
+      </summary>
+      <param name="window">The Unity.Hierarchy.Editor.HierarchyWindow that fired the event.</param>
+      <param name="view">The Unity.Hierarchy.HierarchyView that owns the item.</param>
+      <param name="item">The Unity.Hierarchy.HierarchyViewItem being unbound.</param>
+    </member>
+    <member name="M:Unity.Hierarchy.Editor.HierarchyWindow.UpdateEditorSelection">
+      <summary>
+        <para>
+ Updates the Editor Selection to match the EntityId
+ of the nodes that are flagged as selected in the Hierarchy.
+ </para>
+      </summary>
+    </member>
+    <member name="P:Unity.Hierarchy.Editor.HierarchyWindow.View">
+      <summary>
+        <para>
+ Gets the Unity.Hierarchy.HierarchyView currently being displayed in this Unity.Hierarchy.Editor.HierarchyWindow.
+ </para>
+      </summary>
+    </member>
+  </members>
+</doc>
