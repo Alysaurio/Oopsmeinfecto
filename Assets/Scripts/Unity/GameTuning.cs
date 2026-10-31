@@ -46,6 +46,7 @@ namespace Oopsmeinfecto
 
         [Header("Camera / Layout")]
         public float cameraMargin = 1.0f;
+        public float cameraYOffset = 0.35f;
         [Range(0.10f, 0.30f)] public float hudViewportFraction = 0.18f;
 
         [Header("Ambient infection VFX")]

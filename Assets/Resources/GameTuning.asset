@@ -41,6 +41,7 @@ MonoBehaviour:
   barDrainDuration: 0.5
   defeatDuration: 1.5
   cameraMargin: 1
+  cameraYOffset: 0.35
   hudViewportFraction: 0.18
   ambientParticleCount: 28
   ambientParticleSize: 0.11

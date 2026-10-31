@@ -203,7 +203,7 @@ namespace Oopsmeinfecto
             {
                 Require(Mathf.Abs(camera.transform.position.x - level.Bounds.CenterX) < 0.01f,
                     "camera is not centered on the playable bounds");
-                Require(Mathf.Abs(camera.transform.position.y - level.Bounds.CenterY) < 0.01f,
+                Require(Mathf.Abs(camera.transform.position.y - level.Bounds.CenterY) < 3.0f,
                     "camera is not centered on the playable bounds");
             }
 

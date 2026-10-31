@@ -64,6 +64,15 @@ namespace Oopsmeinfecto
         public PlayerVisualController PlayerVisual => _playerVisual;
         public bool IsTransforming => _transforming;
 
+        [Header("Camera Framing")]
+        [SerializeField] private float cameraYOffset = 0.35f;
+
+        public float CameraYOffset
+        {
+            get => cameraYOffset;
+            set => cameraYOffset = value;
+        }
+
         public Tilemap GroundBaseTilemap => _groundTilemap;
         public Tilemap CracksTilemap => _cracksTilemap;
         public Tilemap MossTilemap => _mossTilemap;
@@ -570,6 +579,12 @@ namespace Oopsmeinfecto
                 var color = _tuning != null ? _tuning.switchColor : new Color(0.25f, 0.95f, 0.85f, 1f);
                 _goalEffect.Initialize(color, glowSprite);
             }
+
+            if (_goalEffect != null)
+            {
+                _goalEffect.transform.localPosition = effectPos;
+                _goalEffect.PlayParticles();
+            }
         }
 
         private void BuildEntities()
@@ -838,7 +853,8 @@ namespace Oopsmeinfecto
             float totalOrthoSize = targetHalfHeight / (1f - hudFraction);
             _camera.orthographicSize = totalOrthoSize;
 
-            float cameraCenterY = centerY - totalOrthoSize * hudFraction;
+            float yOffset = _tuning != null ? _tuning.cameraYOffset : cameraYOffset;
+            float cameraCenterY = centerY - totalOrthoSize * hudFraction + yOffset;
             _camera.transform.position = new Vector3(centerX, cameraCenterY, -10f);
         }
 

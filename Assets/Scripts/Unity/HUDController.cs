@@ -181,8 +181,8 @@ namespace Oopsmeinfecto
         {
             float hudHeight = Mathf.Clamp(_tuning.hudViewportFraction * 1080f, 156f, 280f);
 
-            // Panel de fondo liso y completamente negro en la parte inferior, sin bordes
-            var panel = CreateImage(root, "History Panel", Color.black);
+            // Panel de fondo oscuro en la parte inferior con transparencia (~68% / alfa 175/255)
+            var panel = CreateImage(root, "History Panel", new Color(0f, 0f, 0f, 175f / 255f));
             SetRect(panel.rectTransform,
                 new Vector2(0f, 0f), new Vector2(1f, 0f), new Vector2(0.5f, 0f),
                 Vector2.zero, new Vector2(0f, hudHeight));
