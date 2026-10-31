@@ -24,9 +24,21 @@ namespace Oopsmeinfecto
         private float _autoTimer;
         private bool _transformationStarted;
 
+        [Header("CRT Retro Effect")]
+        [SerializeField] private Material _crtMaterial;
+
+        private static readonly int InfectionProgressId = Shader.PropertyToID("_InfectionProgress");
+        private static readonly int StepFlickerId = Shader.PropertyToID("_StepFlicker");
+        private Coroutine _stepFlickerCoroutine;
+
         public GameState State => _state;
         public bool IsActive => _active;
         public bool IsTransforming => _transformationStarted;
+        public Material CrtMaterial
+        {
+            get => _crtMaterial;
+            set => _crtMaterial = value;
+        }
 
         public void Initialize(GameState state, LevelRenderer renderer, HUDController hud,
             GameTuning tuning, Action onVictory, Action<DefeatReason> onDefeat)
@@ -46,6 +58,13 @@ namespace Oopsmeinfecto
             _transformationStarted = false;
 
             if (_state == null) return;
+
+            ResolveCrtMaterial();
+            UpdateCrtInfectionProgress();
+            if (_crtMaterial != null)
+            {
+                _crtMaterial.SetFloat(StepFlickerId, 0f);
+            }
 
             _renderer.SyncFromState(_state, true);
             _hud.SetInfected(_state.Player.Infected);
@@ -71,10 +90,32 @@ namespace Oopsmeinfecto
             _blockedDirection = null;
             _repeatTimer = 0f;
             _autoTimer = 0f;
+
+            if (_stepFlickerCoroutine != null)
+            {
+                StopCoroutine(_stepFlickerCoroutine);
+                _stepFlickerCoroutine = null;
+            }
+
+            if (_crtMaterial != null)
+            {
+                _crtMaterial.SetFloat(StepFlickerId, 0f);
+            }
+        }
+
+        private void OnDestroy()
+        {
+            if (_crtMaterial != null)
+            {
+                _crtMaterial.SetFloat(StepFlickerId, 0f);
+                _crtMaterial.SetFloat(InfectionProgressId, 0f);
+            }
         }
 
         private void Update()
         {
+            UpdateCrtInfectionProgress();
+
             if (!_active || _state == null) return;
 
             if (_state.Phase == GamePhase.HumanControlled)
@@ -153,6 +194,7 @@ namespace Oopsmeinfecto
             }
 
             _blockedDirection = null;
+            TriggerStepFlicker();
             _renderer.SyncFromState(_state);
             RefreshHumanHud();
             HandleOutcome(result);
@@ -294,6 +336,70 @@ namespace Oopsmeinfecto
                 default:
                     return false;
             }
+        }
+
+        private void ResolveCrtMaterial()
+        {
+            if (_crtMaterial != null) return;
+
+            if (_tuning != null && _tuning.crtMaterial != null)
+            {
+                _crtMaterial = _tuning.crtMaterial;
+                return;
+            }
+
+            _crtMaterial = Resources.Load<Material>("Mat_CRT_Retro");
+        }
+
+        private void UpdateCrtInfectionProgress()
+        {
+            if (_crtMaterial == null)
+            {
+                ResolveCrtMaterial();
+                if (_crtMaterial == null) return;
+            }
+
+            if (_state != null)
+            {
+                int pasosRestantes = _state.CurrentEnergy;
+                int pasosMaximos = Mathf.Max(1, _state.MaxEnergy);
+                float infectionProgress = Mathf.Clamp01(1.0f - ((float)pasosRestantes / pasosMaximos));
+                _crtMaterial.SetFloat(InfectionProgressId, infectionProgress);
+            }
+        }
+
+        private void TriggerStepFlicker()
+        {
+            if (_crtMaterial == null)
+            {
+                ResolveCrtMaterial();
+                if (_crtMaterial == null) return;
+            }
+
+            if (_stepFlickerCoroutine != null)
+            {
+                StopCoroutine(_stepFlickerCoroutine);
+            }
+            _stepFlickerCoroutine = StartCoroutine(StepFlickerRoutine());
+        }
+
+        private System.Collections.IEnumerator StepFlickerRoutine()
+        {
+            float duration = 0.15f;
+            float elapsed = 0f;
+            _crtMaterial.SetFloat(StepFlickerId, 1.0f);
+
+            while (elapsed < duration)
+            {
+                elapsed += Time.unscaledDeltaTime;
+                float t = Mathf.Clamp01(elapsed / duration);
+                float flicker = Mathf.Lerp(1.0f, 0.0f, t);
+                _crtMaterial.SetFloat(StepFlickerId, flicker);
+                yield return null;
+            }
+
+            _crtMaterial.SetFloat(StepFlickerId, 0.0f);
+            _stepFlickerCoroutine = null;
         }
     }
 }

@@ -66,6 +66,7 @@ MonoBehaviour:
   patrolGroundAlpha: 0.45
   tilesetConfig: {fileID: 11400000, guid: 4d700bcc33729404c88165df968d8360, type: 2}
   characterSpritesConfig: {fileID: 11400000, guid: 8a7b6c5d4e3f2a1b0c9d8e7f6a5b4c3d, type: 2}
+  crtMaterial: {fileID: 2100000, guid: e2f8aed1343a14041a042102e44b7ef2, type: 2}
   floorColorA: {r: 0.2, g: 0.22, b: 0.25, a: 1}
   floorColorB: {r: 0.17, g: 0.19, b: 0.22, a: 1}
   wallColor: {r: 0.07, g: 0.08, b: 0.1, a: 1}

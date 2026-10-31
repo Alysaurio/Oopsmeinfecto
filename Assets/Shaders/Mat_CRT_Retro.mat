@@ -27,9 +27,11 @@ Material:
     m_Floats:
     - _ChromaticAberration: 0.004
     - _Curvature: 0.12
+    - _InfectionProgress: 0
     - _NoiseStrength: 0.02
     - _ScanlineCount: 480
     - _ScanlineIntensity: 0.25
+    - _StepFlicker: 0
     - _VignetteStrength: 0.6
     m_Colors: []
   m_BuildTextureStacks: []

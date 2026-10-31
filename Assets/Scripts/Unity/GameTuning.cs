@@ -82,6 +82,9 @@ namespace Oopsmeinfecto
         [Header("Character Sprites Config (optional override)")]
         public CharacterSpritesConfig characterSpritesConfig;
 
+        [Header("CRT Retro Effect (optional override)")]
+        public Material crtMaterial;
+
         [Header("Colors")]
         public Color floorColorA = new Color(0.20f, 0.22f, 0.25f, 1f);
         public Color floorColorB = new Color(0.17f, 0.19f, 0.22f, 1f);

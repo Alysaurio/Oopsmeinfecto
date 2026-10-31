@@ -8,6 +8,8 @@ Shader "Custom/URP_CRT_Retro"
         _ChromaticAberration ("Aberración Cromática", Range(0.0, 0.02)) = 0.004
         _VignetteStrength ("Viñeteado", Range(0.1, 2.0)) = 0.6
         _NoiseStrength ("Ruido Estático", Range(0.0, 0.08)) = 0.02
+        _InfectionProgress ("Progreso de Infección", Range(0.0, 1.0)) = 0.0
+        _StepFlicker ("Parpadeo de Paso", Range(0.0, 1.0)) = 0.0
     }
     SubShader
     {
@@ -34,6 +36,8 @@ Shader "Custom/URP_CRT_Retro"
             float _ChromaticAberration;
             float _VignetteStrength;
             float _NoiseStrength;
+            float _InfectionProgress;
+            float _StepFlicker;
 
             float2 DistortUV(float2 uv)
             {
@@ -53,6 +57,10 @@ Shader "Custom/URP_CRT_Retro"
             {
                 float2 uv = input.texcoord;
                 float2 crtUV = DistortUV(uv);
+
+                // Desplazamiento horizontal aleatorio simulando fallo de sincronismo analógico
+                float hSyncGlitch = (PseudoNoise(float2(floor(crtUV.y * 100.0), _Time.y * 45.0), 0.0) - 0.5) * 2.0;
+                crtUV.x += hSyncGlitch * 0.035 * _StepFlicker;
 
                 // Bordes oscuros fuera del área convexa del tubo
                 if (crtUV.x < 0.0 || crtUV.x > 1.0 || crtUV.y < 0.0 || crtUV.y > 1.0)
@@ -81,8 +89,13 @@ Shader "Custom/URP_CRT_Retro"
 
                 // Viñeteado perimetral
                 float vignette = crtUV.x * crtUV.y * (1.0 - crtUV.x) * (1.0 - crtUV.y);
-                vignette = clamp(pow(16.0 * vignette, _VignetteStrength), 0.0, 1.0);
+                float effectiveVignetteStrength = _VignetteStrength * (1.0 + _InfectionProgress * 2.5);
+                vignette = clamp(pow(16.0 * vignette, effectiveVignetteStrength), 0.0, 1.0);
                 color *= vignette;
+
+                // Tinte verdoso/tóxico en los bordes oscurecidos simulando niebla de miasma zombi
+                half3 toxicMiasma = half3(0.15, 0.45, 0.2);
+                color += toxicMiasma * ((1.0 - vignette) * _InfectionProgress);
 
                 return half4(color, 1.0);
             }
