@@ -47,10 +47,11 @@ namespace Oopsmeinfecto
             public int Delta;
         }
 
-        private static int CountSolutions(LevelDefinition level, GenerationSettings settings, out int statesExplored, out bool unknown)
+        public static System.Collections.IEnumerator CountSolutionsRoutine(
+            LevelDefinition level, GenerationSettings settings, Action<int, int, bool> onResult)
         {
-            statesExplored = 0;
-            unknown = false;
+            int statesExplored = 0;
+            bool unknown = false;
             int solutions = 0;
 
             var start = level.CreateGameState();
@@ -60,6 +61,8 @@ namespace Oopsmeinfecto
             var startKey = MakeKey(start);
             waysSeen[startKey] = 1;
             queue.Enqueue(new QueueEntry { State = start, Delta = 1 });
+
+            int nodesSinceYield = 0;
 
             while (queue.Count > 0)
             {
@@ -71,6 +74,14 @@ namespace Oopsmeinfecto
 
                 var entry = queue.Dequeue();
                 statesExplored++;
+                nodesSinceYield++;
+
+                if (nodesSinceYield >= 64)
+                {
+                    nodesSinceYield = 0;
+                    yield return null;
+                }
+
                 var state = entry.State;
 
                 for (int i = 0; i < Directions.All.Length; i++)
@@ -94,7 +105,11 @@ namespace Oopsmeinfecto
                         if (simulation.ReachedSwitch)
                         {
                             solutions += entry.Delta;
-                            if (solutions >= 2) return 2;
+                            if (solutions >= 2)
+                            {
+                                onResult?.Invoke(2, statesExplored, unknown);
+                                yield break;
+                            }
                         }
                         continue;
                     }
@@ -120,7 +135,24 @@ namespace Oopsmeinfecto
                 }
             }
 
-            return Math.Min(2, solutions);
+            onResult?.Invoke(Math.Min(2, solutions), statesExplored, unknown);
+        }
+
+        private static int CountSolutions(LevelDefinition level, GenerationSettings settings, out int statesExplored, out bool unknown)
+        {
+            int sol = 0;
+            int st = 0;
+            bool unk = false;
+            var routine = CountSolutionsRoutine(level, settings, (s, states, u) =>
+            {
+                sol = s;
+                st = states;
+                unk = u;
+            });
+            while (routine.MoveNext()) { }
+            statesExplored = st;
+            unknown = unk;
+            return sol;
         }
 
         private static StateKey MakeKey(GameState state)

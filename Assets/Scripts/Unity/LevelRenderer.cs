@@ -467,7 +467,7 @@ namespace Oopsmeinfecto
 
             if (_tileset != null && _tileset.damageTilePrefab != null)
             {
-                var instance = Instantiate(_tileset.damageTilePrefab, _specialEffectsRoot);
+                var instance = Instantiate(_tileset.damageTilePrefab, effectPos, Quaternion.identity, _specialEffectsRoot);
                 instance.transform.localPosition = effectPos;
                 effectInstance = instance.GetComponent<DamageTileEffect>();
             }
@@ -485,6 +485,9 @@ namespace Oopsmeinfecto
 
             if (effectInstance != null)
             {
+                effectInstance.transform.localPosition = effectPos;
+                // Activate particle systems (.Play()) strictly after being positioned at the correct grid coordinates
+                effectInstance.PlayParticles();
                 _damageEffects.Add(effectInstance);
             }
         }

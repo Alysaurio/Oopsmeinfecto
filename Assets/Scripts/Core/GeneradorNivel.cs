@@ -15,6 +15,15 @@ namespace Oopsmeinfecto
         public static GenerationResult Generate(
             int levelIndex, int seed, GenerationSettings settingsInput, bool allowEmergency = true)
         {
+            GenerationResult result = null;
+            var routine = GenerateCoroutine(levelIndex, seed, settingsInput, r => result = r, allowEmergency);
+            while (routine.MoveNext()) { }
+            return result;
+        }
+
+        public static System.Collections.IEnumerator GenerateCoroutine(
+            int levelIndex, int seed, GenerationSettings settingsInput, Action<GenerationResult> onComplete, bool allowEmergency = true)
+        {
             var settings = settingsInput.Clone();
             settings.Sanitize();
 
@@ -25,6 +34,8 @@ namespace Oopsmeinfecto
             for (int attempt = 0; attempt < settings.maxGenerationAttempts; attempt++)
             {
                 attempts++;
+                yield return null;
+
                 var rng = new SeededRandom(SeedUtility.DeriveAttemptSeed(seed, attempt, levelIndex));
 
                 int width = rng.Range(settings.minWidth, settings.maxWidth);
@@ -120,31 +131,39 @@ namespace Oopsmeinfecto
                                 level.UniqueConfirmed = false;
                                 level.SolutionCount = -1;
                                 level.GenerationMessage = "valid level; uniqueness not required";
-                                return new GenerationResult
+                                onComplete?.Invoke(new GenerationResult
                                 {
                                     Level = level,
                                     Success = true,
                                     UniqueConfirmed = false,
                                     Attempts = attempts,
                                     Message = level.GenerationMessage
-                                };
+                                });
+                                yield break;
                             }
 
-                            var full = ValidadorNivel.Validate(level, settings, true);
+                            ValidationReport full = null;
+                            var valRoutine = ValidadorNivel.ValidateRoutine(level, settings, true, rep => full = rep);
+                            while (valRoutine.MoveNext())
+                            {
+                                yield return valRoutine.Current;
+                            }
+
                             Log?.Invoke($"    uniqueness: valid={full.Valid} count={full.SolutionCount} states={full.StatesExplored} msg={full}");
                             if (full.Valid && full.SolutionCount == 1)
                             {
                                 level.UniqueConfirmed = true;
                                 level.SolutionCount = 1;
                                 level.GenerationMessage = "valid unique level";
-                                return new GenerationResult
+                                onComplete?.Invoke(new GenerationResult
                                 {
                                     Level = level,
                                     Success = true,
                                     UniqueConfirmed = true,
                                     Attempts = attempts,
                                     Message = level.GenerationMessage
-                                };
+                                });
+                                yield break;
                             }
 
                             if (full.Valid && fallback == null)
@@ -164,26 +183,28 @@ namespace Oopsmeinfecto
                 fallback.UsedFallback = true;
                 fallback.GenerationAttemptsUsed = attempts;
                 fallback.GenerationMessage += " | uniqueness not confirmed after " + attempts + " attempts";
-                return new GenerationResult
+                onComplete?.Invoke(new GenerationResult
                 {
                     Level = fallback,
                     Success = true,
                     UniqueConfirmed = false,
                     Attempts = attempts,
                     Message = fallback.GenerationMessage
-                };
+                });
+                yield break;
             }
 
             if (!allowEmergency)
             {
-                return new GenerationResult
+                onComplete?.Invoke(new GenerationResult
                 {
                     Level = null,
                     Success = false,
                     UniqueConfirmed = false,
                     Attempts = attempts,
                     Message = "no valid level found after " + attempts + " attempts"
-                };
+                });
+                yield break;
             }
 
             // Last resort: retry with relaxed uniqueness and a deterministic offset seed. The
@@ -194,26 +215,34 @@ namespace Oopsmeinfecto
             relaxed.maxGenerationAttempts = Math.Min(40, Math.Max(10, settings.maxGenerationAttempts));
             for (int retry = 1; retry <= 4; retry++)
             {
+                yield return null;
                 int retrySeed = unchecked(seed + retry * 0x5EED);
-                var retryResult = Generate(levelIndex, retrySeed, relaxed, false);
-                if (retryResult.Success && retryResult.Level != null)
+                GenerationResult retryResult = null;
+                var retryRoutine = GenerateCoroutine(levelIndex, retrySeed, relaxed, r => retryResult = r, false);
+                while (retryRoutine.MoveNext())
+                {
+                    yield return retryRoutine.Current;
+                }
+
+                if (retryResult != null && retryResult.Success && retryResult.Level != null)
                 {
                     retryResult.Level.UsedFallback = true;
                     retryResult.Level.GenerationMessage =
                         "relaxed fallback after " + attempts + " attempts; " + retryResult.Message;
                     retryResult.Message = retryResult.Level.GenerationMessage;
-                    return retryResult;
+                    onComplete?.Invoke(retryResult);
+                    yield break;
                 }
             }
 
-            return new GenerationResult
+            onComplete?.Invoke(new GenerationResult
             {
                 Level = null,
                 Success = false,
                 UniqueConfirmed = false,
                 Attempts = attempts,
                 Message = "no valid level found after " + attempts + " attempts"
-            };
+            });
         }
 
         private static bool TryPickConsciousness(

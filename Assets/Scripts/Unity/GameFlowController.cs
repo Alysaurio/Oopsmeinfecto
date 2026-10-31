@@ -26,7 +26,7 @@ namespace Oopsmeinfecto
         private int _levelSeed;
 
         private bool _generating;
-        private Task<GenerationResult> _generationTask;
+        private Coroutine _generationCoroutine;
         private int _pendingIndex;
         private int _pendingSeed;
         private int _generationRetries;
@@ -109,54 +109,47 @@ namespace Oopsmeinfecto
             _turn.SetActive(false);
             _hud.SetLoading(true, "Generando nivel " + levelIndex);
 
-            var settings = _tuning.ToGenerationSettings();
-            _generationTask = Task.Run(() =>
+            if (_generationCoroutine != null)
             {
-                try
+                StopCoroutine(_generationCoroutine);
+            }
+            _generationCoroutine = StartCoroutine(GenerateLevelRoutine(levelIndex, seed));
+        }
+
+        private System.Collections.IEnumerator GenerateLevelRoutine(int levelIndex, int seed)
+        {
+            var settings = _tuning.ToGenerationSettings();
+            GenerationResult result = null;
+
+            yield return GeneradorNivel.GenerateCoroutine(levelIndex, seed, settings, r => result = r);
+
+            _generationCoroutine = null;
+
+            if (result != null && result.Level != null)
+            {
+                _generating = false;
+                _generationRetries = 0;
+                _hud.SetLoading(false);
+                LoadLevel(result.Level);
+            }
+            else
+            {
+                _generationRetries++;
+                _generating = false;
+                if (_generationRetries <= 3)
                 {
-                    return GeneradorNivel.Generate(levelIndex, seed, settings);
+                    BeginLevel(_pendingIndex, _pendingSeed);
                 }
-                catch
+                else
                 {
-                    return null;
+                    _hud.SetLoading(true, "No se pudo generar el nivel");
+                    _hud.SetStatus("Error de generación · reinicia Play para volver a intentarlo");
                 }
-            });
+            }
         }
 
         private void Update()
         {
-            if (_generating && _generationTask != null && _generationTask.IsCompleted)
-            {
-                var task = _generationTask;
-                _generationTask = null;
-
-                GenerationResult result = null;
-                try { result = task.Result; }
-                catch (Exception exception) { Debug.LogException(exception); }
-
-                if (result != null && result.Level != null)
-                {
-                    _generating = false;
-                    _generationRetries = 0;
-                    _hud.SetLoading(false);
-                    LoadLevel(result.Level);
-                }
-                else
-                {
-                    _generationRetries++;
-                    _generating = false;
-                    if (_generationRetries <= 3)
-                    {
-                        BeginLevel(_pendingIndex, _pendingSeed);
-                    }
-                    else
-                    {
-                        _hud.SetLoading(true, "No se pudo generar el nivel");
-                        _hud.SetStatus("Error de generación · reinicia Play para volver a intentarlo");
-                    }
-                }
-            }
-
             if (_victoryDelay >= 0f)
             {
                 _victoryDelay -= Time.unscaledDeltaTime;
@@ -256,7 +249,11 @@ namespace Oopsmeinfecto
 
         private void OnDestroy()
         {
-            _generationTask = null;
+            if (_generationCoroutine != null)
+            {
+                StopCoroutine(_generationCoroutine);
+                _generationCoroutine = null;
+            }
         }
     }
 }

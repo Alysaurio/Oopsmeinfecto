@@ -251,31 +251,16 @@ namespace Oopsmeinfecto
 
         private void BuildLoadingOverlay(RectTransform root)
         {
-            var overlay = CreateImage(root, "Loading Overlay", new Color(0.01f, 0.015f, 0.02f, 0.93f));
+            var overlay = CreateImage(root, "Loading Overlay", Color.black);
             Stretch(overlay.rectTransform, 0f);
             _loadingRoot = overlay.gameObject;
 
-            var border = CreateImage(overlay.transform, "Loading Panel Border", _tuning.hudBorderColor);
-            SetRect(border.rectTransform,
-                new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
-                Vector2.zero, new Vector2(660f, 196f));
-
-            var panel = CreateImage(border.transform, "Loading Panel", _tuning.hudPanelColor);
-            Stretch(panel.rectTransform, 4f);
-
-            _loadingLabel = CreateText(panel.transform, "Loading Label", _loadingBase, 34,
+            _loadingLabel = CreateText(overlay.transform, "Loading Label", _loadingBase, 34,
                 _tuning.hudTextColor, TextAnchor.MiddleCenter);
             _loadingLabel.fontStyle = FontStyle.Bold;
             SetRect(_loadingLabel.rectTransform,
                 new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
-                new Vector2(0f, 26f), new Vector2(600f, 54f));
-
-            var subtitle = CreateText(panel.transform, "Loading Subtitle",
-                "Construyendo el camino obligatorio y validando la solución", 17,
-                Color.Lerp(_tuning.hudTextColor, _tuning.hudBorderColor, 0.30f), TextAnchor.MiddleCenter);
-            SetRect(subtitle.rectTransform,
-                new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
-                new Vector2(0f, -34f), new Vector2(600f, 32f));
+                Vector2.zero, new Vector2(800f, 60f));
 
             _loadingRoot.SetActive(false);
         }

@@ -216,6 +216,61 @@ namespace Oopsmeinfecto
             return report;
         }
 
+        public static System.Collections.IEnumerator ValidateRoutine(
+            LevelDefinition level, GenerationSettings settings, bool checkUniqueness, Action<ValidationReport> onComplete)
+        {
+            var report = Validate(level, settings, false);
+            if (!report.Valid || !checkUniqueness)
+            {
+                onComplete?.Invoke(report);
+                yield break;
+            }
+
+            int solutions = 0;
+            int states = 0;
+            bool unknown = false;
+
+            var routine = CountSolutionsRoutine(level, settings, (sol, st, unk) =>
+            {
+                solutions = sol;
+                states = st;
+                unknown = unk;
+            });
+            while (routine.MoveNext())
+            {
+                yield return routine.Current;
+            }
+
+            report.SolutionCount = solutions;
+            report.StatesExplored = states;
+
+            if (unknown)
+            {
+                report.UniqueConfirmed = false;
+                if (settings.requireUniqueSolution)
+                    report.AddError("uniqueness could not be confirmed within the validator state limit");
+            }
+            else if (solutions == 0)
+            {
+                report.AddError("validator found no winning manual sequence");
+            }
+            else if (solutions == 1)
+            {
+                report.UniqueConfirmed = true;
+                report.Message = "valid level with one solution";
+            }
+            else
+            {
+                report.UniqueConfirmed = false;
+                if (settings.requireUniqueSolution)
+                    report.AddError($"validator found {solutions}+ winning manual sequences");
+                else
+                    report.Message = "valid level (multiple solutions allowed)";
+            }
+
+            onComplete?.Invoke(report);
+        }
+
         private static bool SimulatePlannedSolution(LevelDefinition level, ValidationReport report)
         {
             var state = level.CreateGameState();

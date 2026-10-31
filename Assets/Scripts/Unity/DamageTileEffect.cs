@@ -24,6 +24,20 @@ namespace Oopsmeinfecto
         public SpriteRenderer GlowRenderer => _glowRenderer;
         public ParticleSystem GasParticles => _gasParticles;
 
+        private void Awake()
+        {
+            if (_gasParticles == null)
+            {
+                _gasParticles = GetComponentInChildren<ParticleSystem>(true);
+            }
+            if (_gasParticles != null)
+            {
+                var main = _gasParticles.main;
+                main.playOnAwake = false;
+                _gasParticles.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+            }
+        }
+
         public void Initialize(Color color, Sprite glowSprite, GameObject gasParticlePrefab)
         {
             _glowColor = color;
@@ -50,6 +64,27 @@ namespace Oopsmeinfecto
                 particles.name = "ToxicGasParticles";
                 particles.transform.localPosition = Vector3.zero;
                 _gasParticles = particles.GetComponent<ParticleSystem>();
+            }
+
+            if (_gasParticles != null)
+            {
+                var main = _gasParticles.main;
+                main.playOnAwake = false;
+                _gasParticles.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+            }
+        }
+
+        public void PlayParticles()
+        {
+            if (_gasParticles == null)
+            {
+                _gasParticles = GetComponentInChildren<ParticleSystem>(true);
+            }
+            if (_gasParticles != null)
+            {
+                var main = _gasParticles.main;
+                main.playOnAwake = false;
+                _gasParticles.Play(true);
             }
         }
 
