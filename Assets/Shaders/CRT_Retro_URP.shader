@@ -89,13 +89,14 @@ Shader "Custom/URP_CRT_Retro"
 
                 // Viñeteado perimetral
                 float vignette = crtUV.x * crtUV.y * (1.0 - crtUV.x) * (1.0 - crtUV.y);
-                float effectiveVignetteStrength = _VignetteStrength * (1.0 + _InfectionProgress * 2.5);
-                vignette = clamp(pow(16.0 * vignette, effectiveVignetteStrength), 0.0, 1.0);
+                float currentVignetteStrength = lerp(_VignetteStrength, _VignetteStrength * 1.4, _InfectionProgress);
+                vignette = clamp(pow(16.0 * vignette, currentVignetteStrength), 0.0, 1.0);
                 color *= vignette;
 
                 // Tinte verdoso/tóxico en los bordes oscurecidos simulando niebla de miasma zombi
-                half3 toxicMiasma = half3(0.15, 0.45, 0.2);
-                color += toxicMiasma * ((1.0 - vignette) * _InfectionProgress);
+                half3 toxicTint = half3(0.1, 0.4, 0.2);
+                float edgeMask = 1.0 - vignette; // vignette es 0 en los bordes y 1 al centro
+                color.rgb += (toxicTint * edgeMask * _InfectionProgress);
 
                 return half4(color, 1.0);
             }

@@ -361,10 +361,11 @@ namespace Oopsmeinfecto
 
             if (_state != null)
             {
-                int pasosRestantes = _state.CurrentEnergy;
-                int pasosMaximos = Mathf.Max(1, _state.MaxEnergy);
-                float infectionProgress = Mathf.Clamp01(1.0f - ((float)pasosRestantes / pasosMaximos));
-                _crtMaterial.SetFloat(InfectionProgressId, infectionProgress);
+                int energiaActual = _state.CurrentEnergy;
+                int energiaMaxima = Mathf.Max(1, _state.MaxEnergy);
+                float ratio = 1.0f - ((float)energiaActual / (float)energiaMaxima);
+                float curve = Mathf.Pow(Mathf.Clamp01(ratio), 3.0f);
+                _crtMaterial.SetFloat(InfectionProgressId, curve * 0.35f);
             }
         }
 
@@ -380,20 +381,30 @@ namespace Oopsmeinfecto
             {
                 StopCoroutine(_stepFlickerCoroutine);
             }
-            _stepFlickerCoroutine = StartCoroutine(StepFlickerRoutine());
+
+            float curve = 0f;
+            if (_state != null)
+            {
+                int energiaActual = _state.CurrentEnergy;
+                int energiaMaxima = Mathf.Max(1, _state.MaxEnergy);
+                float ratio = 1.0f - ((float)energiaActual / (float)energiaMaxima);
+                curve = Mathf.Pow(Mathf.Clamp01(ratio), 3.0f);
+            }
+
+            _stepFlickerCoroutine = StartCoroutine(StepFlickerRoutine(curve * 0.20f));
         }
 
-        private System.Collections.IEnumerator StepFlickerRoutine()
+        private System.Collections.IEnumerator StepFlickerRoutine(float initialFlicker)
         {
             float duration = 0.15f;
             float elapsed = 0f;
-            _crtMaterial.SetFloat(StepFlickerId, 1.0f);
+            _crtMaterial.SetFloat(StepFlickerId, initialFlicker);
 
             while (elapsed < duration)
             {
                 elapsed += Time.unscaledDeltaTime;
                 float t = Mathf.Clamp01(elapsed / duration);
-                float flicker = Mathf.Lerp(1.0f, 0.0f, t);
+                float flicker = Mathf.Lerp(initialFlicker, 0.0f, t);
                 _crtMaterial.SetFloat(StepFlickerId, flicker);
                 yield return null;
             }
