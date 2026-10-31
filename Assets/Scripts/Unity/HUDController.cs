@@ -23,6 +23,7 @@ namespace Oopsmeinfecto
         private Text _levelLabel;
         private Text _statusLabel;
         private Text _hintLabel;
+        private Text _infectionBanner;
 
         private GameObject _tooltipRoot;
         private Text _tooltipSeedLabel;
@@ -88,6 +89,7 @@ namespace Oopsmeinfecto
             BuildTooltip(root);
             BuildHint(root);
             BuildHistoryPanel(root);
+            BuildInfectionBanner(root);
             BuildLoadingOverlay(root);
         }
 
@@ -275,6 +277,26 @@ namespace Oopsmeinfecto
                 new Vector2(0f, -34f), new Vector2(600f, 32f));
 
             _loadingRoot.SetActive(false);
+        }
+
+        private void BuildInfectionBanner(RectTransform root)
+        {
+            _infectionBanner = CreateText(root, "Infection Banner", "Oops, me infecté", 64,
+                _tuning.hudTextColor, TextAnchor.MiddleCenter);
+            _infectionBanner.fontStyle = FontStyle.Bold;
+            SetRect(_infectionBanner.rectTransform,
+                new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
+                Vector2.zero, new Vector2(1200f, 100f));
+            _infectionBanner.transform.SetAsLastSibling();
+            _infectionBanner.gameObject.SetActive(false);
+        }
+
+        public void ShowInfectionBanner(bool show)
+        {
+            if (_infectionBanner != null)
+            {
+                _infectionBanner.gameObject.SetActive(show);
+            }
         }
 
         public void SetLevelInfo(LevelDefinition level)

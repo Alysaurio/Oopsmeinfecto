@@ -15,8 +15,6 @@ namespace Oopsmeinfecto
         private CanvasGroup _group;
         private Image _overlay;
         private Text _title;
-        private Text _subtitle;
-        private Text _hint;
 
         private bool _playing;
         private bool _callbackInvoked;
@@ -24,7 +22,7 @@ namespace Oopsmeinfecto
         private float _duration = 1.5f;
         private Action _onComplete;
 
-        public void Build(GameTuning tuning)
+        public void Build(GameTuning tuning, Camera uiCamera = null)
         {
             _tuning = tuning;
 
@@ -32,7 +30,18 @@ namespace Oopsmeinfecto
 
             _canvasObject = new GameObject("Defeat Canvas", typeof(Canvas), typeof(CanvasScaler), typeof(CanvasGroup));
             var canvas = _canvasObject.GetComponent<Canvas>();
-            canvas.renderMode = RenderMode.ScreenSpaceOverlay;
+
+            var cam = uiCamera != null ? uiCamera : Camera.main;
+            if (cam != null)
+            {
+                canvas.renderMode = RenderMode.ScreenSpaceCamera;
+                canvas.worldCamera = cam;
+                canvas.planeDistance = 2f;
+            }
+            else
+            {
+                canvas.renderMode = RenderMode.ScreenSpaceOverlay;
+            }
             canvas.sortingOrder = 300;
 
             var scaler = _canvasObject.GetComponent<CanvasScaler>();
@@ -51,25 +60,12 @@ namespace Oopsmeinfecto
             _overlay = CreateImage(root, "Defeat Overlay", tuning.defeatOverlayColor);
             Stretch(_overlay.rectTransform);
 
-            _title = CreateText(root, "Defeat Title", "", 64, tuning.hudTextColor,
+            _title = CreateText(root, "End Title", "", 76, tuning.hudTextColor,
                 TextAnchor.MiddleCenter);
             _title.fontStyle = FontStyle.Bold;
             SetRect(_title.rectTransform,
                 new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
-                new Vector2(0f, 58f), new Vector2(1300f, 90f));
-
-            _subtitle = CreateText(root, "Defeat Subtitle", "", 26,
-                Color.Lerp(tuning.hudTextColor, tuning.hudBorderColor, 0.20f), TextAnchor.MiddleCenter);
-            SetRect(_subtitle.rectTransform,
-                new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
-                new Vector2(0f, -18f), new Vector2(1300f, 46f));
-
-            _hint = CreateText(root, "Defeat Hint",
-                "Reiniciando el mismo nivel y la misma semilla…", 18,
-                Color.Lerp(tuning.hudTextColor, tuning.hudBorderColor, 0.45f), TextAnchor.MiddleCenter);
-            SetRect(_hint.rectTransform,
-                new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
-                new Vector2(0f, -92f), new Vector2(1300f, 34f));
+                Vector2.zero, new Vector2(1200f, 140f));
 
             _canvasObject.SetActive(false);
         }
@@ -86,7 +82,6 @@ namespace Oopsmeinfecto
             _onComplete = onComplete;
 
             if (_title != null) _title.text = title ?? "";
-            if (_subtitle != null) _subtitle.text = subtitle ?? "";
             if (_overlay != null) _overlay.color = _tuning.defeatOverlayColor;
             if (_group != null) _group.alpha = 0f;
 

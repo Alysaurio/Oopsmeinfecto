@@ -17,6 +17,7 @@ namespace Oopsmeinfecto
         private HUDController _hud;
         private DefeatPresentationController _defeat;
         private TurnManager _turn;
+        private AudioManager _audio;
 
         private GameState _state;
         private LevelDefinition _currentLevel;
@@ -76,10 +77,13 @@ namespace Oopsmeinfecto
 
             _defeat = GetComponent<DefeatPresentationController>();
             if (_defeat == null) _defeat = gameObject.AddComponent<DefeatPresentationController>();
-            _defeat.Build(_tuning);
+            _defeat.Build(_tuning, _camera);
 
             _turn = GetComponent<TurnManager>();
             if (_turn == null) _turn = gameObject.AddComponent<TurnManager>();
+
+            _audio = GetComponent<AudioManager>();
+            if (_audio == null) _audio = gameObject.AddComponent<AudioManager>();
         }
 
         private void Start()
@@ -186,6 +190,7 @@ namespace Oopsmeinfecto
             _hud.SetHistories(_state.Player.History, _state.Zombie.History);
             _hud.SetLoading(false);
             _defeat.Hide();
+            AudioManager.Instance?.RestoreMusicVolume();
 
             _turn.Initialize(_state, _renderer, _hud, _tuning, HandleVictory, HandleDefeat);
 
@@ -212,8 +217,14 @@ namespace Oopsmeinfecto
             if (_victoryDelay >= 0f || _defeatPlaying || _generating) return;
 
             _turn.SetActive(false);
-            _hud.SetStatus("¡NIVEL SUPERADO! Preparando el siguiente nivel…");
-            _victoryDelay = 0.35f;
+            _hud.SetStatus("Bien");
+            AudioManager.Instance?.PlayVictory();
+            _defeat.Play("Bien", "", 1.2f, () =>
+            {
+                _levelIndex++;
+                _levelSeed = SeedUtility.DeriveLevelSeed(_sessionSeed, _levelIndex);
+                BeginLevel(_levelIndex, _levelSeed);
+            });
         }
 
         private void HandleDefeat(DefeatReason reason)
@@ -222,35 +233,16 @@ namespace Oopsmeinfecto
             _defeatPlaying = true;
             _turn.SetActive(false);
 
-            string title;
-            string subtitle;
-            switch (reason)
-            {
-                case DefeatReason.DamageTile:
-                    title = "CASILLA DAÑINA";
-                    subtitle = "La energía se drena hasta cero. El nivel se reinicia.";
-                    break;
-                case DefeatReason.EnergyDepleted:
-                    title = "TRANSFORMACIÓN AMBIENTAL";
-                    subtitle = "Sin energía, la infección te transforma. El nivel se reinicia.";
-                    break;
-                case DefeatReason.PlaybackExhausted:
-                    title = "SECUENCIA AGOTADA";
-                    subtitle = "El patrón heredado no llegó al interruptor. El nivel se reinicia.";
-                    break;
-                default:
-                    title = "DERROTA";
-                    subtitle = "El nivel se reinicia.";
-                    break;
-            }
-
-            _hud.SetStatus("Derrota · " + title.ToLowerInvariant());
-            _defeat.Play(title, subtitle, _tuning.defeatDuration, RestartSameLevel);
+            _hud.SetStatus("Mal");
+            AudioManager.Instance?.PlayDefeat(reason);
+            _defeat.Play("Mal", "", _tuning.defeatDuration, RestartSameLevel);
         }
 
         private void RestartSameLevel()
         {
             _defeatPlaying = false;
+            _defeat.Hide();
+            AudioManager.Instance?.RestoreMusicVolume();
             if (_currentLevel != null)
             {
                 // Reuse the exact level definition, including its seed and consciousness values.

@@ -23,6 +23,8 @@ namespace Oopsmeinfecto
         private Direction? _blockedDirection;
         private float _autoTimer;
         private bool _transformationStarted;
+        private bool hasShownInfectionPause = false;
+        private bool _infectionPaused = false;
 
         [Header("CRT Retro Effect")]
         [SerializeField] private Material _crtMaterial;
@@ -56,6 +58,9 @@ namespace Oopsmeinfecto
             _blockedDirection = null;
             _autoTimer = 0f;
             _transformationStarted = false;
+            hasShownInfectionPause = false;
+            _infectionPaused = false;
+            Time.timeScale = 1f;
 
             if (_state == null) return;
 
@@ -86,6 +91,12 @@ namespace Oopsmeinfecto
 
         private void OnDisable()
         {
+            if (_infectionPaused)
+            {
+                Time.timeScale = 1f;
+                _infectionPaused = false;
+            }
+
             _heldDirection = null;
             _blockedDirection = null;
             _repeatTimer = 0f;
@@ -105,6 +116,12 @@ namespace Oopsmeinfecto
 
         private void OnDestroy()
         {
+            if (_infectionPaused)
+            {
+                Time.timeScale = 1f;
+                _infectionPaused = false;
+            }
+
             if (_crtMaterial != null)
             {
                 _crtMaterial.SetFloat(StepFlickerId, 0f);
@@ -114,6 +131,8 @@ namespace Oopsmeinfecto
 
         private void Update()
         {
+            if (_infectionPaused) return;
+
             UpdateCrtInfectionProgress();
 
             if (!_active || _state == null) return;
@@ -194,6 +213,12 @@ namespace Oopsmeinfecto
             }
 
             _blockedDirection = null;
+            AudioManager.Instance?.PlayMovePlayer();
+            if (result.Outcome != TurnOutcome.DamageDefeat)
+            {
+                AudioManager.Instance?.PlayMoveEnemy();
+            }
+
             TriggerStepFlicker();
             _renderer.SyncFromState(_state);
             RefreshHumanHud();
@@ -213,8 +238,14 @@ namespace Oopsmeinfecto
             _renderer.SyncFromState(_state);
             _hud.SetHistories(_state.Player.History, _state.Zombie.History);
 
+            if (result.Moved)
+            {
+                AudioManager.Instance?.PlayMovePlayer();
+            }
+
             if (result.Outcome == TurnOutcome.PlaybackStep)
             {
+                AudioManager.Instance?.PlayMoveEnemy();
                 string blocked = result.PlaybackStepBlocked ? " · paso bloqueado" : "";
                 _hud.SetStatus("REPRODUCIENDO " + _state.PlaybackIndex + "/" +
                                _state.PlaybackSequence.Count + blocked);
@@ -252,8 +283,17 @@ namespace Oopsmeinfecto
                     _hud.SetInfected(true);
                     _hud.SetStatus("¡CONTACTO! Secuencia congelada · " +
                                    _state.PlaybackSequence.Count + " pasos");
-                    _autoTimer = Mathf.Max(0.03f,
-                        _tuning.autoStepInterval + _tuning.playbackExtraDelay);
+
+                    if (!hasShownInfectionPause)
+                    {
+                        hasShownInfectionPause = true;
+                        StartCoroutine(InfectionPauseRoutine());
+                    }
+                    else
+                    {
+                        _autoTimer = Mathf.Max(0.03f,
+                            _tuning.autoStepInterval + _tuning.playbackExtraDelay);
+                    }
                     break;
 
                 case TurnOutcome.SwitchVictory:
@@ -297,6 +337,22 @@ namespace Oopsmeinfecto
                     _onDefeat?.Invoke(DefeatReason.PlaybackExhausted);
                     break;
             }
+        }
+
+        private System.Collections.IEnumerator InfectionPauseRoutine()
+        {
+            _infectionPaused = true;
+            Time.timeScale = 0f;
+            if (_hud != null) _hud.ShowInfectionBanner(true);
+
+            yield return new WaitForSecondsRealtime(1f);
+
+            if (_hud != null) _hud.ShowInfectionBanner(false);
+            Time.timeScale = 1f;
+            _infectionPaused = false;
+
+            _autoTimer = Mathf.Max(0.03f,
+                _tuning.autoStepInterval + _tuning.playbackExtraDelay);
         }
 
         private static Direction? ReadPressedDirection(Keyboard keyboard)
