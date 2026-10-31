@@ -103,7 +103,7 @@ namespace Oopsmeinfecto
 
         private void BuildTopLeft(RectTransform root)
         {
-            _levelLabel = CreateText(root, "Level Label", "", 28,
+            _levelLabel = CreateText(root, "Level Label", "", 30,
                 _tuning.hudTextColor, TextAnchor.UpperLeft);
             _levelLabel.fontStyle = FontStyle.Bold;
             SetRect(_levelLabel.rectTransform,
@@ -116,30 +116,30 @@ namespace Oopsmeinfecto
             var border = CreateImage(root, "Info Tooltip Border", new Color(0.42f, 0.18f, 0.18f, 0.90f));
             SetRect(border.rectTransform,
                 new Vector2(1f, 1f), new Vector2(1f, 1f), new Vector2(1f, 1f),
-                new Vector2(-28f, -68f), new Vector2(460f, 114f));
+                new Vector2(-28f, -86f), new Vector2(460f, 124f));
             _tooltipRoot = border.gameObject;
 
             var panel = CreateImage(border.transform, "Info Tooltip Panel", new Color(0.290f, 0.125f, 0.125f, 0.88f));
             Stretch(panel.rectTransform, 2f);
 
-            _tooltipSeedLabel = CreateText(panel.transform, "Tooltip Seed Label", "", 16,
+            _tooltipSeedLabel = CreateText(panel.transform, "Tooltip Seed Label", "", 18,
                 new Color(0.95f, 0.85f, 0.85f), TextAnchor.MiddleLeft);
             _tooltipSeedLabel.fontStyle = FontStyle.Bold;
             SetRect(_tooltipSeedLabel.rectTransform,
                 new Vector2(0f, 1f), new Vector2(1f, 1f), new Vector2(0f, 1f),
-                new Vector2(18f, -10f), new Vector2(-36f, 26f));
+                new Vector2(18f, -12f), new Vector2(-36f, 28f));
 
-            _tooltipValidationLabel = CreateText(panel.transform, "Tooltip Validation Label", "", 14,
+            _tooltipValidationLabel = CreateText(panel.transform, "Tooltip Validation Label", "", 16,
                 new Color(0.88f, 0.78f, 0.78f), TextAnchor.MiddleLeft);
             SetRect(_tooltipValidationLabel.rectTransform,
                 new Vector2(0f, 1f), new Vector2(1f, 1f), new Vector2(0f, 1f),
-                new Vector2(18f, -38f), new Vector2(-36f, 24f));
+                new Vector2(18f, -42f), new Vector2(-36f, 26f));
 
-            _statusLabel = CreateText(panel.transform, "Status Label", "", 13,
+            _statusLabel = CreateText(panel.transform, "Status Label", "", 15,
                 new Color(0.80f, 0.70f, 0.70f), TextAnchor.MiddleLeft);
             SetRect(_statusLabel.rectTransform,
                 new Vector2(0f, 1f), new Vector2(1f, 1f), new Vector2(0f, 1f),
-                new Vector2(18f, -66f), new Vector2(-36f, 34f));
+                new Vector2(18f, -70f), new Vector2(-36f, 38f));
 
             _tooltipRoot.SetActive(false);
         }
@@ -147,15 +147,16 @@ namespace Oopsmeinfecto
         private void BuildHint(RectTransform root)
         {
             _hintLabel = CreateText(root, "Controls Hint",
-                "WASD / ← ↑ ↓ → - Info (i)", 17,
+                "WASD / ← ↑ ↓ →\nInfo (i)", 21,
                 Color.Lerp(_tuning.hudTextColor, _tuning.hudBorderColor, 0.35f), TextAnchor.MiddleRight);
+            _hintLabel.raycastTarget = true;
             SetRect(_hintLabel.rectTransform,
                 new Vector2(1f, 1f), new Vector2(1f, 1f), new Vector2(1f, 1f),
-                new Vector2(-28f, -30f), new Vector2(400f, 30f));
+                new Vector2(-28f, -22f), new Vector2(400f, 56f));
 
             var infoHitArea = CreateRect(_hintLabel.transform, "Info (i) Area",
-                new Vector2(1f, 0f), new Vector2(1f, 1f), new Vector2(1f, 0.5f),
-                Vector2.zero, new Vector2(100f, 30f));
+                new Vector2(1f, 0f), new Vector2(1f, 0.5f), new Vector2(1f, 0f),
+                Vector2.zero, new Vector2(110f, 28f));
             var hitImg = infoHitArea.gameObject.AddComponent<Image>();
             hitImg.color = Color.clear;
             hitImg.raycastTarget = true;
@@ -281,7 +282,7 @@ namespace Oopsmeinfecto
 
         private void BuildInfectionBanner(RectTransform root)
         {
-            _infectionBanner = CreateText(root, "Infection Banner", "Oops, me infecté", 64,
+            _infectionBanner = CreateText(root, "Infection Banner", "Oops, me infectó", 64,
                 _tuning.hudTextColor, TextAnchor.MiddleCenter);
             _infectionBanner.fontStyle = FontStyle.Bold;
             SetRect(_infectionBanner.rectTransform,
@@ -291,10 +292,14 @@ namespace Oopsmeinfecto
             _infectionBanner.gameObject.SetActive(false);
         }
 
-        public void ShowInfectionBanner(bool show)
+        public void ShowInfectionBanner(bool show, string message = "Oops, me infectó")
         {
             if (_infectionBanner != null)
             {
+                if (show && !string.IsNullOrEmpty(message))
+                {
+                    _infectionBanner.text = message;
+                }
                 _infectionBanner.gameObject.SetActive(show);
             }
         }

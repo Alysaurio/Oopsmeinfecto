@@ -22,6 +22,7 @@ namespace Oopsmeinfecto
         [SerializeField] private AudioClip _win;
 
         private Coroutine _duckingCoroutine;
+        private bool _defeatAudioTriggered = false;
 
         public AudioSource MusicSource => _musicSource;
         public AudioSource SfxSource => _sfxSource;
@@ -111,7 +112,7 @@ namespace Oopsmeinfecto
         {
             if (_sfxSource != null && _movePlayer != null)
             {
-                _sfxSource.PlayOneShot(_movePlayer);
+                _sfxSource.PlayOneShot(_movePlayer, 1.20f);
             }
         }
 
@@ -119,7 +120,7 @@ namespace Oopsmeinfecto
         {
             if (_sfxSource != null && _moveEnemy != null)
             {
-                _sfxSource.PlayOneShot(_moveEnemy);
+                _sfxSource.PlayOneShot(_moveEnemy, 1.20f);
             }
         }
 
@@ -130,6 +131,9 @@ namespace Oopsmeinfecto
 
         public void PlayDefeat(DefeatReason reason)
         {
+            if (_defeatAudioTriggered) return;
+            _defeatAudioTriggered = true;
+
             AudioClip clip = (reason == DefeatReason.DamageTile) ? _lose2 : _lose;
             StartDuckingAndPlay(clip);
         }
@@ -171,6 +175,7 @@ namespace Oopsmeinfecto
 
         public void RestoreMusicVolume()
         {
+            _defeatAudioTriggered = false;
             if (_duckingCoroutine != null)
             {
                 StopCoroutine(_duckingCoroutine);

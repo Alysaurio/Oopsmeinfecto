@@ -213,9 +213,22 @@ namespace Oopsmeinfecto
             }
 
             _blockedDirection = null;
-            AudioManager.Instance?.PlayMovePlayer();
-            if (result.Outcome != TurnOutcome.DamageDefeat)
+
+            if (result.Outcome == TurnOutcome.DamageDefeat)
             {
+                AudioManager.Instance?.PlayDefeat(DefeatReason.DamageTile);
+            }
+            else if (result.Outcome == TurnOutcome.EnergyDefeat)
+            {
+                AudioManager.Instance?.PlayDefeat(DefeatReason.EnergyDepleted);
+            }
+            else if (result.Outcome == TurnOutcome.SwitchVictory)
+            {
+                AudioManager.Instance?.PlayVictory();
+            }
+            else
+            {
+                AudioManager.Instance?.PlayMovePlayer();
                 AudioManager.Instance?.PlayMoveEnemy();
             }
 
@@ -235,13 +248,26 @@ namespace Oopsmeinfecto
             _autoTimer = stepInterval;
 
             var result = _state.AdvancePlaybackStep();
-            _renderer.SyncFromState(_state);
-            _hud.SetHistories(_state.Player.History, _state.Zombie.History);
 
-            if (result.Moved)
+            if (result.Outcome == TurnOutcome.DamageDefeat)
+            {
+                AudioManager.Instance?.PlayDefeat(DefeatReason.DamageTile);
+            }
+            else if (result.Outcome == TurnOutcome.PlaybackExhausted)
+            {
+                AudioManager.Instance?.PlayDefeat(DefeatReason.PlaybackExhausted);
+            }
+            else if (result.Outcome == TurnOutcome.SwitchVictory)
+            {
+                AudioManager.Instance?.PlayVictory();
+            }
+            else if (result.Moved)
             {
                 AudioManager.Instance?.PlayMovePlayer();
             }
+
+            _renderer.SyncFromState(_state);
+            _hud.SetHistories(_state.Player.History, _state.Zombie.History);
 
             if (result.Outcome == TurnOutcome.PlaybackStep)
             {
@@ -297,12 +323,14 @@ namespace Oopsmeinfecto
                     break;
 
                 case TurnOutcome.SwitchVictory:
+                    AudioManager.Instance?.PlayVictory();
                     _active = false;
                     _hud.SetStatus("¡INTERRUPTOR ALCANZADO!");
                     _onVictory?.Invoke();
                     break;
 
                 case TurnOutcome.DamageDefeat:
+                    AudioManager.Instance?.PlayDefeat(DefeatReason.DamageTile);
                     _active = false;
                     _renderer.PlayDrain(_tuning.barDrainDuration);
                     _renderer.PlayerVisual?.PlayDefeat(DefeatReason.DamageTile, _tuning.defeatDuration);
@@ -311,6 +339,7 @@ namespace Oopsmeinfecto
                     break;
 
                 case TurnOutcome.EnergyDefeat:
+                    AudioManager.Instance?.PlayDefeat(DefeatReason.EnergyDepleted);
                     _active = false;
                     _heldDirection = null;
                     _blockedDirection = null;
@@ -331,6 +360,7 @@ namespace Oopsmeinfecto
                     break;
 
                 case TurnOutcome.PlaybackExhausted:
+                    AudioManager.Instance?.PlayDefeat(DefeatReason.PlaybackExhausted);
                     _active = false;
                     _renderer.PlayerVisual?.PlayDefeat(DefeatReason.PlaybackExhausted, _tuning.defeatDuration);
                     _hud.SetStatus("Derrota · secuencia agotada");
@@ -343,7 +373,7 @@ namespace Oopsmeinfecto
         {
             _infectionPaused = true;
             Time.timeScale = 0f;
-            if (_hud != null) _hud.ShowInfectionBanner(true);
+            if (_hud != null) _hud.ShowInfectionBanner(true, "Oops, me infectó");
 
             yield return new WaitForSecondsRealtime(1f);
 
