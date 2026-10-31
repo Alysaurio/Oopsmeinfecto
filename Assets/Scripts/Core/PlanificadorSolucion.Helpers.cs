@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 
 namespace Oopsmeinfecto
@@ -11,126 +11,131 @@ namespace Oopsmeinfecto
             PatternPlacement placement,
             CyclicRoutePattern pattern,
             HashSet<GridPos> routeSet,
-            Node node,
-            GameState contactState,
-            MoveResult result,
-            Direction finalDirection,
-            GridPos target,
-            GridPos nextZombiePosition,
+            IReadOnlyList<Direction> manualDirections,
             int zombieConciencia,
             int playerConciencia,
             int maxEnergy,
-            bool strict)
+            DifficultyProfile profile,
+            int initialOptions,
+            SeededRandom rng)
         {
-            if (!contactState.ContactHasRequiredHistory())
+            if (manualDirections == null || manualDirections.Count == 0) return null;
+
+            SolutionPlan Reject(string reason)
             {
-                Log?.Invoke($"      contact {contactState.Player.Position} turn {contactState.TurnNumber} rejected: history player={contactState.Player.HistoryCount} zombie={contactState.Zombie.HistoryCount}");
+                Log?.Invoke("      plan reject: " + reason);
                 return null;
             }
 
-            var contactPosition = contactState.Player.Position;
-            if (contactPosition != target || contactPosition != nextZombiePosition)
-            {
-                Log?.Invoke($"      contact rejected: position mismatch {contactPosition}/{target}/{nextZombiePosition}");
-                return null;
-            }
+            var state = new GameState(
+                board, playerStart, placement.Route, zombieConciencia,
+                playerConciencia, maxEnergy, 7);
 
-            var manualPositions = new List<GridPos>(node.Positions) { target };
-            var manualDirections = new List<Direction>(node.Directions) { finalDirection };
-
-            if (strict)
+            var manualPositions = new List<GridPos> { playerStart };
+            for (int i = 0; i < manualDirections.Count; i++)
             {
-                var seenManual = new HashSet<GridPos>();
-                for (int i = 0; i < manualPositions.Count; i++)
+                var result = state.TryManualMove(manualDirections[i]);
+                bool last = i == manualDirections.Count - 1;
+                if (last)
                 {
-                    var p = manualPositions[i];
-                    if (!seenManual.Add(p)) return null;
-                    if (routeSet.Contains(p) && p != contactPosition) return null;
+                    if (result.Outcome != TurnOutcome.Infected) return Reject("last manual move was " + result.Outcome);
+                }
+                else if (result.Outcome != TurnOutcome.Moved)
+                {
+                    return Reject("manual move " + i + " was " + result.Outcome);
+                }
+                manualPositions.Add(state.Player.Position);
+            }
+
+            if (state.Phase != GamePhase.InfectedPlayback) return Reject("not in playback");
+            if (!state.ContactHasRequiredHistory()) return Reject("missing history");
+            if (state.PlaybackSequence.Count != InfectionSystem.InfectorMoveCount + playerConciencia)
+                return Reject("sequence length " + state.PlaybackSequence.Count);
+
+            var simulationState = state.Clone();
+            var simulation = simulationState.SimulatePlaybackToEnd();
+            if (simulation.AnyBlockedStep) return Reject("blocked playback step");
+            if (simulation.Outcome != GamePhase.Defeat ||
+                simulation.DefeatReason != DefeatReason.PlaybackExhausted)
+                return Reject("playback outcome " + simulation.Outcome + "/" + simulation.DefeatReason);
+
+            var autoPositions = new List<GridPos>(simulation.Positions);
+            if (autoPositions.Count != state.PlaybackSequence.Count + 1) return Reject("auto positions " + autoPositions.Count);
+
+            // The switch does not exist yet: the planner chooses the end of the inherited
+            // sequence as the switch cell. It must not be visited earlier, or the real game
+            // would win before the sequence is consumed.
+            var switchPosition = simulation.FinalPosition;
+            if (autoPositions[autoPositions.Count - 1] != switchPosition) return Reject("switch not final");
+            if (autoPositions.Count - 1 < zombieConciencia + 2) return Reject("auto steps too short");
+
+            var manualSet = new HashSet<GridPos>(manualPositions);
+            if (switchPosition == playerStart || manualSet.Contains(switchPosition)) return Reject("switch on start/manual path");
+
+            int switchVisits = 0;
+            for (int i = 0; i < autoPositions.Count; i++)
+            {
+                if (autoPositions[i] == switchPosition) switchVisits++;
+            }
+            if (switchVisits != 1) return Reject("switch visits " + switchVisits);
+
+            for (int i = 0; i < autoPositions.Count; i++)
+            {
+                if (!board.IsWalkable(autoPositions[i])) return Reject("auto path blocked");
+            }
+
+            int turns = 0;
+            int reversals = 0;
+            int maxStraight = 1;
+            int run = 1;
+            var distinct = new HashSet<Direction>();
+            for (int i = 0; i < manualDirections.Count; i++)
+            {
+                var direction = manualDirections[i];
+                distinct.Add(direction);
+                if (i > 0)
+                {
+                    var previous = manualDirections[i - 1];
+                    if (direction != previous) turns++;
+                    if (direction == Directions.Opposite(previous)) reversals++;
+                    run = direction == previous ? run + 1 : 1;
+                    if (run > maxStraight) maxStraight = run;
                 }
             }
 
-            var simulationState = contactState.Clone();
-            var simulation = simulationState.SimulatePlaybackToEnd();
-            if (simulation.AnyBlockedStep)
+            var seenPositions = new HashSet<GridPos>();
+            int revisits = 0;
+            for (int i = 0; i < manualPositions.Count; i++)
             {
-                Log?.Invoke($"      contact {contactPosition} turn {contactState.TurnNumber} rejected: blocked playback");
-                return null;
-            }
-            if (simulation.Positions.Count < 2)
-            {
-                Log?.Invoke($"      contact {contactPosition} turn {contactState.TurnNumber} rejected: empty playback");
-                return null;
-            }
-
-            var autoPositions = new List<GridPos>(simulation.Positions);
-            var manualSet = new HashSet<GridPos>(manualPositions);
-            for (int i = 0; i < autoPositions.Count; i++)
-            {
-                var p = autoPositions[i];
-                if (!board.IsWalkable(p)) return null;
-            }
-
-            var switchPosition = simulation.FinalPosition;
-            if (!board.IsWalkable(switchPosition))
-            {
-                Log?.Invoke($"      contact {contactPosition} rejected: switch not walkable {switchPosition}");
-                return null;
-            }
-            if (switchPosition == playerStart || manualSet.Contains(switchPosition))
-            {
-                Log?.Invoke($"      contact {contactPosition} rejected: switch overlaps start/manual {switchPosition}");
-                return null;
-            }
-
-            // If the frozen sequence revisits the final cell, victory happens on the first
-            // visit. Keep only the trajectory up to that first visit.
-            int switchIndex = autoPositions.FindIndex(p => p == switchPosition);
-            if (switchIndex < 0) return null;
-            if (switchIndex + 1 < autoPositions.Count)
-            {
-                autoPositions.RemoveRange(switchIndex + 1, autoPositions.Count - switchIndex - 1);
-            }
-
-            // The switch must be impossible to reach with the manual energy budget.
-            // Manhattan distance is a lower bound for any grid path.
-            if (playerStart.ManhattanDistance(switchPosition) <= maxEnergy)
-            {
-                Log?.Invoke($"      contact {contactPosition} rejected: switch too close to start ({playerStart.ManhattanDistance(switchPosition)} <= {maxEnergy})");
-                return null;
+                if (!seenPositions.Add(manualPositions[i])) revisits++;
             }
 
             var plan = new SolutionPlan
             {
-                ContactPosition = contactPosition,
+                ContactPosition = state.Player.Position,
                 SwitchPosition = switchPosition,
-                ContactTurn = contactState.TurnNumber,
-                ZombiePhaseAtContact = contactState.ZombiePhase
+                ContactTurn = state.TurnNumber,
+                ZombiePhaseAtContact = state.ZombiePhase,
+                ManualTurnCount = turns,
+                DistinctDirections = distinct.Count,
+                MaxStraightRun = maxStraight,
+                ImmediateReversals = reversals,
+                RevisitedCells = revisits,
+                InitialDistance = playerStart.ManhattanDistance(placement.Route[0]),
+                InitialOptions = initialOptions,
+                AutomaticSteps = autoPositions.Count - 1,
+                SwitchDistance = playerStart.ManhattanDistance(switchPosition),
+                HasBacktrack = reversals > 0 || revisits > 0
             };
             plan.ManualDirections.AddRange(manualDirections);
             plan.ManualPositions.AddRange(manualPositions);
-            plan.Sequence.AddRange(contactState.PlaybackSequence);
+            plan.Sequence.AddRange(state.PlaybackSequence);
             plan.AutoPositions.AddRange(autoPositions);
 
-            int score = 0;
-            if (plan.ContactTurn == maxEnergy) score += 30;
-            score += playerStart.ManhattanDistance(switchPosition) * 2;
-            score += autoPositions.Count * 3;
-            if (strict) score += 10;
-            if (contactState.PlaybackSequence.Count >= 3 + zombieConciencia) score += 5;
-            plan.Score = score;
+            plan.MeetsDifficulty = profile.Accepts(plan, maxEnergy, zombieConciencia, playerConciencia);
+            plan.Score = profile.Score(plan, maxEnergy) + rng.Range(0, 11);
             return plan;
-        }
-
-        private static bool IsAdjacentToOtherRoute(GridPos cell, HashSet<GridPos> routeSet, GridPos? allowedRouteCell)
-        {
-            for (int i = 0; i < Directions.All.Length; i++)
-            {
-                var neighbor = cell + Directions.Delta(Directions.All[i]);
-                if (!routeSet.Contains(neighbor)) continue;
-                if (allowedRouteCell.HasValue && neighbor == allowedRouteCell.Value) continue;
-                return true;
-            }
-            return false;
         }
     }
 }
+

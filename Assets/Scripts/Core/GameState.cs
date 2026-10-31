@@ -8,7 +8,8 @@ namespace Oopsmeinfecto
         HumanControlled = 0,
         InfectedPlayback = 1,
         Victory = 2,
-        Defeat = 3
+        Defeat = 3,
+        EnvironmentalTransformation = 4
     }
 
     public enum DefeatReason
@@ -164,14 +165,9 @@ namespace Oopsmeinfecto
                 return result;
             }
 
-            // Reaching the switch wins immediately: the NPC does not move.
-            if (Board.IsSwitch(target))
-            {
-                Phase = GamePhase.Victory;
-                result.Outcome = TurnOutcome.SwitchVictory;
-                return result;
-            }
-
+            // The switch only activates during the inherited playback. Stepping on it while
+            // still human-controlled is an ordinary move; the validator rejects levels where
+            // the switch can be reached manually before contact.
             AdvanceZombie();
 
             // Only ending the turn on the same cell counts as contact. A position swap does not.
@@ -190,7 +186,7 @@ namespace Oopsmeinfecto
             // budget is gone, environmental infection defeats the player.
             if (CurrentEnergy <= 0)
             {
-                Phase = GamePhase.Defeat;
+                Phase = GamePhase.EnvironmentalTransformation;
                 DefeatReason = DefeatReason.EnergyDepleted;
                 result.Outcome = TurnOutcome.EnergyDefeat;
                 return result;
@@ -257,14 +253,6 @@ namespace Oopsmeinfecto
             }
 
             AdvanceZombie();
-
-            if (PlaybackIndex >= _playbackSequence.Count)
-            {
-                Phase = GamePhase.Defeat;
-                DefeatReason = DefeatReason.PlaybackExhausted;
-                result.Outcome = TurnOutcome.PlaybackExhausted;
-                return result;
-            }
 
             result.Outcome = TurnOutcome.PlaybackStep;
             return result;

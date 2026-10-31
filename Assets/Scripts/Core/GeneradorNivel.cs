@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 
 namespace Oopsmeinfecto
@@ -12,43 +12,65 @@ namespace Oopsmeinfecto
         /// <summary>Optional diagnostic hook used by the external harness; null in the game.</summary>
         public static Action<string> Log;
 
-        public static GenerationResult Generate(int levelIndex, int seed, GenerationSettings settingsInput)
+        public static GenerationResult Generate(
+            int levelIndex, int seed, GenerationSettings settingsInput, bool allowEmergency = true)
         {
             var settings = settingsInput.Clone();
             settings.Sanitize();
 
             LevelDefinition fallback = null;
             int attempts = 0;
+            var profile = DifficultyProfile.ForLevel(levelIndex);
 
             for (int attempt = 0; attempt < settings.maxGenerationAttempts; attempt++)
             {
                 attempts++;
-                var rng = new SeededRandom(HashSeed(seed, attempt, levelIndex));
+                var rng = new SeededRandom(SeedUtility.DeriveAttemptSeed(seed, attempt, levelIndex));
 
                 int width = rng.Range(settings.minWidth, settings.maxWidth);
                 int height = rng.Range(settings.minHeight, settings.maxHeight);
                 var placement = GeneradorPatronMovimiento.Generate(width, height, rng);
                 if (placement == null) continue;
 
-                int zombieConciencia = rng.Range(settings.minZombieConciencia, settings.maxZombieConciencia);
-                int maxEnergy = rng.Range(settings.minEnergy, settings.maxEnergy);
-                var openBoard = new BoardData(width, height, TileType.Floor);
-                Log?.Invoke($"attempt {attempt} {width}x{height} pattern={placement.TemplateName} zc={zombieConciencia} energy={maxEnergy}");
+                int zombieConciencia;
+                int playerConciencia;
+                if (!TryPickConsciousness(settings, rng, out zombieConciencia, out playerConciencia))
+                    continue;
 
-                var starts = BuildStartCandidates(openBoard, placement.Route, rng, 12, maxEnergy);
+                int planningEnergy = settings.maxEnergy;
+                var openBoard = new BoardData(width, height, TileType.Floor);
+                Log?.Invoke($"attempt {attempt} {width}x{height} pattern={placement.TemplateName} " +
+                            $"zc={zombieConciencia} pc={playerConciencia} tier={profile.Tier}");
+
+                var starts = BuildStartCandidates(
+                    openBoard, placement.Route, rng, 12, planningEnergy, profile, playerConciencia);
                 for (int s = 0; s < starts.Count; s++)
                 {
                     var start = starts[s];
                     var plans = PlanificadorSolucion.FindCandidates(
-                        openBoard, start, placement, zombieConciencia,
-                        settings.playerConciencia, maxEnergy, settings);
+                        openBoard, start, placement, zombieConciencia, playerConciencia,
+                        planningEnergy, settings, levelIndex, rng);
                     if (plans.Count == 0) continue;
-                    Log?.Invoke($"  start {start}: {plans.Count} plans, best contactTurn={plans[0].ContactTurn} switch={plans[0].SwitchPosition} score={plans[0].Score}");
+                    Log?.Invoke($"  start {start}: {plans.Count} plans, best length={plans[0].ManualDirections.Count} " +
+                                $"turns={plans[0].ManualTurnCount} switch={plans[0].SwitchPosition} score={plans[0].Score}");
 
-                    int planLimit = Math.Min(4, plans.Count);
+                    int planLimit = Math.Min(8, plans.Count);
                     for (int p = 0; p < planLimit; p++)
                     {
                         var plan = plans[p];
+                        if (!plan.MeetsDifficulty)
+                        {
+                            Log?.Invoke($"    plan rejected: does not meet {profile}");
+                            continue;
+                        }
+
+                        int energy;
+                        if (!TryChooseEnergy(plan, start, settings, rng, out energy))
+                        {
+                            Log?.Invoke("    plan rejected: switch is too close for the minimum energy");
+                            continue;
+                        }
+
                         var core = BuildCore(plan, placement.Route, start);
                         if (core == null) continue;
 
@@ -59,7 +81,7 @@ namespace Oopsmeinfecto
                         {
                             var geometry = GeneradorGeometria.Build(
                                 width, height, core, radii[r], settings.expansionDensity,
-                                rng, maxHazards);
+                                rng, Math.Max(1, maxHazards) + 2);
                             if (geometry == null) continue;
 
                             geometry.Board.SetTile(plan.SwitchPosition, TileType.Switch);
@@ -72,12 +94,17 @@ namespace Oopsmeinfecto
 
                             var hazards = HazardPlacer.Place(
                                 geometry.Board, geometry.OptionalCells, protectedCells,
+                                plan.ManualPositions, plan.AutoPositions, placement.Route,
                                 settings.maxHazardsCap, rng);
-                            if (hazards == null) continue;
+                            if (hazards == null)
+                            {
+                                Log?.Invoke($"    radius {radii[r]}: not enough useful hazard cells");
+                                continue;
+                            }
 
                             var level = BuildDefinition(
                                 levelIndex, seed, width, height, geometry.Board,
-                                start, placement, zombieConciencia, maxEnergy,
+                                start, placement, zombieConciencia, playerConciencia, energy,
                                 settings, plan, hazards, attempts);
 
                             var structural = ValidadorNivel.Validate(level, settings, false);
@@ -147,15 +174,90 @@ namespace Oopsmeinfecto
                 };
             }
 
-            var emergency = CreateEmergencyLevel(levelIndex, seed, settings, attempts);
+            if (!allowEmergency)
+            {
+                return new GenerationResult
+                {
+                    Level = null,
+                    Success = false,
+                    UniqueConfirmed = false,
+                    Attempts = attempts,
+                    Message = "no valid level found after " + attempts + " attempts"
+                };
+            }
+
+            // Last resort: retry with relaxed uniqueness and a deterministic offset seed. The
+            // relaxed level is still structurally valid and uses the real turn engine, so it
+            // never replaces gameplay with a broken hand-written board.
+            var relaxed = settings.Clone();
+            relaxed.requireUniqueSolution = false;
+            relaxed.maxGenerationAttempts = Math.Min(40, Math.Max(10, settings.maxGenerationAttempts));
+            for (int retry = 1; retry <= 4; retry++)
+            {
+                int retrySeed = unchecked(seed + retry * 0x5EED);
+                var retryResult = Generate(levelIndex, retrySeed, relaxed, false);
+                if (retryResult.Success && retryResult.Level != null)
+                {
+                    retryResult.Level.UsedFallback = true;
+                    retryResult.Level.GenerationMessage =
+                        "relaxed fallback after " + attempts + " attempts; " + retryResult.Message;
+                    retryResult.Message = retryResult.Level.GenerationMessage;
+                    return retryResult;
+                }
+            }
+
             return new GenerationResult
             {
-                Level = emergency,
-                Success = true,
+                Level = null,
+                Success = false,
                 UniqueConfirmed = false,
                 Attempts = attempts,
-                Message = emergency.GenerationMessage
+                Message = "no valid level found after " + attempts + " attempts"
             };
+        }
+
+        private static bool TryPickConsciousness(
+            GenerationSettings settings, SeededRandom rng, out int zombie, out int player)
+        {
+            zombie = 0;
+            player = 0;
+
+            var zombies = new List<int>();
+            for (int z = settings.minZombieConciencia; z <= settings.maxZombieConciencia; z++)
+                zombies.Add(z);
+            rng.Shuffle(zombies);
+
+            for (int i = 0; i < zombies.Count; i++)
+            {
+                int z = zombies[i];
+                int minPlayer = Math.Max(settings.minPlayerConciencia, z - 1);
+                if (minPlayer > settings.maxPlayerConciencia) continue;
+                zombie = z;
+                player = rng.Range(minPlayer, settings.maxPlayerConciencia);
+                return true;
+            }
+
+            return false;
+        }
+
+        private static bool TryChooseEnergy(
+            SolutionPlan plan, GridPos start, GenerationSettings settings, SeededRandom rng, out int energy)
+        {
+            energy = 0;
+            if (plan == null) return false;
+
+            int manualLength = plan.ManualDirections.Count;
+            int switchDistance = start.ManhattanDistance(plan.SwitchPosition);
+
+            // The manual budget must at least cover the planned contact route, and it must stay
+            // below the Manhattan distance to the switch so the switch cannot be walked to
+            // before contact.
+            int minEnergy = Math.Max(settings.minEnergy, manualLength);
+            int maxEnergy = Math.Min(settings.maxEnergy, switchDistance - 1);
+            if (minEnergy > maxEnergy) return false;
+
+            energy = rng.Range(minEnergy, maxEnergy);
+            return true;
         }
 
         private static HashSet<GridPos> BuildCore(SolutionPlan plan, GridPos[] route, GridPos start)
@@ -170,11 +272,16 @@ namespace Oopsmeinfecto
         }
 
         private static List<GridPos> BuildStartCandidates(
-            BoardData board, GridPos[] route, SeededRandom rng, int maxStarts, int maxEnergy)
+            BoardData board, GridPos[] route, SeededRandom rng, int maxStarts,
+            int maxEnergy, DifficultyProfile profile, int playerConciencia)
         {
             var routeSet = new HashSet<GridPos>(route);
-            var nearRoute = new List<GridPos>();
-            var relaxed = new List<GridPos>();
+            var preferred = new List<GridPos>();
+            var fallback = new List<GridPos>();
+
+            int minDepth = Math.Max(3, Math.Max(profile.MinManualMoves, playerConciencia));
+            int maxDepth = Math.Min(maxEnergy, profile.MaxManualMoves);
+            if (minDepth > maxDepth) return new List<GridPos>();
 
             for (int y = 0; y < board.Height; y++)
             {
@@ -182,25 +289,63 @@ namespace Oopsmeinfecto
                 {
                     var p = new GridPos(x, y);
                     if (routeSet.Contains(p)) continue;
-                    relaxed.Add(p);
-                    if (MinDistanceToRoute(p, route) <= maxEnergy) nearRoute.Add(p);
+
+                    int options = CountInitialOptions(board, p, routeSet);
+                    if (options < profile.MinInitialOptions) continue;
+
+                    // The zombie reaches route[d] after exactly d manual moves, so the player
+                    // start has to be able to reach one of those contact cells in d steps.
+                    int bestContactDistance = int.MaxValue;
+                    int bestContactDepth = -1;
+                    for (int depth = minDepth; depth <= maxDepth; depth++)
+                    {
+                        if (depth >= route.Length) break;
+                        int distance = p.ManhattanDistance(route[depth]);
+                        if (distance < 2 || distance > depth) continue;
+                        if (((depth - distance) & 1) != 0) continue;
+                        if (distance < bestContactDistance)
+                        {
+                            bestContactDistance = distance;
+                            bestContactDepth = depth;
+                        }
+                    }
+
+                    bool interior = x > 0 && y > 0 && x < board.Width - 1 && y < board.Height - 1;
+                    if (bestContactDepth >= 0 && interior &&
+                        bestContactDistance >= 2 && bestContactDistance <= Math.Max(2, maxEnergy))
+                        preferred.Add(p);
+                    else
+                        fallback.Add(p);
                 }
             }
 
-            rng.Shuffle(nearRoute);
-            rng.Shuffle(relaxed);
+            rng.Shuffle(preferred);
+            rng.Shuffle(fallback);
 
             var result = new List<GridPos>();
             var seen = new HashSet<GridPos>();
-            for (int i = 0; i < nearRoute.Count && result.Count < maxStarts; i++)
+            for (int i = 0; i < preferred.Count && result.Count < maxStarts; i++)
             {
-                if (seen.Add(nearRoute[i])) result.Add(nearRoute[i]);
+                if (seen.Add(preferred[i])) result.Add(preferred[i]);
             }
-            for (int i = 0; i < relaxed.Count && result.Count < maxStarts; i++)
+            for (int i = 0; i < fallback.Count && result.Count < maxStarts; i++)
             {
-                if (seen.Add(relaxed[i])) result.Add(relaxed[i]);
+                if (seen.Add(fallback[i])) result.Add(fallback[i]);
             }
             return result;
+        }
+
+        private static int CountInitialOptions(BoardData board, GridPos p, HashSet<GridPos> routeSet)
+        {
+            int count = 0;
+            for (int i = 0; i < Directions.All.Length; i++)
+            {
+                var next = p + Directions.Delta(Directions.All[i]);
+                if (!board.IsWalkable(next)) continue;
+                if (routeSet.Contains(next)) continue;
+                count++;
+            }
+            return count;
         }
 
         private static int MinDistanceToRoute(GridPos p, GridPos[] route)
@@ -214,15 +359,6 @@ namespace Oopsmeinfecto
             return best;
         }
 
-        private static bool IsAdjacentToRoute(GridPos p, HashSet<GridPos> routeSet)
-        {
-            for (int i = 0; i < Directions.All.Length; i++)
-            {
-                if (routeSet.Contains(p + Directions.Delta(Directions.All[i]))) return true;
-            }
-            return false;
-        }
-
         private static List<int> BuildRadii(int maxRadius)
         {
             var radii = new List<int>();
@@ -233,6 +369,7 @@ namespace Oopsmeinfecto
             }
 
             Add(maxRadius);
+            Add(maxRadius + 1);
             Add(Math.Max(0, maxRadius / 2));
             Add(0);
             return radii;
@@ -240,8 +377,9 @@ namespace Oopsmeinfecto
 
         private static LevelDefinition BuildDefinition(
             int levelIndex, int seed, int width, int height, BoardData board,
-            GridPos start, PatternPlacement placement, int zombieConciencia, int maxEnergy,
-            GenerationSettings settings, SolutionPlan plan, List<GridPos> hazards, int attempts)
+            GridPos start, PatternPlacement placement, int zombieConciencia, int playerConciencia,
+            int maxEnergy, GenerationSettings settings, SolutionPlan plan,
+            List<GridPos> hazards, int attempts)
         {
             return new LevelDefinition
             {
@@ -256,7 +394,7 @@ namespace Oopsmeinfecto
                 NpcRoute = (GridPos[])placement.Route.Clone(),
                 ZombiePhaseStart = 0,
                 ZombieConciencia = zombieConciencia,
-                PlayerConciencia = settings.playerConciencia,
+                PlayerConciencia = playerConciencia,
                 MaxEnergy = maxEnergy,
                 HistoryCapacity = settings.historyCapacity,
                 PlannedManualDirections = plan.ManualDirections.ToArray(),
@@ -270,6 +408,16 @@ namespace Oopsmeinfecto
                 PatternMirrorV = placement.MirrorVertical,
                 PatternPhase = placement.Phase,
                 PatternOrigin = placement.RegionOrigin,
+                DifficultyTier = DifficultyProfile.TierForLevel(levelIndex),
+                MeetsDifficulty = plan.MeetsDifficulty,
+                ManualTurnCount = plan.ManualTurnCount,
+                DistinctDirections = plan.DistinctDirections,
+                MaxStraightRun = plan.MaxStraightRun,
+                ImmediateReversals = plan.ImmediateReversals,
+                RevisitedCells = plan.RevisitedCells,
+                InitialOptions = plan.InitialOptions,
+                AutomaticStepCount = plan.AutomaticSteps,
+                Bounds = PlayableBounds.FromBoard(board),
                 UniqueConfirmed = false,
                 SolutionCount = 0,
                 GenerationAttemptsUsed = attempts,
@@ -277,74 +425,5 @@ namespace Oopsmeinfecto
             };
         }
 
-        private static int HashSeed(int seed, int attempt, int levelIndex)
-        {
-            unchecked
-            {
-                uint x = (uint)seed;
-                x ^= (uint)attempt * 0x9E3779B9u;
-                x ^= (uint)levelIndex * 0x85EBCA6Bu;
-                x ^= x >> 16;
-                x *= 0x7FEB352Du;
-                x ^= x >> 15;
-                x *= 0x846CA68Bu;
-                x ^= x >> 16;
-                return (int)x;
-            }
-        }
-
-        private static LevelDefinition CreateEmergencyLevel(
-            int levelIndex, int seed, GenerationSettings settings, int attempts)
-        {
-            int width = 6;
-            int height = 6;
-            var board = new BoardData(width, height, TileType.Floor);
-            var start = new GridPos(0, 0);
-            var switchPosition = new GridPos(1, 0);
-            var hazard = new GridPos(0, 5);
-            board.SetTile(switchPosition, TileType.Switch);
-            board.SetTile(hazard, TileType.Damage);
-
-            // A small, valid perimeter route away from the debug switch.
-            var route = new[]
-            {
-                new GridPos(3, 5), new GridPos(4, 5), new GridPos(5, 5), new GridPos(5, 4),
-                new GridPos(5, 3), new GridPos(4, 3), new GridPos(3, 3), new GridPos(3, 4)
-            };
-
-            return new LevelDefinition
-            {
-                Seed = seed,
-                LevelIndex = levelIndex,
-                Width = width,
-                Height = height,
-                Board = board,
-                PlayerStart = start,
-                ZombieStart = route[0],
-                SwitchPosition = switchPosition,
-                NpcRoute = route,
-                ZombiePhaseStart = 0,
-                ZombieConciencia = 3,
-                PlayerConciencia = settings.playerConciencia,
-                MaxEnergy = 5,
-                HistoryCapacity = settings.historyCapacity,
-                PlannedManualDirections = new[] { Direction.Right },
-                PlannedManualPositions = new[] { start, switchPosition },
-                PlannedSequence = new Direction[0],
-                PlannedAutoPositions = new[] { start, switchPosition },
-                HazardPositions = new[] { hazard },
-                PatternName = "Emergency perimeter",
-                PatternRotation = 0,
-                PatternMirrorH = false,
-                PatternMirrorV = false,
-                PatternPhase = 0,
-                PatternOrigin = new GridPos(3, 3),
-                UniqueConfirmed = false,
-                SolutionCount = 0,
-                GenerationAttemptsUsed = attempts,
-                UsedFallback = true,
-                GenerationMessage = "EMERGENCY debug level: no valid level was found after " + attempts + " attempts"
-            };
-        }
     }
 }

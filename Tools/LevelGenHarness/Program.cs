@@ -16,9 +16,9 @@ internal static class Program
             PlanificadorSolucion.Log = Console.WriteLine;
             var debugSettings = new GenerationSettings
             {
-                maxGenerationAttempts = 2,
-                maxPlannerStates = 30000,
-                maxValidatorStates = 30000,
+                maxGenerationAttempts = 4,
+                maxPlannerStates = 60000,
+                maxValidatorStates = 60000,
                 requireUniqueSolution = true
             };
             debugSettings.Sanitize();
@@ -29,9 +29,10 @@ internal static class Program
         TestPatternLibrary();
         TestHistoryAndSequence();
         TestTurnRules();
+        TestPlaybackLastStep();
         bool quick = args.Length > 0 && args[0] == "quick";
-        TestGeneration(seedCount: quick ? 2 : 20, requireUnique: true, attempts: quick ? 8 : 60);
-        TestGeneration(seedCount: quick ? 1 : 5, requireUnique: false, attempts: quick ? 4 : 20);
+        TestGeneration(seedCount: quick ? 2 : 20, requireUnique: true, attempts: quick ? 12 : 80);
+        TestGeneration(seedCount: quick ? 1 : 5, requireUnique: false, attempts: quick ? 8 : 40);
         TestDeterminism();
         Console.WriteLine(_failures == 0 ? "ALL CHECKS PASSED" : $"{_failures} CHECK(S) FAILED");
         Environment.ExitCode = _failures == 0 ? 0 : 1;
@@ -69,8 +70,8 @@ internal static class Program
     private static void TestHistoryAndSequence()
     {
         Console.WriteLine("\n-- History and infection sequence --");
-        var zombie = new EntityState(1, EntityKind.Zombie, new GridPos(5, 5), 3, 7);
-        var player = new EntityState(0, EntityKind.Player, new GridPos(0, 0), 3, 7);
+        var zombie = new EntityState(1, EntityKind.Zombie, new GridPos(5, 5), 5, 7);
+        var player = new EntityState(0, EntityKind.Player, new GridPos(0, 0), 2, 7);
         for (int i = 0; i < 9; i++)
         {
             zombie.RecordMove(Directions.All[i % 4]);
@@ -78,15 +79,33 @@ internal static class Program
         }
         Check(zombie.HistoryCount == 7, "zombie history cap is not 7");
         Check(player.HistoryCount == 7, "player history cap is not 7");
+
+        // The infected entity contributes its own Conciencia, not the infector's.
         var sequence = InfectionSystem.BuildSequence(zombie, player);
-        Check(sequence.Count == 6, "sequence should be 3 + conciencia(3) = 6");
+        Check(sequence.Count == 3 + player.Conciencia,
+            "sequence should be 3 + infected conciencia = 5, got " + sequence.Count);
         var expectedZombie = zombie.GetLastDirections(3);
-        var expectedPlayer = player.GetLastDirections(3);
+        var expectedPlayer = player.GetLastDirections(player.Conciencia);
         for (int i = 0; i < 3; i++)
-        {
             Check(sequence[i] == expectedZombie[i], "zombie part of sequence mismatch");
-            Check(sequence[i + 3] == expectedPlayer[i], "player part of sequence mismatch");
-        }
+        for (int i = 0; i < player.Conciencia; i++)
+            Check(sequence[3 + i] == expectedPlayer[i], "infected part of sequence mismatch");
+
+        // Same infector, different infected conciencia: the length must change accordingly.
+        var player2 = new EntityState(0, EntityKind.Player, new GridPos(0, 0), 4, 7);
+        for (int i = 0; i < 6; i++) player2.RecordMove(Directions.All[i % 4]);
+        var sequence2 = InfectionSystem.BuildSequence(zombie, player2);
+        Check(sequence2.Count == 3 + player2.Conciencia,
+            "sequence should follow the infected entity's conciencia");
+
+        // Chronological order inside each group: oldest first.
+        Check(sequence2[0] == zombie.GetLastDirections(3)[0], "zombie group is not chronological");
+        Check(sequence2[3] == player2.GetLastDirections(4)[0], "infected group is not chronological");
+
+        var shortEntity = new EntityState(0, EntityKind.Player, new GridPos(0, 0), 3, 7);
+        shortEntity.RecordMove(Direction.Right);
+        Check(!InfectionSystem.HasRequiredHistory(zombie, shortEntity),
+            "history check accepted an infected entity with too few moves");
         Console.WriteLine("History cap and sequence composition OK");
     }
 
@@ -118,15 +137,17 @@ internal static class Program
         Check(damageState.Zombie.HistoryCount == 0, "NPC moved after damage defeat");
         Check(damageState.Phase == GamePhase.Defeat, "damage did not set Defeat phase");
 
-        // Switch: immediate victory, NPC does not move.
+        // The switch only activates during the inherited playback. Standing on it manually is
+        // an ordinary move and must not win.
         var switchBoard = new BoardData(5, 3, TileType.Floor);
         switchBoard.SetTile(new GridPos(1, 0), TileType.Switch);
         var switchState = new GameState(switchBoard, new GridPos(0, 0), route, 2, 3, 5, 7);
         var switchResult = switchState.TryManualMove(Direction.Right);
-        Check(switchResult.Outcome == TurnOutcome.SwitchVictory, "switch did not win");
-        Check(switchState.Zombie.HistoryCount == 0, "NPC moved after switch victory");
+        Check(switchResult.Outcome == TurnOutcome.Moved, "manual switch step should be an ordinary move");
+        Check(switchState.Phase == GamePhase.HumanControlled, "manual switch step must not win");
+        Check(switchState.Zombie.HistoryCount == 1, "NPC did not move after a manual switch step");
 
-        // Energy exhaustion without contact.
+        // Energy exhaustion without contact enters the environmental transformation phase.
         var exhaustBoard = new BoardData(8, 3, TileType.Floor);
         var exhaustRoute = new[] { new GridPos(7, 2), new GridPos(7, 1) };
         var exhaust = new GameState(exhaustBoard, new GridPos(0, 0), exhaustRoute, 2, 3, 2, 7);
@@ -134,7 +155,11 @@ internal static class Program
         Check(first.Outcome == TurnOutcome.Moved, "exhaust first move failed");
         var second = exhaust.TryManualMove(Direction.Right);
         Check(second.Outcome == TurnOutcome.EnergyDefeat, "energy exhaustion did not defeat");
-        Check(exhaust.Phase == GamePhase.Defeat, "energy exhaustion did not set Defeat phase");
+        Check(exhaust.Phase == GamePhase.EnvironmentalTransformation,
+            "energy exhaustion did not enter EnvironmentalTransformation");
+        Check(exhaust.DefeatReason == DefeatReason.EnergyDepleted, "wrong energy defeat reason");
+        var afterExhaust = exhaust.TryManualMove(Direction.Right);
+        Check(afterExhaust.Outcome == TurnOutcome.Blocked, "transformation phase accepted manual input");
 
         // Contact on the last energy unit has priority over exhaustion.
         var contactBoard = new BoardData(5, 3, TileType.Floor);
@@ -145,6 +170,71 @@ internal static class Program
         Check(contact.Phase == GamePhase.InfectedPlayback, "contact did not enter playback");
 
         Console.WriteLine("Blocked movement, energy, damage, switch and contact priority OK");
+    }
+
+    private static void TestPlaybackLastStep()
+    {
+        Console.WriteLine("\n-- Playback last step & order of operations --");
+        var board = new BoardData(10, 5, TileType.Floor);
+        var route = new[] { new GridPos(2, 0), new GridPos(1, 0) };
+        var state = new GameState(board, new GridPos(0, 0), route, 3, 1, 10, 7);
+
+        var contactRes = state.TryManualMove(Direction.Right);
+        Check(contactRes.Outcome == TurnOutcome.Infected, "Failed to infect in test setup: " + contactRes.Outcome);
+        Check(state.Phase == GamePhase.InfectedPlayback, "State did not enter InfectedPlayback");
+
+        int totalMoves = state.PlaybackSequence.Count;
+        Check(totalMoves > 0, "Playback sequence is empty");
+
+        GridPos posBeforeLast = default;
+        for (int i = 0; i < totalMoves - 1; i++)
+        {
+            var stepRes = state.AdvancePlaybackStep();
+            Check(stepRes.Outcome == TurnOutcome.PlaybackStep, $"Step {i} was not PlaybackStep, got {stepRes.Outcome}");
+            Check(state.Phase == GamePhase.InfectedPlayback, $"Phase changed prematurely to {state.Phase} on step {i}");
+        }
+
+        posBeforeLast = state.Player.Position;
+        var lastStepRes = state.AdvancePlaybackStep();
+        Check(lastStepRes.Outcome == TurnOutcome.PlaybackStep,
+            $"Final step should be PlaybackStep so visual interpolation completes, but was {lastStepRes.Outcome}");
+        Check(state.Phase == GamePhase.InfectedPlayback,
+            $"Final step should remain InfectedPlayback until next tick, but was {state.Phase}");
+
+        GridPos finalPosA = state.Player.Position;
+        Check(finalPosA != posBeforeLast || lastStepRes.PlaybackStepBlocked,
+            "Player did not move on the final step");
+
+        var exhaustRes = state.AdvancePlaybackStep();
+        Check(exhaustRes.Outcome == TurnOutcome.PlaybackExhausted,
+            $"Post-final tick should be PlaybackExhausted, got {exhaustRes.Outcome}");
+        Check(state.Phase == GamePhase.Defeat,
+            $"Post-final phase should be Defeat, got {state.Phase}");
+        Check(state.DefeatReason == DefeatReason.PlaybackExhausted,
+            $"DefeatReason should be PlaybackExhausted, got {state.DefeatReason}");
+        Check(state.Player.Position == finalPosA,
+            $"Player position changed after exhaustion! Expected {finalPosA}, got {state.Player.Position}");
+
+        // Switch scenario: Switch is placed at finalPosA
+        var switchBoard = new BoardData(10, 5, TileType.Floor);
+        switchBoard.SetTile(finalPosA, TileType.Switch);
+        var switchState = new GameState(switchBoard, new GridPos(0, 0), route, 3, 1, 10, 7);
+        switchState.TryManualMove(Direction.Right);
+
+        for (int i = 0; i < totalMoves - 1; i++)
+        {
+            var s = switchState.AdvancePlaybackStep();
+            Check(s.Outcome == TurnOutcome.PlaybackStep, "Switch scenario intermediate step failed");
+        }
+        var winStep = switchState.AdvancePlaybackStep();
+        Check(winStep.Outcome == TurnOutcome.SwitchVictory,
+            $"Reaching switch on final step should return SwitchVictory, got {winStep.Outcome}");
+        Check(switchState.Phase == GamePhase.Victory,
+            $"Phase should be Victory, got {switchState.Phase}");
+        Check(switchState.Player.Position == finalPosA,
+            $"Player should end on switch position {finalPosA}, got {switchState.Player.Position}");
+
+        Console.WriteLine("Playback last step & victory/exhaustion order verified successfully");
     }
 
     private static void TestGeneration(int seedCount, bool requireUnique, int attempts)
@@ -186,12 +276,36 @@ internal static class Program
                 Check(level.HazardPositions != null && level.HazardPositions.Length >= 1, $"seed {i}: no hazard");
                 Check(level.Width >= 6 && level.Width <= 16 && level.Height >= 6 && level.Height <= 16, $"seed {i}: bad dimensions");
                 Check(level.MaxEnergy >= 5 && level.MaxEnergy <= 10, $"seed {i}: bad energy");
-                Check(level.ZombieConciencia >= 2 && level.ZombieConciencia <= 4, $"seed {i}: bad conciencia");
+                Check(level.ZombieConciencia >= 2 && level.ZombieConciencia <= 5, $"seed {i}: bad zombie conciencia");
+                Check(level.PlayerConciencia >= 2 && level.PlayerConciencia <= 5, $"seed {i}: bad player conciencia");
+                Check(level.PlannedSequence.Length == 3 + level.PlayerConciencia, $"seed {i}: wrong sequence length");
+                Check(level.PlannedAutoPositions.Length - 1 == level.PlannedSequence.Length,
+                    $"seed {i}: automatic trajectory does not consume the whole sequence");
+                Check(level.PlannedAutoPositions.Length - 1 >= level.ZombieConciencia + 2,
+                    $"seed {i}: automatic trajectory shorter than zombie conciencia + 2");
+                Check(level.PlayerStart.ManhattanDistance(level.SwitchPosition) > level.MaxEnergy,
+                    $"seed {i}: switch is within the manual energy budget");
+                Check(level.HazardPositions.Length <= HazardPlacer.GetMaxHazards(level.Width, level.Height, settings.maxHazardsCap),
+                    $"seed {i}: too many hazards");
+                Check(level.Bounds.IsValid, $"seed {i}: invalid playable bounds");
+                Check(level.Bounds.MinX >= 0 && level.Bounds.MinY >= 0 &&
+                      level.Bounds.MaxX < level.Width && level.Bounds.MaxY < level.Height,
+                    $"seed {i}: playable bounds outside the board");
+
+                var profile = DifficultyProfile.ForLevel(level.LevelIndex);
+                Check(level.DifficultyTier == profile.Tier, $"seed {i}: difficulty tier mismatch");
+                Check(level.ManualTurnCount >= profile.MinTurns, $"seed {i}: too few turns for tier");
+                Check(level.DistinctDirections >= profile.MinDistinctDirections, $"seed {i}: too few directions for tier");
+                Check(level.MaxStraightRun <= profile.MaxStraightRun, $"seed {i}: straight run too long for tier");
+                Check(level.ImmediateReversals <= profile.MaxImmediateReversals, $"seed {i}: too many reversals for tier");
+                Check(level.RevisitedCells <= profile.MaxRevisitedCells, $"seed {i}: too many revisits for tier");
+                Check(level.InitialOptions >= profile.MinInitialOptions, $"seed {i}: too few initial options");
                 Check(PlannedSolutionReachesSwitch(level), $"seed {i}: independent planned solution simulation failed");
             }
 
             Console.WriteLine(
-                $"seed {i,3}: {level.Width}x{level.Height} energy={level.MaxEnergy} conciencia={level.ZombieConciencia} " +
+                $"seed {i,3}: {level.Width}x{level.Height} energy={level.MaxEnergy} " +
+                $"zc={level.ZombieConciencia} pc={level.PlayerConciencia} tier={level.DifficultyTier} " +
                 $"hazards={level.HazardPositions?.Length ?? 0} sol={report.SolutionCount} unique={result.UniqueConfirmed} " +
                 $"attempts={result.Attempts} pattern={level.PatternName} ms={sw.Elapsed.TotalMilliseconds:F0}");
         }
@@ -210,6 +324,7 @@ internal static class Program
             if (i == level.PlannedManualDirections.Length - 1 && result.Outcome != TurnOutcome.Infected) return false;
         }
         if (state.Phase != GamePhase.InfectedPlayback) return false;
+        if (state.PlaybackSequence.Count != 3 + level.PlayerConciencia) return false;
         int guard = 0;
         while (state.Phase == GamePhase.InfectedPlayback && guard++ < 256)
         {
@@ -224,7 +339,7 @@ internal static class Program
     private static void TestDeterminism()
     {
         Console.WriteLine("\n-- Determinism --");
-        var settings = new GenerationSettings { maxGenerationAttempts = 30, requireUniqueSolution = true };
+        var settings = new GenerationSettings { maxGenerationAttempts = 40, requireUniqueSolution = true };
         settings.Sanitize();
         var a = GeneradorNivel.Generate(7, 424242, settings);
         var b = GeneradorNivel.Generate(7, 424242, settings);
@@ -232,13 +347,16 @@ internal static class Program
         Check(a.Level.PlayerStart == b.Level.PlayerStart, "start not deterministic");
         Check(a.Level.SwitchPosition == b.Level.SwitchPosition, "switch not deterministic");
         Check(a.Level.MaxEnergy == b.Level.MaxEnergy, "energy not deterministic");
-        Check(a.Level.ZombieConciencia == b.Level.ZombieConciencia, "conciencia not deterministic");
+        Check(a.Level.ZombieConciencia == b.Level.ZombieConciencia, "zombie conciencia not deterministic");
+        Check(a.Level.PlayerConciencia == b.Level.PlayerConciencia, "player conciencia not deterministic");
         Check(a.Level.NpcRoute.Length == b.Level.NpcRoute.Length, "route length not deterministic");
         for (int i = 0; i < a.Level.NpcRoute.Length; i++)
             Check(a.Level.NpcRoute[i] == b.Level.NpcRoute[i], "route not deterministic");
         for (int y = 0; y < a.Level.Height; y++)
             for (int x = 0; x < a.Level.Width; x++)
                 Check(a.Level.Board.GetTile(x, y) == b.Level.Board.GetTile(x, y), "board not deterministic");
+        Check(a.Level.Bounds.MinX == b.Level.Bounds.MinX && a.Level.Bounds.MaxY == b.Level.Bounds.MaxY,
+            "bounds not deterministic");
         Console.WriteLine("Same seed reproduces the same level");
     }
 }

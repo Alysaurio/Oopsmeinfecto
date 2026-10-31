@@ -83,12 +83,9 @@ namespace Oopsmeinfecto
                     if (result.Outcome == TurnOutcome.DamageDefeat) continue;
                     if (result.Outcome == TurnOutcome.EnergyDefeat) continue;
 
-                    if (result.Outcome == TurnOutcome.SwitchVictory)
-                    {
-                        solutions += entry.Delta;
-                        if (solutions >= 2) return 2;
-                        continue;
-                    }
+                    // Manual moves never win on the switch: the switch only activates during
+                    // the inherited playback, which is counted from the contact branch below.
+                    if (result.Outcome == TurnOutcome.SwitchVictory) continue;
 
                     if (result.Outcome == TurnOutcome.Infected)
                     {

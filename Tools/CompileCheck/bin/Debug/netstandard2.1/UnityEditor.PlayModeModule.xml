@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<doc>
+  <members>
+    <assembly>
+      <name>UnityEditor.PlayModeModule</name>
+    </assembly>
+    <member name="T:Unity.PlayMode.Editor.PlayModeScenario">
+      <summary>
+        <para>
+ Base class for play mode scenario assets. This is used to configure the play mode behavior.
+ </para>
+      </summary>
+    </member>
+    <member name="T:Unity.PlayMode.Editor.PlayModeScenarioManager">
+      <summary>
+        <para>
+ Manages the lifecycle of Play Mode Scenarios, which define custom behaviors for entering and exiting Play mode, such as launching multiple Player instances.
+ </para>
+      </summary>
+    </member>
+    <member name="P:Unity.PlayMode.Editor.PlayModeScenarioManager.ActiveScenario">
+      <summary>
+        <para>
+ Returns or sets the active play mode scenario.
+ </para>
+      </summary>
+    </member>
+    <member name="M:Unity.PlayMode.Editor.PlayModeScenarioManager.Start">
+      <summary>
+        <para>
+ Starts the play mode using the active play mode scenario.
+ </para>
+      </summary>
+    </member>
+    <member name="P:Unity.PlayMode.Editor.PlayModeScenarioManager.State">
+      <summary>
+        <para>
+ Returns the current state of the active play mode scenario.
+ </para>
+      </summary>
+    </member>
+    <member name="M:Unity.PlayMode.Editor.PlayModeScenarioManager.Stop">
+      <summary>
+        <para>
+ Stops the play mode scenario.
+ </para>
+      </summary>
+    </member>
+    <member name="T:Unity.PlayMode.Editor.PlayModeScenarioState">
+      <summary>
+        <para>
+ Represents the different states of a play mode scenario.
+ </para>
+      </summary>
+    </member>
+    <member name="F:Unity.PlayMode.Editor.PlayModeScenarioState.Idle">
+      <summary>
+        <para>
+ The current play mode scenario is not running.
+ </para>
+      </summary>
+    </member>
+    <member name="F:Unity.PlayMode.Editor.PlayModeScenarioState.Running">
+      <summary>
+        <para>
+ The current play mode scenario is running.
+ </para>
+      </summary>
+    </member>
+    <member name="F:Unity.PlayMode.Editor.PlayModeScenarioState.Starting">
+      <summary>
+        <para>
+ The current play mode scenario is starting.
+ </para>
+      </summary>
+    </member>
+    <member name="F:Unity.PlayMode.Editor.PlayModeScenarioState.Stopping">
+      <summary>
+        <para>
+ The current play mode scenario is stopping.
+ </para>
+      </summary>
+    </member>
+  </members>
+</doc>

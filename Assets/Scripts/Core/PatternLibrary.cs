@@ -147,8 +147,11 @@ namespace Oopsmeinfecto
                 bool mirrorH = rng.Chance(0.5);
                 bool mirrorV = rng.Chance(0.5);
                 int phase = rng.Next(template.Cells.Length);
-                int originX = rng.Next(width - 2);
-                int originY = rng.Next(height - 2);
+                // Keep the patrol region one cell away from the outer border. This leaves room
+                // for the inherited playback, which continues past the contact cell, and keeps
+                // hazards eligible for the interior-only rule.
+                int originX = rng.Range(1, Math.Max(1, width - 3));
+                int originY = rng.Range(1, Math.Max(1, height - 3));
 
                 var placement = BuildPlacement(template, rotation, mirrorH, mirrorV, phase, new GridPos(originX, originY), width, height);
                 if (placement != null) return placement;

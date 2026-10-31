@@ -22,9 +22,11 @@ namespace Oopsmeinfecto
         private Direction? _heldDirection;
         private Direction? _blockedDirection;
         private float _autoTimer;
+        private bool _transformationStarted;
 
         public GameState State => _state;
         public bool IsActive => _active;
+        public bool IsTransforming => _transformationStarted;
 
         public void Initialize(GameState state, LevelRenderer renderer, HUDController hud,
             GameTuning tuning, Action onVictory, Action<DefeatReason> onDefeat)
@@ -41,6 +43,7 @@ namespace Oopsmeinfecto
             _heldDirection = null;
             _blockedDirection = null;
             _autoTimer = 0f;
+            _transformationStarted = false;
 
             if (_state == null) return;
 
@@ -62,6 +65,14 @@ namespace Oopsmeinfecto
             }
         }
 
+        private void OnDisable()
+        {
+            _heldDirection = null;
+            _blockedDirection = null;
+            _repeatTimer = 0f;
+            _autoTimer = 0f;
+        }
+
         private void Update()
         {
             if (!_active || _state == null) return;
@@ -81,18 +92,14 @@ namespace Oopsmeinfecto
             var keyboard = Keyboard.current;
             if (keyboard == null) return;
 
+            // A physical press always produces exactly one move immediately, even if the key is
+            // released in the same frame. Repeat is only considered for a key that stays held.
             var pressed = ReadPressedDirection(keyboard);
             if (pressed.HasValue)
             {
-                if (_blockedDirection.HasValue && _blockedDirection.Value == pressed.Value &&
-                    IsHeld(keyboard, pressed.Value))
-                {
-                    return;
-                }
-
                 _blockedDirection = null;
                 _heldDirection = pressed.Value;
-                _repeatTimer = Mathf.Max(0.02f, _tuning.initialRepeatDelay);
+                _repeatTimer = Mathf.Max(0.01f, _tuning.initialRepeatDelay);
                 PerformManualMove(pressed.Value);
                 return;
             }
@@ -102,6 +109,7 @@ namespace Oopsmeinfecto
                 if (IsHeld(keyboard, _blockedDirection.Value)) return;
                 _blockedDirection = null;
                 _heldDirection = null;
+                _repeatTimer = 0f;
             }
 
             var held = ReadHeldDirection(keyboard);
@@ -114,33 +122,37 @@ namespace Oopsmeinfecto
 
             if (!_heldDirection.HasValue || !IsHeld(keyboard, _heldDirection.Value))
             {
+                // The key was already down when the turn became available. Do not generate an
+                // involuntary move: wait for a new physical press or the normal repeat delay.
                 _heldDirection = held.Value;
-                _repeatTimer = Mathf.Max(0.02f, _tuning.initialRepeatDelay);
-                PerformManualMove(held.Value);
+                _repeatTimer = Mathf.Max(0.01f, _tuning.initialRepeatDelay);
                 return;
             }
 
             _repeatTimer -= Time.unscaledDeltaTime;
             if (_repeatTimer <= 0f)
             {
-                _repeatTimer += Mathf.Max(0.02f, _tuning.repeatInterval);
+                _repeatTimer += Mathf.Max(0.01f, _tuning.repeatInterval);
                 PerformManualMove(_heldDirection.Value);
             }
         }
 
         private void PerformManualMove(Direction direction)
         {
+            if (_state == null || _state.Phase != GamePhase.HumanControlled) return;
+
             var result = _state.TryManualMove(direction);
 
             if (result.Outcome == TurnOutcome.Blocked)
             {
                 _blockedDirection = direction;
                 _heldDirection = direction;
-                _repeatTimer = 0.15f;
+                _repeatTimer = Mathf.Max(0.01f, _tuning.initialRepeatDelay);
                 _hud.SetStatus("Movimiento bloqueado · prueba otra dirección");
                 return;
             }
 
+            _blockedDirection = null;
             _renderer.SyncFromState(_state);
             RefreshHumanHud();
             HandleOutcome(result);
@@ -148,9 +160,12 @@ namespace Oopsmeinfecto
 
         private void HandlePlayback()
         {
+            float stepInterval = Mathf.Max(0.03f,
+                _tuning.autoStepInterval + _tuning.playbackExtraDelay);
+
             _autoTimer -= Time.unscaledDeltaTime;
             if (_autoTimer > 0f) return;
-            _autoTimer = Mathf.Max(0.03f, _tuning.autoStepInterval);
+            _autoTimer = stepInterval;
 
             var result = _state.AdvancePlaybackStep();
             _renderer.SyncFromState(_state);
@@ -191,10 +206,12 @@ namespace Oopsmeinfecto
                 case TurnOutcome.Infected:
                     _heldDirection = null;
                     _blockedDirection = null;
+                    _repeatTimer = 0f;
                     _hud.SetInfected(true);
                     _hud.SetStatus("¡CONTACTO! Secuencia congelada · " +
                                    _state.PlaybackSequence.Count + " pasos");
-                    _autoTimer = Mathf.Max(0.30f, _tuning.autoStepInterval * 2f);
+                    _autoTimer = Mathf.Max(0.03f,
+                        _tuning.autoStepInterval + _tuning.playbackExtraDelay);
                     break;
 
                 case TurnOutcome.SwitchVictory:
@@ -206,18 +223,34 @@ namespace Oopsmeinfecto
                 case TurnOutcome.DamageDefeat:
                     _active = false;
                     _renderer.PlayDrain(_tuning.barDrainDuration);
+                    _renderer.PlayerVisual?.PlayDefeat(DefeatReason.DamageTile, _tuning.defeatDuration);
                     _hud.SetStatus("Derrota · casilla dañina");
                     _onDefeat?.Invoke(DefeatReason.DamageTile);
                     break;
 
                 case TurnOutcome.EnergyDefeat:
                     _active = false;
-                    _hud.SetStatus("Derrota · energía agotada");
-                    _onDefeat?.Invoke(DefeatReason.EnergyDepleted);
+                    _heldDirection = null;
+                    _blockedDirection = null;
+                    _repeatTimer = 0f;
+                    _renderer.PlayerVisual?.PlayDefeat(DefeatReason.EnergyDepleted, _tuning.defeatDuration);
+                    _hud.SetStatus("Transformación ambiental · la infección te consume");
+                    if (!_transformationStarted)
+                    {
+                        _transformationStarted = true;
+                        _renderer.BeginEnvironmentalTransformation(
+                            _tuning.transformationDuration,
+                            () =>
+                            {
+                                _hud.SetStatus("Derrota · energía agotada");
+                                _onDefeat?.Invoke(DefeatReason.EnergyDepleted);
+                            });
+                    }
                     break;
 
                 case TurnOutcome.PlaybackExhausted:
                     _active = false;
+                    _renderer.PlayerVisual?.PlayDefeat(DefeatReason.PlaybackExhausted, _tuning.defeatDuration);
                     _hud.SetStatus("Derrota · secuencia agotada");
                     _onDefeat?.Invoke(DefeatReason.PlaybackExhausted);
                     break;

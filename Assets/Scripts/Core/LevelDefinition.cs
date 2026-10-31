@@ -14,8 +14,9 @@ namespace Oopsmeinfecto
         public int maxHeight = 16;
 
         public int minZombieConciencia = 2;
-        public int maxZombieConciencia = 4;
-        public int playerConciencia = 3;
+        public int maxZombieConciencia = 5;
+        public int minPlayerConciencia = 2;
+        public int maxPlayerConciencia = 5;
         public int historyCapacity = 7;
 
         public int minEnergy = 5;
@@ -43,9 +44,10 @@ namespace Oopsmeinfecto
             maxWidth = Math.Max(minWidth, Math.Min(16, maxWidth));
             minHeight = Math.Max(6, minHeight);
             maxHeight = Math.Max(minHeight, Math.Min(16, maxHeight));
-            minZombieConciencia = Math.Max(1, minZombieConciencia);
-            maxZombieConciencia = Math.Max(minZombieConciencia, maxZombieConciencia);
-            playerConciencia = Math.Max(0, playerConciencia);
+            minZombieConciencia = Math.Max(2, Math.Min(5, minZombieConciencia));
+            maxZombieConciencia = Math.Max(minZombieConciencia, Math.Min(5, maxZombieConciencia));
+            minPlayerConciencia = Math.Max(2, Math.Min(5, minPlayerConciencia));
+            maxPlayerConciencia = Math.Max(minPlayerConciencia, Math.Min(5, maxPlayerConciencia));
             historyCapacity = Math.Max(7, historyCapacity);
             minEnergy = Math.Max(1, minEnergy);
             maxEnergy = Math.Max(minEnergy, maxEnergy);
@@ -71,6 +73,18 @@ namespace Oopsmeinfecto
         public int Score { get; set; }
         public int ZombiePhaseAtContact { get; set; }
 
+        public int ManualTurnCount { get; set; }
+        public int DistinctDirections { get; set; }
+        public int MaxStraightRun { get; set; }
+        public int ImmediateReversals { get; set; }
+        public int RevisitedCells { get; set; }
+        public int InitialDistance { get; set; }
+        public int InitialOptions { get; set; }
+        public int AutomaticSteps { get; set; }
+        public int SwitchDistance { get; set; }
+        public bool MeetsDifficulty { get; set; }
+        public bool HasBacktrack { get; set; }
+
         public SolutionPlan Clone()
         {
             var clone = new SolutionPlan
@@ -79,7 +93,18 @@ namespace Oopsmeinfecto
                 SwitchPosition = SwitchPosition,
                 ContactTurn = ContactTurn,
                 Score = Score,
-                ZombiePhaseAtContact = ZombiePhaseAtContact
+                ZombiePhaseAtContact = ZombiePhaseAtContact,
+                ManualTurnCount = ManualTurnCount,
+                DistinctDirections = DistinctDirections,
+                MaxStraightRun = MaxStraightRun,
+                ImmediateReversals = ImmediateReversals,
+                RevisitedCells = RevisitedCells,
+                InitialDistance = InitialDistance,
+                InitialOptions = InitialOptions,
+                AutomaticSteps = AutomaticSteps,
+                SwitchDistance = SwitchDistance,
+                MeetsDifficulty = MeetsDifficulty,
+                HasBacktrack = HasBacktrack
             };
             clone.ManualDirections.AddRange(ManualDirections);
             clone.ManualPositions.AddRange(ManualPositions);
@@ -121,6 +146,17 @@ namespace Oopsmeinfecto
         public bool PatternMirrorV;
         public int PatternPhase;
         public GridPos PatternOrigin;
+
+        public int DifficultyTier;
+        public bool MeetsDifficulty;
+        public int ManualTurnCount;
+        public int DistinctDirections;
+        public int MaxStraightRun;
+        public int ImmediateReversals;
+        public int RevisitedCells;
+        public int InitialOptions;
+        public int AutomaticStepCount;
+        public PlayableBounds Bounds;
 
         public bool UniqueConfirmed;
         public int SolutionCount;
@@ -170,6 +206,12 @@ namespace Oopsmeinfecto
                 for (int i = 0; i < NpcRoute.Length; i++) result.Add(NpcRoute[i]);
             }
             return result;
+        }
+
+        public PlayableBounds GetPlayableBounds()
+        {
+            if (Bounds.IsValid) return Bounds;
+            return PlayableBounds.FromBoard(Board);
         }
     }
 

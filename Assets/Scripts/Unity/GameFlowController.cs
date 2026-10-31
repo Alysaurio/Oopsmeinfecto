@@ -21,6 +21,8 @@ namespace Oopsmeinfecto
         private GameState _state;
         private LevelDefinition _currentLevel;
         private int _levelIndex = 1;
+        private int _sessionSeed;
+        private int _levelSeed;
 
         private bool _generating;
         private Task<GenerationResult> _generationTask;
@@ -30,6 +32,11 @@ namespace Oopsmeinfecto
 
         private bool _defeatPlaying;
         private float _victoryDelay = -1f;
+
+        public int SessionSeed => _sessionSeed;
+        public int CurrentLevelSeed => _levelSeed;
+        public int CurrentLevelIndex => _levelIndex;
+        public LevelDefinition CurrentLevel => _currentLevel;
 
         private void Awake()
         {
@@ -77,8 +84,14 @@ namespace Oopsmeinfecto
 
         private void Start()
         {
+            // A fresh session seed on every Play run. With the debug option enabled the same
+            // session is reused, which is useful while inspecting one specific level.
+            _sessionSeed = _tuning.useFixedSeed
+                ? _tuning.fixedSeed
+                : SeedUtility.GenerateSessionSeed();
             _levelIndex = 1;
-            BeginLevel(_levelIndex, MixSeed(_tuning.baseSeed, _levelIndex));
+            _levelSeed = SeedUtility.DeriveLevelSeed(_sessionSeed, _levelIndex);
+            BeginLevel(_levelIndex, _levelSeed);
         }
 
         private void BeginLevel(int levelIndex, int seed)
@@ -88,6 +101,7 @@ namespace Oopsmeinfecto
             _generating = true;
             _pendingIndex = levelIndex;
             _pendingSeed = seed;
+            _levelSeed = seed;
             _turn.SetActive(false);
             _hud.SetLoading(true, "Generando nivel " + levelIndex);
 
@@ -146,7 +160,8 @@ namespace Oopsmeinfecto
                 {
                     _victoryDelay = -1f;
                     _levelIndex++;
-                    BeginLevel(_levelIndex, MixSeed(_tuning.baseSeed, _levelIndex));
+                    _levelSeed = SeedUtility.DeriveLevelSeed(_sessionSeed, _levelIndex);
+                    BeginLevel(_levelIndex, _levelSeed);
                 }
             }
         }
@@ -157,6 +172,7 @@ namespace Oopsmeinfecto
 
             _currentLevel = level;
             _levelIndex = level.LevelIndex;
+            _levelSeed = level.Seed;
             _victoryDelay = -1f;
             _defeatPlaying = false;
 
@@ -215,8 +231,8 @@ namespace Oopsmeinfecto
                     subtitle = "La energía se drena hasta cero. El nivel se reinicia.";
                     break;
                 case DefeatReason.EnergyDepleted:
-                    title = "ENERGÍA AGOTADA";
-                    subtitle = "Sin energía, la infección te alcanza. El nivel se reinicia.";
+                    title = "TRANSFORMACIÓN AMBIENTAL";
+                    subtitle = "Sin energía, la infección te transforma. El nivel se reinicia.";
                     break;
                 case DefeatReason.PlaybackExhausted:
                     title = "SECUENCIA AGOTADA";
@@ -237,6 +253,7 @@ namespace Oopsmeinfecto
             _defeatPlaying = false;
             if (_currentLevel != null)
             {
+                // Reuse the exact level definition, including its seed and consciousness values.
                 LoadLevel(_currentLevel);
             }
             else
@@ -245,18 +262,9 @@ namespace Oopsmeinfecto
             }
         }
 
-        private static int MixSeed(int baseSeed, int levelIndex)
+        private void OnDestroy()
         {
-            unchecked
-            {
-                uint value = (uint)baseSeed + (uint)levelIndex * 0x9E3779B9u;
-                value ^= value >> 16;
-                value *= 0x7FEB352Du;
-                value ^= value >> 15;
-                value *= 0x846CA68Bu;
-                value ^= value >> 16;
-                return (int)value;
-            }
+            _generationTask = null;
         }
     }
 }

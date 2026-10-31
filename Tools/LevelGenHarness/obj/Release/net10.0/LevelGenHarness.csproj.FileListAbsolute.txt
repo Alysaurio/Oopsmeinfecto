@@ -12,3 +12,4 @@ C:\Users\JAVIER\Oopsmeinfecto\Tools\LevelGenHarness\obj\Release\net10.0\refint\L
 C:\Users\JAVIER\Oopsmeinfecto\Tools\LevelGenHarness\obj\Release\net10.0\LevelGenHarness.pdb
 C:\Users\JAVIER\Oopsmeinfecto\Tools\LevelGenHarness\obj\Release\net10.0\LevelGenHarness.genruntimeconfig.cache
 C:\Users\JAVIER\Oopsmeinfecto\Tools\LevelGenHarness\obj\Release\net10.0\ref\LevelGenHarness.dll
+C:\Users\JAVIER\Oopsmeinfecto\Tools\LevelGenHarness\obj\Release\net10.0\LevelGenHarness.sourcelink.json

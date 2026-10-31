@@ -6,6 +6,10 @@ namespace Oopsmeinfecto
     /// <summary>
     /// Runtime-generated provisional pixel art. Everything uses point filtering and a 1-unit
     /// world scale so the grid logic never depends on sprite resolution.
+    ///
+    /// The project runs with domain reload disabled, so cached UnityEngine.Object references can
+    /// survive a Stop/Play cycle as "fake null" values. Every property uses an explicit Unity
+    /// null check and <see cref="ResetCache"/> is called by the runtime bootstrap.
     /// </summary>
     public static class PixelArtFactory
     {
@@ -18,31 +22,189 @@ namespace Oopsmeinfecto
         private static Sprite _player;
         private static Sprite _zombie;
         private static Sprite _arrow;
+        private static Sprite _infectionParticle;
+        private static Sprite _patrolGroundA;
+        private static Sprite _patrolGroundB;
+        private static readonly Sprite[] _zombieFacing = new Sprite[8];
         private static Material _spriteMaterial;
 
-        public static Sprite WhiteSprite => _white ??= CreateSolidSprite(1, Color.white);
-        public static Sprite FloorA => _floorA ??= CreateFloor("FloorA", 255, 220, 240);
-        public static Sprite FloorB => _floorB ??= CreateFloor("FloorB", 235, 205, 225);
-        public static Sprite WallSprite => _wall ??= CreateWall();
-        public static Sprite DamageSprite => _damage ??= CreateDamage();
-        public static Sprite SwitchSprite => _switch ??= CreateSwitch();
-        public static Sprite PlayerSprite => _player ??= CreatePlayer();
-        public static Sprite ZombieSprite => _zombie ??= CreateZombie();
-        public static Sprite ArrowSprite => _arrow ??= CreateArrow();
+        public static Sprite WhiteSprite
+        {
+            get
+            {
+                if (_white == null) _white = CreateSolidSprite(1, Color.white);
+                return _white;
+            }
+        }
+
+        public static Sprite FloorA
+        {
+            get
+            {
+                if (_floorA == null) _floorA = CreateFloor("FloorA", 255, 220, 240);
+                return _floorA;
+            }
+        }
+
+        public static Sprite FloorB
+        {
+            get
+            {
+                if (_floorB == null) _floorB = CreateFloor("FloorB", 235, 205, 225);
+                return _floorB;
+            }
+        }
+
+        public static Sprite WallSprite
+        {
+            get
+            {
+                if (_wall == null) _wall = CreateWall();
+                return _wall;
+            }
+        }
+
+        public static Sprite DamageSprite
+        {
+            get
+            {
+                if (_damage == null) _damage = CreateDamage();
+                return _damage;
+            }
+        }
+
+        public static Sprite SwitchSprite
+        {
+            get
+            {
+                if (_switch == null) _switch = CreateSwitch();
+                return _switch;
+            }
+        }
+
+        public static Sprite PlayerSprite
+        {
+            get
+            {
+                if (_player == null) _player = CreatePlayer();
+                return _player;
+            }
+        }
+
+        public static Sprite ZombieSprite
+        {
+            get
+            {
+                if (_zombie == null) _zombie = CreateZombie();
+                return _zombie;
+            }
+        }
+
+        public static Sprite ArrowSprite
+        {
+            get
+            {
+                if (_arrow == null) _arrow = CreateArrow();
+                return _arrow;
+            }
+        }
+
+        public static Sprite InfectionParticleSprite
+        {
+            get
+            {
+                if (_infectionParticle == null) _infectionParticle = CreateInfectionParticle();
+                return _infectionParticle;
+            }
+        }
+
+        public static Sprite PatrolGroundSpriteA
+        {
+            get
+            {
+                if (_patrolGroundA == null) _patrolGroundA = CreatePatrolGround("PatrolGroundA", false);
+                return _patrolGroundA;
+            }
+        }
+
+        public static Sprite PatrolGroundSpriteB
+        {
+            get
+            {
+                if (_patrolGroundB == null) _patrolGroundB = CreatePatrolGround("PatrolGroundB", true);
+                return _patrolGroundB;
+            }
+        }
+
+        public static Sprite ZombieFacingSprite(NpcFacing facing)
+        {
+            int index = (int)facing & 7;
+            if (_zombieFacing[index] == null)
+                _zombieFacing[index] = CreateZombieFacing(facing);
+            return _zombieFacing[index];
+        }
 
         public static Material SpriteMaterial
         {
             get
             {
                 if (_spriteMaterial != null) return _spriteMaterial;
-                var shader = Shader.Find("Sprites/Default");
-                if (shader == null) shader = Shader.Find("Universal Render Pipeline/2D/Sprite-Unlit-Default");
+                var shader = Shader.Find("Universal Render Pipeline/2D/Sprite-Unlit-Default");
+                if (shader == null) shader = Shader.Find("Sprites/Default");
                 if (shader != null)
                 {
                     _spriteMaterial = new Material(shader) { hideFlags = HideFlags.DontSave };
                 }
                 return _spriteMaterial;
             }
+        }
+
+        /// <summary>
+        /// Drops every cached runtime object. Safe to call at the start of a Play session even
+        /// when the cached references point to objects destroyed by the previous session.
+        /// </summary>
+        public static void ResetCache()
+        {
+            DestroySprite(ref _white);
+            DestroySprite(ref _floorA);
+            DestroySprite(ref _floorB);
+            DestroySprite(ref _wall);
+            DestroySprite(ref _damage);
+            DestroySprite(ref _switch);
+            DestroySprite(ref _player);
+            DestroySprite(ref _zombie);
+            DestroySprite(ref _arrow);
+            DestroySprite(ref _infectionParticle);
+            DestroySprite(ref _patrolGroundA);
+            DestroySprite(ref _patrolGroundB);
+            for (int i = 0; i < _zombieFacing.Length; i++) DestroySprite(ref _zombieFacing[i]);
+
+            if (_spriteMaterial != null)
+            {
+                DestroyObject(_spriteMaterial);
+                _spriteMaterial = null;
+            }
+        }
+
+        private static void DestroySprite(ref Sprite sprite)
+        {
+            if (sprite == null)
+            {
+                sprite = null;
+                return;
+            }
+
+            var texture = sprite.texture;
+            DestroyObject(sprite);
+            if (texture != null) DestroyObject(texture);
+            sprite = null;
+        }
+
+        private static void DestroyObject(UnityEngine.Object value)
+        {
+            if (value == null) return;
+            if (Application.isPlaying) UnityEngine.Object.Destroy(value);
+            else UnityEngine.Object.DestroyImmediate(value);
         }
 
         private static Sprite CreateSolidSprite(int size, Color color)
@@ -146,7 +308,7 @@ namespace Oopsmeinfecto
             return MakeSprite("Player", size, p);
         }
 
-        private static Sprite CreateZombie()
+        private static Color32[] BuildZombiePixels()
         {
             const int size = 16;
             var p = new Color32[size * size];
@@ -168,7 +330,51 @@ namespace Oopsmeinfecto
             FillRect(p, size, 9, 2, 2, 4, C(55, 50, 60));
             FillRect(p, size, 4, 1, 3, 1, C(35, 35, 40));
             FillRect(p, size, 9, 1, 3, 1, C(35, 35, 40));
-            return MakeSprite("Zombie", size, p);
+            return p;
+        }
+
+        private static Sprite CreateZombie()
+        {
+            return MakeSprite("Zombie", 16, BuildZombiePixels());
+        }
+
+        private static Sprite CreateZombieFacing(NpcFacing facing)
+        {
+            const int size = 16;
+            var p = BuildZombiePixels();
+            int dx = 0;
+            int dy = 0;
+
+            switch (facing)
+            {
+                case NpcFacing.Up: dy = 1; break;
+                case NpcFacing.UpRight: dx = 1; dy = 1; break;
+                case NpcFacing.Right: dx = 1; break;
+                case NpcFacing.DownRight: dx = 1; dy = -1; break;
+                case NpcFacing.Down: dy = -1; break;
+                case NpcFacing.DownLeft: dx = -1; dy = -1; break;
+                case NpcFacing.Left: dx = -1; break;
+                case NpcFacing.UpLeft: dx = -1; dy = 1; break;
+            }
+
+            // Replace the neutral eyes with a pair shifted toward the facing direction. This is
+            // pixel art, not a rotation, so the character keeps its crisp silhouette.
+            FillRect(p, size, 6, 12, 1, 1, C(105, 175, 90));
+            FillRect(p, size, 9, 12, 1, 1, C(105, 175, 90));
+            int eyeY = Mathf.Clamp(12 + dy, 11, 13);
+            int leftEyeX = Mathf.Clamp(6 + dx, 5, 8);
+            int rightEyeX = Mathf.Clamp(9 + dx, 6, 10);
+            SetP(p, size, leftEyeX, eyeY, C(255, 70, 50));
+            SetP(p, size, rightEyeX, eyeY, C(255, 70, 50));
+
+            // Bright outstretched arm in the facing direction.
+            var arm = C(150, 225, 120);
+            if (dx > 0) FillRect(p, size, 11, 8, 5, 2, arm);
+            if (dx < 0) FillRect(p, size, 0, 8, 5, 2, arm);
+            if (dy > 0) FillRect(p, size, 6, 15, 4, 1, arm);
+            if (dy < 0) FillRect(p, size, 6, 0, 4, 1, arm);
+
+            return MakeSprite("Zombie_" + facing, size, p);
         }
 
         private static Sprite CreateArrow()
@@ -187,6 +393,67 @@ namespace Oopsmeinfecto
                 }
             }
             return MakeSprite("Arrow", size, p);
+        }
+
+        private static Sprite CreateInfectionParticle()
+        {
+            const int size = 8;
+            var p = new Color32[size * size];
+            float center = (size - 1) * 0.5f;
+            for (int y = 0; y < size; y++)
+            {
+                for (int x = 0; x < size; x++)
+                {
+                    float distance = Mathf.Sqrt((x - center) * (x - center) + (y - center) * (y - center));
+                    float alpha = Mathf.Clamp01(1f - distance / (size * 0.5f));
+                    alpha *= alpha;
+                    if (alpha <= 0.01f) continue;
+                    p[y * size + x] = C(255, 255, 255, (byte)(alpha * 255f));
+                }
+            }
+            return MakeSprite("InfectionParticle", size, p);
+        }
+
+        private static Sprite CreatePatrolGround(string name, bool variantB)
+        {
+            const int size = 16;
+            var p = new Color32[size * size];
+            var soft = C(255, 255, 255, 70);
+            var strong = C(255, 255, 255, 120);
+
+            if (!variantB)
+            {
+                // Corner brackets and a small central diamond.
+                FillRect(p, size, 1, 1, 4, 1, soft);
+                FillRect(p, size, 1, 1, 1, 4, soft);
+                FillRect(p, size, 11, 1, 4, 1, soft);
+                FillRect(p, size, 14, 1, 1, 4, soft);
+                FillRect(p, size, 1, 14, 4, 1, soft);
+                FillRect(p, size, 1, 11, 1, 4, soft);
+                FillRect(p, size, 11, 14, 4, 1, soft);
+                FillRect(p, size, 14, 11, 1, 4, soft);
+                DrawDisc(p, size, 8, 8, 1, strong);
+            }
+            else
+            {
+                // Diagonal hatch with a faint ring.
+                for (int i = 2; i < 14; i += 3)
+                {
+                    SetP(p, size, i, 3, soft);
+                    SetP(p, size, i + 1, 4, soft);
+                    SetP(p, size, i, 11, soft);
+                    SetP(p, size, i + 1, 12, soft);
+                }
+                for (int x = 4; x <= 11; x++)
+                {
+                    SetP(p, size, x, 7, strong);
+                    SetP(p, size, x, 9, strong);
+                }
+                SetP(p, size, 3, 8, strong);
+                SetP(p, size, 12, 8, strong);
+            }
+
+            return MakeSprite(name, size, p);
         }
 
         private static Sprite MakeSprite(string name, int size, Color32[] pixels)

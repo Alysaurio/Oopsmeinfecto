@@ -13,11 +13,11 @@
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "C:\\Users\\JAVIER\\Oopsmeinfecto\\Tools\\CompileCheck\\CompileCheck.csproj",
+      "projectUniqueName": "C:\\Users\\JAVIER\\Desktop\\AAAA\\Oopsmeinfecto\\Tools\\CompileCheck\\CompileCheck.csproj",
       "projectName": "Oopsmeinfecto.CompileCheck",
-      "projectPath": "C:\\Users\\JAVIER\\Oopsmeinfecto\\Tools\\CompileCheck\\CompileCheck.csproj",
+      "projectPath": "C:\\Users\\JAVIER\\Desktop\\AAAA\\Oopsmeinfecto\\Tools\\CompileCheck\\CompileCheck.csproj",
       "packagesPath": "C:\\Users\\JAVIER\\.nuget\\packages\\",
-      "outputPath": "C:\\Users\\JAVIER\\Oopsmeinfecto\\Tools\\CompileCheck\\obj\\",
+      "outputPath": "C:\\Users\\JAVIER\\Desktop\\AAAA\\Oopsmeinfecto\\Tools\\CompileCheck\\obj\\",
       "projectStyle": "PackageReference",
       "configFilePaths": [
         "C:\\Users\\JAVIER\\AppData\\Roaming\\NuGet\\NuGet.Config"

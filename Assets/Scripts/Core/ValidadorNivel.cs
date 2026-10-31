@@ -29,10 +29,12 @@ namespace Oopsmeinfecto
                 report.AddError("board dimensions do not match level dimensions");
             if (level.MaxEnergy < 5 || level.MaxEnergy > 10)
                 report.AddError("max energy outside 5..10");
-            if (level.ZombieConciencia < 2 || level.ZombieConciencia > 4)
-                report.AddError("zombie conciencia outside 2..4");
-            if (level.PlayerConciencia < 0)
-                report.AddError("negative player conciencia");
+            if (level.ZombieConciencia < 2 || level.ZombieConciencia > 5)
+                report.AddError("zombie conciencia outside 2..5");
+            if (level.PlayerConciencia < 2 || level.PlayerConciencia > 5)
+                report.AddError("player conciencia outside 2..5");
+            if (InfectionSystem.InfectorMoveCount + level.PlayerConciencia < level.ZombieConciencia + 2)
+                report.AddError("automatic sequence is shorter than zombie conciencia + 2");
             if (level.HistoryCapacity < 7)
                 report.AddError("history capacity below 7");
 
@@ -68,8 +70,14 @@ namespace Oopsmeinfecto
             }
 
             var routeSet = level.GetRoutePositions();
-            if (level.PlayerStart.ManhattanDistance(level.SwitchPosition) <= level.MaxEnergy)
-                report.AddError("switch can be reached manually within the energy budget");
+            if (CanReachSwitchManually(level, settings.maxValidatorStates))
+                report.AddError("switch is reachable manually before contact");
+
+            int startOptions = CountInitialOptions(level, routeSet);
+            if (startOptions < 2)
+                report.AddError("player start has fewer than two initial movement options");
+            if (MinDistanceToRoute(level.PlayerStart, level.NpcRoute) > level.MaxEnergy)
+                report.AddError("player start is too far from the patrol route");
 
             if (level.HazardPositions == null || level.HazardPositions.Length < 1)
             {
@@ -77,6 +85,15 @@ namespace Oopsmeinfecto
             }
             else
             {
+                int maxHazards = HazardPlacer.GetMaxHazards(level.Width, level.Height, 5);
+                if (level.HazardPositions.Length > maxHazards)
+                    report.AddError($"too many hazards ({level.HazardPositions.Length} > {maxHazards})");
+
+                var trajectory = new HashSet<GridPos>();
+                AddTrajectory(trajectory, level.PlannedManualPositions);
+                AddTrajectory(trajectory, level.PlannedAutoPositions);
+                AddTrajectory(trajectory, level.NpcRoute);
+
                 var hazardSet = new HashSet<GridPos>();
                 for (int i = 0; i < level.HazardPositions.Length; i++)
                 {
@@ -88,6 +105,11 @@ namespace Oopsmeinfecto
                     if (routeSet.Contains(p)) report.AddError($"hazard {p} is on the npc route");
                     if (p == level.PlayerStart || p == level.ZombieStart || p == level.SwitchPosition)
                         report.AddError($"hazard {p} overlaps an entity or the switch");
+                    if (p.X < 1 || p.Y < 1 || p.X > level.Width - 2 || p.Y > level.Height - 2)
+                        report.AddError($"hazard {p} is on the outer perimeter");
+                    int distance = DistanceToTrajectory(p, trajectory);
+                    if (distance < 1 || distance > 2)
+                        report.AddError($"hazard {p} is not 1-2 cells from a planned trajectory");
                 }
             }
 
@@ -96,13 +118,57 @@ namespace Oopsmeinfecto
             if (level.PlannedManualPositions == null || level.PlannedManualPositions.Length !=
                 (level.PlannedManualDirections?.Length ?? 0) + 1)
                 report.AddError("planned manual positions do not match directions");
-            if (level.PlannedSequence == null || level.PlannedSequence.Length < 3 + level.ZombieConciencia)
-                report.AddError("planned inherited sequence is too short");
+            if (level.PlannedSequence == null ||
+                level.PlannedSequence.Length != InfectionSystem.InfectorMoveCount + level.PlayerConciencia)
+                report.AddError("planned inherited sequence does not have 3 + player conciencia moves");
             if (level.PlannedAutoPositions == null || level.PlannedAutoPositions.Length < 2)
                 report.AddError("planned automatic trajectory is empty");
             if (level.PlannedAutoPositions != null && level.PlannedAutoPositions.Length > 0 &&
                 level.PlannedAutoPositions[level.PlannedAutoPositions.Length - 1] != level.SwitchPosition)
                 report.AddError("switch is not at the end of the planned automatic trajectory");
+            if (level.PlannedAutoPositions != null && level.PlannedAutoPositions.Length > 0 &&
+                level.PlannedAutoPositions.Length - 1 < level.ZombieConciencia + 2)
+                report.AddError("automatic trajectory is shorter than zombie conciencia + 2");
+            if (level.PlannedAutoPositions != null)
+            {
+                int switchVisits = 0;
+                for (int i = 0; i < level.PlannedAutoPositions.Length; i++)
+                    if (level.PlannedAutoPositions[i] == level.SwitchPosition) switchVisits++;
+                if (switchVisits != 1)
+                    report.AddError("switch is visited more than once in the automatic trajectory");
+            }
+            if (level.PlannedManualPositions != null)
+            {
+                for (int i = 0; i < level.PlannedManualPositions.Length; i++)
+                {
+                    if (level.PlannedManualPositions[i] == level.SwitchPosition)
+                        report.AddError("planned manual trajectory crosses the switch");
+                }
+            }
+
+            var difficulty = DifficultyProfile.ForLevel(level.LevelIndex);
+            if (level.PlannedManualDirections != null)
+            {
+                int manualLength = level.PlannedManualDirections.Length;
+                if (manualLength < difficulty.MinManualMoves || manualLength > difficulty.MaxManualMoves)
+                    report.AddError("planned manual length does not meet the difficulty tier");
+                if (manualLength > level.MaxEnergy)
+                    report.AddError("planned manual route exceeds the energy budget");
+                if (level.ManualTurnCount < difficulty.MinTurns)
+                    report.AddError("planned manual route has too few turns for its tier");
+                if (level.DistinctDirections < difficulty.MinDistinctDirections)
+                    report.AddError("planned manual route uses too few directions for its tier");
+                if (level.MaxStraightRun > difficulty.MaxStraightRun)
+                    report.AddError("planned manual route has an excessively long straight run");
+                if (level.ImmediateReversals > difficulty.MaxImmediateReversals)
+                    report.AddError("planned manual route has too many immediate reversals for its tier");
+                if (level.RevisitedCells > difficulty.MaxRevisitedCells)
+                    report.AddError("planned manual route has too many revisited cells for its tier");
+                if (level.InitialOptions < difficulty.MinInitialOptions)
+                    report.AddError("not enough initial movement options");
+                if (!level.MeetsDifficulty)
+                    report.AddError("planned route was not marked as meeting its difficulty tier");
+            }
 
             if (!report.Valid) return report;
 

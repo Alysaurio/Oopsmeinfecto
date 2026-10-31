@@ -1,0 +1,2854 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<doc>
+  <members>
+    <assembly>
+      <name>UnityEditor.ProjectAuditorModule</name>
+    </assembly>
+    <member name="T:Unity.ProjectAuditor.Editor.AnalysisParams">
+      <summary>
+        <para>
+ Represents an object which can be passed to an instance of Unity.ProjectAuditor.Editor.ProjectAuditor to specify how analysis should be performed and to provide delegates to be called when analysis steps have completed.
+ AnalysisParams defaults to values which instruct ProjectAuditor to analyze everything in the project for the current build target, but instances can be populated with custom data in an object initializer to provide additional constraints.
+ </para>
+      </summary>
+    </member>
+    <member name="F:Unity.ProjectAuditor.Editor.AnalysisParams.AssemblyNames">
+      <summary>
+        <para>
+ Assemblies to analyze. If null, all compiled assemblies will be analyzed.
+ </para>
+      </summary>
+    </member>
+    <member name="F:Unity.ProjectAuditor.Editor.AnalysisParams.Categories">
+      <summary>
+        <para>
+ Issue Categories to include in the audit. If null, the analysis will include all categories.
+ </para>
+      </summary>
+    </member>
+    <member name="F:Unity.ProjectAuditor.Editor.AnalysisParams.CodeAnalysisFlags">
+      <summary>
+        <para>
+ The Compilation flags to use during code analysis.
+ </para>
+      </summary>
+    </member>
+    <member name="F:Unity.ProjectAuditor.Editor.AnalysisParams.CodeOptimization">
+      <summary>
+        <para>
+ Code optimization mode. The default is Unity.ProjectAuditor.Editor.CodeOptimization.Release.
+ </para>
+      </summary>
+    </member>
+    <member name="M:Unity.ProjectAuditor.Editor.AnalysisParams.#ctor(System.Boolean)">
+      <summary>
+        <para>
+ AnalysisParams constructor.
+ </para>
+      </summary>
+      <param name="copyParamsFromGlobal">If true, the global ProjectSettings will register DiagnosticParams defaults, save any changes and copy the data into this object. This is usually the desired behaviour, but is not allowed during serialization. </param>
+    </member>
+    <member name="M:Unity.ProjectAuditor.Editor.AnalysisParams.#ctor(Unity.ProjectAuditor.Editor.AnalysisParams)">
+      <summary>
+        <para>
+ Copy constructor.
+ </para>
+      </summary>
+      <param name="original">The AnalysisParams object to copy from.</param>
+    </member>
+    <member name="F:Unity.ProjectAuditor.Editor.AnalysisParams.DiagnosticParams">
+      <summary>
+        <para>
+ The DiagnosticParams object which defines the customizable thresholds for reporting certain diagnostics.
+ By default, this makes a copy of Unity.ProjectAuditor.Editor.ProjectAuditorSettings.
+ </para>
+      </summary>
+    </member>
+    <member name="F:Unity.ProjectAuditor.Editor.AnalysisParams.OnCompleted">
+      <summary>
+        <para>
+ Notifies that all Modules completed their analysis.
+ </para>
+      </summary>
+    </member>
+    <member name="F:Unity.ProjectAuditor.Editor.AnalysisParams.OnIncomingIssues">
+      <summary>
+        <para>
+ Reports a batch of new issues. Note that this be called multiple times per analysis.
+ </para>
+      </summary>
+    </member>
+    <member name="F:Unity.ProjectAuditor.Editor.AnalysisParams.OnModuleCompleted">
+      <summary>
+        <para>
+ Notifies that a Module completed its analysis.
+ </para>
+      </summary>
+    </member>
+    <member name="F:Unity.ProjectAuditor.Editor.AnalysisParams.OnStarted">
+      <summary>
+        <para>
+ Notifies that an analysis has started.
+ </para>
+      </summary>
+    </member>
+    <member name="P:Unity.ProjectAuditor.Editor.AnalysisParams.Platform">
+      <summary>
+        <para>
+ Analysis platform. The default platform is the currently active build target.
+ </para>
+      </summary>
+    </member>
+    <member name="M:Unity.ProjectAuditor.Editor.AnalysisParams.WithAdditionalDiagnosticRules(System.Collections.Generic.List`1&lt;Unity.ProjectAuditor.Editor.Rule&gt;)">
+      <summary>
+        <para>
+ Adds a list of additional Rules which will be applied during analysis.
+ </para>
+      </summary>
+      <param name="rules">Additional Rules to impose.</param>
+      <returns>
+        <para>This AnalysisParams object, after adding the additional Rules.</para>
+      </returns>
+    </member>
+    <member name="T:Unity.ProjectAuditor.Editor.AnalysisResult">
+      <summary>
+        <para>
+ Identifiers for the results of analysis for a Module and for a whole Report
+ </para>
+      </summary>
+    </member>
+    <member name="F:Unity.ProjectAuditor.Editor.AnalysisResult.Cancelled">
+      <summary>
+        <para>
+ Analysis was cancelled by the user
+ </para>
+      </summary>
+    </member>
+    <member name="F:Unity.ProjectAuditor.Editor.AnalysisResult.Failure">
+      <summary>
+        <para>
+ Analysis failed
+ </para>
+      </summary>
+    </member>
+    <member name="F:Unity.ProjectAuditor.Editor.AnalysisResult.InProgress">
+      <summary>
+        <para>
+ Analysis is still in progress
+ </para>
+      </summary>
+    </member>
+    <member name="F:Unity.ProjectAuditor.Editor.AnalysisResult.Success">
+      <summary>
+        <para>
+ Analysis completed successfully
+ </para>
+      </summary>
+    </member>
+    <member name="T:Unity.ProjectAuditor.Editor.Areas">
+      <summary>
+        <para>
+ Which area(s) of a project may be affected by a ReportItem.
+ </para>
+      </summary>
+    </member>
+    <member name="F:Unity.ProjectAuditor.Editor.Areas.All">
+      <summary>
+        <para>
+ Bitmask value representing all areas
+ </para>
+      </summary>
+    </member>
+    <member name="F:Unity.ProjectAuditor.Editor.Areas.BuildSize">
+      <summary>
+        <para>
+ Application size
+ </para>
+      </summary>
+    </member>
+    <member name="F:Unity.ProjectAuditor.Editor.Areas.BuildTime">
+      <summary>
+        <para>
+ Build time
+ </para>
+      </summary>
+    </member>
+    <member name="F:Unity.ProjectAuditor.Editor.Areas.CPU">
+      <summary>
+        <para>
+ CPU Performance
+ </para>
+      </summary>
+    </member>
+    <member name="F:Unity.ProjectAuditor.Editor.Areas.GPU">
+      <summary>
+        <para>
+ GPU Performance
+ </para>
+      </summary>
+    </member>
+    <member name="F:Unity.ProjectAuditor.Editor.Areas.IterationTime">
+      <summary>
+        <para>
+ Issues which affect iteration time in the Editor and can hamper productivity during development
+ </para>
+      </summary>
+    </member>
+    <member name="F:Unity.ProjectAuditor.Editor.Areas.LoadTime">
+      <summary>
+        <para>
+ Load times
+ </para>
+      </summary>
+    </member>
+    <member name="F:Unity.ProjectAuditor.Editor.Areas.Memory">
+      <summary>
+        <para>
+ Memory consumption
+ </para>
+      </summary>
+    </member>
+    <member name="F:Unity.ProjectAuditor.Editor.Areas.MigrationToCoreCLR">
+      <summary>
+        <para>
+ Migration To CoreCLR. Issues that prevent you from switching from Mono to the CoreCLR scripting backend.
+ </para>
+      </summary>
+    </member>
+    <member name="F:Unity.ProjectAuditor.Editor.Areas.MigrationToURP">
+      <summary>
+        <para>
+ Migration To URP. Issues that prevent you from migrating to the Universal Render Pipeline.
+ </para>
+      </summary>
+    </member>
+    <member name="F:Unity.ProjectAuditor.Editor.Areas.None">
+      <summary>
+        <para>
+ Indicates some error with the Descriptor data: A descriptor should never match no areas.
+ </para>
+      </summary>
+    </member>
+    <member name="F:Unity.ProjectAuditor.Editor.Areas.Quality">
+      <summary>
+        <para>
+ Quality. For example, using preview packages, or settings that negatively affect visual quality
+ </para>
+      </summary>
+    </member>
+    <member name="F:Unity.ProjectAuditor.Editor.Areas.Requirement">
+      <summary>
+        <para>
+ Required by platform. Typically this issue must be fixed before submitting to the platform store
+ </para>
+      </summary>
+    </member>
+    <member name="F:Unity.ProjectAuditor.Editor.Areas.Support">
+      <summary>
+        <para>
+ Lack of platform support. For example, using APIs that are not supported on a specific platform and might fail at runtime
+ </para>
+      </summary>
+    </member>
+    <member name="F:Unity.ProjectAuditor.Editor.Areas.Upgrade">
+      <summary>
+        <para>
+ Upgrade. For example, issues that may prevent you from upgrading to a newer version of Unity.
+ </para>
+      </summary>
+    </member>
+    <member name="T:Unity.ProjectAuditor.Editor.AssetAnalysis.AssetDependencyNode">
+      <summary>
+        <para>
+ For building an asset dependency tree.
+ </para>
+      </summary>
+    </member>
+    <member name="T:Unity.ProjectAuditor.Editor.AssetAnalysis.ShaderDependencyNode">
+      <summary>
+        <para>
+ For building a shader dependency tree.
+ </para>
+      </summary>
+    </member>
+    <member name="T:Unity.ProjectAuditor.Editor.AssetAnalysis.TextureDependencyNode">
+      <summary>
+        <para>
+ For building a texture dependency tree.
+ </para>
+      </summary>
+    </member>
+    <member name="T:Unity.ProjectAuditor.Editor.AsyncProgressState">
+      <summary>
+        <para>
+ Stores the state of an individual progress item during analysis.
+ </para>
+      </summary>
+    </member>
+    <member name="T:Unity.ProjectAuditor.Editor.CodeAnalysisFlags">
+      <summary>
+        <para>
+ Options for the compilation mode Project Auditor should use when performing code analysis.
+ </para>
+      </summary>
+    </member>
+    <member name="F:Unity.ProjectAuditor.Editor.CodeAnalysisFlags.All">
+      <summary>
+        <para>
+All
+</para>
+      </summary>
+    </member>
+    <member name="F:Unity.ProjectAuditor.Editor.CodeAnalysisFlags.DebugManagedCodeVariant">
+      <summary>
+        <para>
+DebugManagedCodeVariant
+</para>
+      </summary>
+    </member>
+    <member name="F:Unity.ProjectAuditor.Editor.CodeAnalysisFlags.Editor">
+      <summary>
+        <para>
+Editor
+</para>
+      </summary>
+    </member>
+    <member name="F:Unity.ProjectAuditor.Editor.CodeAnalysisFlags.None">
+      <summary>
+        <para>
+None
+</para>
+      </summary>
+    </member>
+    <member name="F:Unity.ProjectAuditor.Editor.CodeAnalysisFlags.Packages">
+      <summary>
+        <para>
+Packages
+</para>
+      </summary>
+    </member>
+    <member name="F:Unity.ProjectAuditor.Editor.CodeAnalysisFlags.Player">
+      <summary>
+        <para>
+Player
+</para>
+      </summary>
+    </member>
+    <member name="F:Unity.ProjectAuditor.Editor.CodeAnalysisFlags.Tests">
+      <summary>
+        <para>
+Tests
+</para>
+      </summary>
+    </member>
+    <member name="T:Unity.ProjectAuditor.Editor.CodeOptimization">
+      <summary>
+        <para>
+ Options for selecting the code optimization level to be used during code analysis.
+ </para>
+      </summary>
+    </member>
+    <member name="F:Unity.ProjectAuditor.Editor.CodeOptimization.Debug">
+      <summary>
+        <para>
+ Debug code optimization
+ </para>
+      </summary>
+    </member>
+    <member name="F:Unity.ProjectAuditor.Editor.CodeOptimization.Release">
+      <summary>
+        <para>
+ Release code optimization
+ </para>
+      </summary>
+    </member>
+    <member name="T:Unity.ProjectAuditor.Editor.CompilationMode">
+      <summary>
+        <para>
+ Options for the compilation mode Project Auditor should use when performing code analysis.
+ </para>
+      </summary>
+    </member>
+    <member name="F:Unity.ProjectAuditor.Editor.CompilationMode.DevelopmentPlayer">
+      <summary>
+        <para>
+Development player
+</para>
+      </summary>
+    </member>
+    <member name="F:Unity.ProjectAuditor.Editor.CompilationMode.Editor">
+      <summary>
+        <para>
+Editor assemblies
+</para>
+      </summary>
+    </member>
+    <member name="F:Unity.ProjectAuditor.Editor.CompilationMode.EditorPlayMode">
+      <summary>
+        <para>
+Editor assemblies for Play Mode
+</para>
+      </summary>
+    </member>
+    <member name="F:Unity.ProjectAuditor.Editor.CompilationMode.Player">
+      <summary>
+        <para>
+Non-Development player (default)
+</para>
+      </summary>
+    </member>
+    <member name="T:Unity.ProjectAuditor.Editor.Core.AnalysisContext">
+      <summary>
+        <para>
+ Base class for a context object passed by a Module to an Analyzer's Analyze() method.
+ </para>
+      </summary>
+    </member>
+    <member name="M:Unity.ProjectAuditor.Editor.Core.AnalysisContext.CreateInsight(Unity.ProjectAuditor.Editor.IssueCategory,System.String)">
+      <summary>
+        <para>
+ Create a ReportItemBuilder for an Insight: A ReportItem collected for informational purposes.
+ </para>
+      </summary>
+      <param name="category">Issue category</param>
+      <param name="description">User-friendly description</param>
+      <returns>
+        <para>The ReportItemBuilder, constructed with the specified category and description string</para>
+      </returns>
+    </member>
+    <member name="M:Unity.ProjectAuditor.Editor.Core.AnalysisContext.CreateIssue(Unity.ProjectAuditor.Editor.IssueCategory,System.String,System.Object[])">
+      <summary>
+        <para>
+ Create a ReportItemBuilder for an Issue: a potential problem in the project, with an actionable
+ recommendation to resolve it.
+ </para>
+      </summary>
+      <param name="category">Issue category</param>
+      <param name="id">Descriptor ID</param>
+      <param name="messageArgs">Arguments to be used in the message formatting</param>
+      <returns>
+        <para>
+ The ReportItemBuilder, constructed with the specified category, descriptor ID and message arguments
+ </para>
+      </returns>
+    </member>
+    <member name="M:Unity.ProjectAuditor.Editor.Core.AnalysisContext.IsDescriptorEnabled(Unity.ProjectAuditor.Editor.Descriptor)">
+      <summary>
+        <para>
+ Checks whether a given Descriptor is enabled for the current analysis.
+ </para>
+      </summary>
+      <param name="descriptor">The descriptor to check</param>
+      <returns>
+        <para>True if the Descriptor is applicable to the current target platform and Unity version, and if it's
+ either enabled by default or by a Rule specified in Params. Otherwise, returns false.</para>
+      </returns>
+    </member>
+    <member name="F:Unity.ProjectAuditor.Editor.Core.AnalysisContext.Params">
+      <summary>
+        <para>
+ The AnalysisParams object that was passed to (or created by) the ProjectAuditor's Audit() method.
+ </para>
+      </summary>
+    </member>
+    <member name="T:Unity.ProjectAuditor.Editor.Core.AnimationModuleAnalyzer">
+      <summary>
+        <para>
+ Abstract base class for an Analyzer to be invoked by AnimationModule
+ </para>
+      </summary>
+    </member>
+    <member name="T:Unity.ProjectAuditor.Editor.Core.AssetAnalysisContext">
+      <summary>
+        <para>
+ A context object passed by AssetsModule to an AssetsModuleAnalyzer's Analyze() method.
+ </para>
+      </summary>
+    </member>
+    <member name="F:Unity.ProjectAuditor.Editor.Core.AssetAnalysisContext.AssetPath">
+      <summary>
+        <para>
+ A path to an asset, of any type, in the project.
+ </para>
+      </summary>
+    </member>
+    <member name="T:Unity.ProjectAuditor.Editor.Core.AssetsModuleAnalyzer">
+      <summary>
+        <para>
+ Abstract base class for an Analyzer to be invoked by AssetsModule
+ </para>
+      </summary>
+    </member>
+    <member name="M:Unity.ProjectAuditor.Editor.Core.AssetsModuleAnalyzer.Analyze(Unity.ProjectAuditor.Editor.Core.AssetAnalysisContext)">
+      <summary>
+        <para>
+ Implement this method to detect Issues, construct ReportItem objects to describe them, and return them.
+ </para>
+      </summary>
+      <param name="context">Context object containing information necessary to perform analysis</param>
+      <returns>
+        <para>An enumerator for a collection of ReportItem objects</para>
+      </returns>
+    </member>
+    <member name="T:Unity.ProjectAuditor.Editor.Core.AudioClipAnalysisContext">
+      <summary>
+        <para>
+ A context object passed by AudioClipModule to an AudioClipModuleAnalyzer's Analyze() method.
+ </para>
+      </summary>
+    </member>
+    <member name="F:Unity.ProjectAuditor.Editor.Core.AudioClipAnalysisContext.AudioClip">
+      <summary>
+        <para>
+ The AudioClip to be analyzed.
+ </para>
+      </summary>
+    </member>
+    <member name="F:Unity.ProjectAuditor.Editor.Core.AudioClipAnalysisContext.ImportedSize">
+      <summary>
+        <para>
+ The file size of the imported AudioClip.
+ </para>
+      </summary>
+    </member>
+    <member name="F:Unity.ProjectAuditor.Editor.Core.AudioClipAnalysisContext.Importer">
+      <summary>
+        <para>
+ The AudioImporter used to import the AudioClip to be analyzed.
+ </para>
+      </summary>
+    </member>
+    <member name="F:Unity.ProjectAuditor.Editor.Core.AudioClipAnalysisContext.Name">
+      <summary>
+        <para>
+ The name of an AudioClip in the project.
+ </para>
+      </summary>
+    </member>
+    <member name="F:Unity.ProjectAuditor.Editor.Core.AudioClipAnalysisContext.RuntimeSize">
+      <summary>
+        <para>
+ An estimate of the runtime memory footprint of this AudioClip, when it's playing.
+ </para>
+      </summary>
+    </member>
+    <member name="F:Unity.ProjectAuditor.Editor.Core.AudioClipAnalysisContext.SampleSettings">
+      <summary>
+        <para>
+ The AudioImporter's sample settings.
+ </para>
+      </summary>
+    </member>
+    <member name="T:Unity.ProjectAuditor.Editor.Core.AudioClipModuleAnalyzer">
+      <summary>
+        <para>
+ Abstract base class for an Analyzer to be invoked by AudioClipModule
+ </para>
+      </summary>
+    </member>
+    <member name="M:Unity.ProjectAuditor.Editor.Core.AudioClipModuleAnalyzer.Analyze(Unity.ProjectAuditor.Editor.Core.AudioClipAnalysisContext)">
+      <summary>
+        <para>
+ Implement this method to detect Issues, construct ReportItem objects to describe them, and return them.
+ </para>
+      </summary>
+      <param name="context">Context object containing information necessary to perform analysis</param>
+      <returns>
+        <para>An enumerator for a collection of ReportItem objects</para>
+      </returns>
+    </member>
+    <member name="T:Unity.ProjectAuditor.Editor.Core.CodeModuleAnalyzer">
+      <summary>
+        <para>
+ Abstract base class for an Analyzer to be invoked by CodeModule
+ </para>
+      </summary>
+    </member>
+    <member name="T:Unity.ProjectAuditor.Editor.Core.CodeModulePrecompiledAssemblyAnalyzer">
+      <summary>
+        <para>
+ Abstract base class for a Precompiled Assembly analyzer
+ </para>
+      </summary>
+    </member>
+    <member name="M:Unity.ProjectAuditor.Editor.Core.CodeModulePrecompiledAssemblyAnalyzer.Analyze(Unity.ProjectAuditor.Editor.Core.PrecompiledAssemblyAnalysisContext)">
+      <summary>
+        <para>
+ Implement this method to detect Issues in precompiled assemblies, and construct a ReportItemBuilder object with
+ basic information about a ReportItem object to describe the issue.
+ </para>
+      </summary>
+      <param name="context">Context object containing information necessary to perform analysis</param>
+      <returns>
+        <para>A collection of ReportItemBuilder objects</para>
+      </returns>
+    </member>
+    <member name="T:Unity.ProjectAuditor.Editor.Core.DescriptorExtensions">
+      <summary>
+        <para>
+ Additional Descriptor functionality
+ </para>
+      </summary>
+    </member>
+    <member name="M:Unity.ProjectAuditor.Editor.Core.DescriptorExtensions.IsSupported(Unity.ProjectAuditor.Editor.Descriptor,Unity.ProjectAuditor.Editor.AnalysisParams)">
+      <summary>
+        <para>
+ Check if the descriptor is valid for the target platform specified in AnalysisParams and the current Editor version
+ </para>
+      </summary>
+      <param name="desc">The descriptor to check.</param>
+      <param name="analysisParams">The analysis parameters containing the target platform.</param>
+      <returns>
+        <para>True if the descriptor is supported; otherwise, false.</para>
+      </returns>
+    </member>
+    <member name="M:Unity.ProjectAuditor.Editor.Core.DescriptorExtensions.IsSupported(Unity.ProjectAuditor.Editor.Descriptor)">
+      <summary>
+        <para>
+ Check if the descriptor is valid for any platform supported by the current Editor and the current Editor version
+ </para>
+      </summary>
+      <param name="desc">The descriptor to check.</param>
+      <returns>
+        <para>True if the descriptor is supported; otherwise, false.</para>
+      </returns>
+    </member>
+    <member name="T:Unity.ProjectAuditor.Editor.Core.DiagnosticParameterAttribute">
+      <summary>
+        <para>
+ Used to mark an integer field in an class that inherits from Unity.ProjectAuditor.Editor.Core.ModuleAnalyzer as being a Diagnostic Parameter.
+ </para>
+      </summary>
+    </member>
+    <member name="M:Unity.ProjectAuditor.Editor.Core.DiagnosticParameterAttribute.#ctor(System.String,System.String,System.String,System.Int32)">
+      <summary>
+        <para>
+ Constructor.
+ </para>
+      </summary>
+      <param name="name">The Diagnotic Parameter's name</param>
+      <param name="userFriendlyName">The Diagnostic Parameter's user friendly name for Project Settings.</param>
+      <param name="tooltip">The Diagnotic Parameter's tooltip text for project settings.</param>
+      <param name="defaultValue">A default value for the parameter.</param>
+    </member>
+    <member name="M:Unity.ProjectAuditor.Editor.Core.DiagnosticParameterAttribute.#ctor(System.String,System.String,System.String,System.Int32,System.Int32,System.Int32)">
+      <summary>
+        <para>
+ Constructor.
+ </para>
+      </summary>
+      <param name="name">The Diagnotic Parameter's name</param>
+      <param name="userFriendlyName">The Diagnostic Parameter's user friendly name for Project Settings.</param>
+      <param name="tooltip">The Diagnotic Parameter's tooltip text for project settings.</param>
+      <param name="defaultValue">A default value for the parameter.</param>
+      <param name="minValue">The minimum valid value this parameter may have.</param>
+      <param name="maxValue">The maximum valid value this parameter may have.</param>
+    </member>
+    <member name="P:Unity.ProjectAuditor.Editor.Core.DiagnosticParameterAttribute.DefaultValue">
+      <summary>
+        <para>
+ The default value for this parameter.
+ </para>
+      </summary>
+    </member>
+    <member name="P:Unity.ProjectAuditor.Editor.Core.DiagnosticParameterAttribute.MaxValue">
+      <summary>
+        <para>
+ The maximum value for this parameter.
+ </para>
+      </summary>
+    </member>
+    <member name="P:Unity.ProjectAuditor.Editor.Core.DiagnosticParameterAttribute.MinValue">
+      <summary>
+        <para>
+ The minimum value for this parameter.
+ </para>
+      </summary>
+    </member>
+    <member name="P:Unity.ProjectAuditor.Editor.Core.DiagnosticParameterAttribute.Name">
+      <summary>
+        <para>
+ The Diagnostic Parameter's name. This name should uniquely identify this parameter within a project.
+ </para>
+      </summary>
+    </member>
+    <member name="P:Unity.ProjectAuditor.Editor.Core.DiagnosticParameterAttribute.Tooltip">
+      <summary>
+        <para>
+ Text about this DiagnosticParameter to show as a tooltip in Project Settings.
+ </para>
+      </summary>
+    </member>
+    <member name="P:Unity.ProjectAuditor.Editor.Core.DiagnosticParameterAttribute.UserFriendlyName">
+      <summary>
+        <para>
+ The Diagnostic Parameter's user friendly name as will be seen in Project Settings.
+ </para>
+      </summary>
+    </member>
+    <member name="T:Unity.ProjectAuditor.Editor.Core.GameObjectAnalysisContext">
+      <summary>
+        <para>
+ A context object passed by GameObjectModule to an GameObjectModuleAnalyzer's Analyze() method.
+ </para>
+      </summary>
+    </member>
+    <member name="F:Unity.ProjectAuditor.Editor.Core.GameObjectAnalysisContext.GameObject">
+      <summary>
+        <para>
+ The GameObject to analyze.
+ </para>
+      </summary>
+    </member>
+    <member name="F:Unity.ProjectAuditor.Editor.Core.GameObjectAnalysisContext.Source">
+      <summary>
+        <para>
+ The owner of this GameObject (Scene or Prefab).
+ </para>
+      </summary>
+    </member>
+    <member name="T:Unity.ProjectAuditor.Editor.Core.GameObjectModuleAnalyzer">
+      <summary>
+        <para>
+ Abstract base class for an Analyzer to be invoked by GameObjectModule
+ </para>
+      </summary>
+    </member>
+    <member name="M:Unity.ProjectAuditor.Editor.Core.GameObjectModuleAnalyzer.Analyze(Unity.ProjectAuditor.Editor.Core.GameObjectAnalysisContext)">
+      <summary>
+        <para>
+ Implement this method to detect Issues, construct ReportItem objects to describe them, and return them.
+ </para>
+      </summary>
+      <param name="context">Context object containing information necessary to perform analysis</param>
+      <returns>
+        <para>An enumerator for a collection of ReportItemBuilder objects</para>
+      </returns>
+    </member>
+    <member name="M:Unity.ProjectAuditor.Editor.Core.GameObjectModuleAnalyzer.OnAnalysisStarted">
+      <summary>
+        <para>
+ Implement this method to initialize the analyzer at the start of analysis
+ </para>
+      </summary>
+    </member>
+    <member name="T:Unity.ProjectAuditor.Editor.Core.GameObjectSource">
+      <summary>
+        <para>
+ Describes where a GameObject is stored.
+ </para>
+      </summary>
+    </member>
+    <member name="F:Unity.ProjectAuditor.Editor.Core.GameObjectSource.Prefab">
+      <summary>
+        <para>
+ The GameObject belongs to a Prefab.
+ </para>
+      </summary>
+    </member>
+    <member name="F:Unity.ProjectAuditor.Editor.Core.GameObjectSource.Scene">
+      <summary>
+        <para>
+ The GameObject belongs to a Scene.
+ </para>
+      </summary>
+    </member>
+    <member name="T:Unity.ProjectAuditor.Editor.Core.MaterialAnalysisContext">
+      <summary>
+        <para>
+ A context object passed by a MaterialModule to a MaterialModuleAnalyzer's Analyze() method.
+ </para>
+      </summary>
+    </member>
+    <member name="F:Unity.ProjectAuditor.Editor.Core.MaterialAnalysisContext.Material">
+      <summary>
+        <para>
+ The material asset to be analyzed.
+ </para>
+      </summary>
+    </member>
+    <member name="F:Unity.ProjectAuditor.Editor.Core.MaterialAnalysisContext.Name">
+      <summary>
+        <para>
+ The name of a material asset in the project
+ </para>
+      </summary>
+    </member>
+    <member name="T:Unity.ProjectAuditor.Editor.Core.MaterialModuleAnalyzer">
+      <summary>
+        <para>
+ Abstract base class for an Analyzer to be invoked by MaterialModule
+ </para>
+      </summary>
+    </member>
+    <member name="M:Unity.ProjectAuditor.Editor.Core.MaterialModuleAnalyzer.Analyze(Unity.ProjectAuditor.Editor.Core.MaterialAnalysisContext)">
+      <summary>
+        <para>
+ Implement this method to detect Issues, construct ReportItem objects to describe them, and return them.
+ </para>
+      </summary>
+      <param name="context">Context object containing information necessary to perform analysis</param>
+      <returns>
+        <para>An enumerator for a collection of ReportItem objects</para>
+      </returns>
+    </member>
+    <member name="T:Unity.ProjectAuditor.Editor.Core.MeshAnalysisContext">
+      <summary>
+        <para>
+ A context object passed by MeshModule to a MeshModuleAnalyzer's Analyze() method.
+ </para>
+      </summary>
+    </member>
+    <member name="F:Unity.ProjectAuditor.Editor.Core.MeshAnalysisContext.Importer">
+      <summary>
+        <para>
+ The Mesh asset's AssetImporter
+ </para>
+      </summary>
+    </member>
+    <member name="F:Unity.ProjectAuditor.Editor.Core.MeshAnalysisContext.Mesh">
+      <summary>
+        <para>
+ The Mesh asset to be analyzed.
+ </para>
+      </summary>
+    </member>
+    <member name="F:Unity.ProjectAuditor.Editor.Core.MeshAnalysisContext.Name">
+      <summary>
+        <para>
+ The name of a Mesh asset to be analyzed.
+ </para>
+      </summary>
+    </member>
+    <member name="F:Unity.ProjectAuditor.Editor.Core.MeshAnalysisContext.Size">
+      <summary>
+        <para>
+ An estimate of the Mesh's runtime memory footprint.
+ </para>
+      </summary>
+    </member>
+    <member name="T:Unity.ProjectAuditor.Editor.Core.MeshModuleAnalyzer">
+      <summary>
+        <para>
+ Abstract base class for an Analyzer to be invoked by MeshModule
+ </para>
+      </summary>
+    </member>
+    <member name="M:Unity.ProjectAuditor.Editor.Core.MeshModuleAnalyzer.Analyze(Unity.ProjectAuditor.Editor.Core.MeshAnalysisContext)">
+      <summary>
+        <para>
+ Implement this method to detect Issues, construct ReportItem objects to describe them, and return them.
+ </para>
+      </summary>
+      <param name="context">Context object containing information necessary to perform analysis</param>
+      <returns>
+        <para>An enumerator for a collection of ReportItem objects</para>
+      </returns>
+    </member>
+    <member name="T:Unity.ProjectAuditor.Editor.Core.ModuleAnalyzer">
+      <summary>
+        <para>
+ Base class for all ModuleAnalyzers
+ </para>
+      </summary>
+    </member>
+    <member name="M:Unity.ProjectAuditor.Editor.Core.ModuleAnalyzer.Initialize(System.Action`1&lt;Unity.ProjectAuditor.Editor.Descriptor&gt;)">
+      <summary>
+        <para>
+ Initializes the Analyzer
+ </para>
+      </summary>
+      <param name="registerDescriptor">An Action which the method can invoke to register an Issue Descriptor for later reporting</param>
+    </member>
+    <member name="T:Unity.ProjectAuditor.Editor.Core.PackageAnalysisContext">
+      <summary>
+        <para>
+ A context object passed by PackagesModule to a PackagesModuleAnalyzer's Analyze() method.
+ </para>
+      </summary>
+    </member>
+    <member name="F:Unity.ProjectAuditor.Editor.Core.PackageAnalysisContext.PackageInfo">
+      <summary>
+        <para>
+ Information about a Unity package to be analyzed.
+ </para>
+      </summary>
+    </member>
+    <member name="T:Unity.ProjectAuditor.Editor.Core.PackagesModuleAnalyzer">
+      <summary>
+        <para>
+ Abstract base class for an Analyzer to be invoked by PackagesModule
+ </para>
+      </summary>
+    </member>
+    <member name="M:Unity.ProjectAuditor.Editor.Core.PackagesModuleAnalyzer.Analyze(Unity.ProjectAuditor.Editor.Core.PackageAnalysisContext)">
+      <summary>
+        <para>
+ Implement this method to detect Issues, construct ReportItem objects to describe them, and return them.
+ </para>
+      </summary>
+      <param name="context">Context object containing information necessary to perform analysis</param>
+      <returns>
+        <para>An enumerator for a collection of ReportItem objects</para>
+      </returns>
+    </member>
+    <member name="T:Unity.ProjectAuditor.Editor.Core.PrecompiledAssemblyAnalysisContext">
+      <summary>
+        <para>
+ A context object passed by CodeModule to a CodeModulePrecompiledAssemblyAnalyzer's Analyze() method.
+ </para>
+      </summary>
+    </member>
+    <member name="F:Unity.ProjectAuditor.Editor.Core.PrecompiledAssemblyAnalysisContext.AssemblyPath">
+      <summary>
+        <para>
+ The path to the Assembly.
+ </para>
+      </summary>
+    </member>
+    <member name="F:Unity.ProjectAuditor.Editor.Core.PrecompiledAssemblyAnalysisContext.TargetFramework">
+      <summary>
+        <para>
+ The Target Framework version.
+ </para>
+      </summary>
+    </member>
+    <member name="T:Unity.ProjectAuditor.Editor.Core.ReportItemBuilder">
+      <summary>
+        <para>
+ Provides methods to construct a Unity.ProjectAuditor.Editor.ReportItem object for a Report.
+ </para>
+      </summary>
+    </member>
+    <member name="M:Unity.ProjectAuditor.Editor.Core.ReportItemBuilder.#ctor(Unity.ProjectAuditor.Editor.IssueCategory,System.String,System.Object[])">
+      <summary>
+        <para>
+ Constructor for an object to build ReportItems representing Issues.
+ </para>
+      </summary>
+      <param name="category">The IssueCategory of the reported Issue</param>
+      <param name="id">Identifies the Descriptor object containing information about the Issue</param>
+      <param name="args">Arguments to be used in the message formatting</param>
+    </member>
+    <member name="M:Unity.ProjectAuditor.Editor.Core.ReportItemBuilder.#ctor(Unity.ProjectAuditor.Editor.IssueCategory,System.String)">
+      <summary>
+        <para>
+ Constructor for an object to build ReportItems representing Insights.
+ </para>
+      </summary>
+      <param name="category">The IssueCategory of the reported Insight</param>
+      <param name="description">The primary descriptive string for this Insight</param>
+    </member>
+    <member name="?:Unity.ProjectAuditor.Editor.Core.ReportItemBuilder.implop_ReportItem(ReportItemBuilder)(Unity.ProjectAuditor.Editor.Core.ReportItemBuilder)">
+      <summary>
+        <para>Implicit conversion of ReportItemBuilder to ReportItem.</para>
+      </summary>
+      <param name="builder">A ReportItemBuilder to convert</param>
+      <returns>
+        <para>A ReportItem</para>
+      </returns>
+    </member>
+    <member name="M:Unity.ProjectAuditor.Editor.Core.ReportItemBuilder.WithCustomProperties(System.Int32,System.Object)">
+      <summary>
+        <para>
+ Initialize all custom properties to the same value.
+ </para>
+      </summary>
+      <param name="numProperties"> total number of custom properties </param>
+      <param name="property"> value the properties will be set to </param>
+      <returns>
+        <para>The ReportItemBuilder object with the custom properties set.</para>
+      </returns>
+    </member>
+    <member name="M:Unity.ProjectAuditor.Editor.Core.ReportItemBuilder.WithCustomProperties(System.Object[])">
+      <summary>
+        <para>
+ Initialize custom properties.
+ </para>
+      </summary>
+      <param name="properties"> Issue-specific properties </param>
+      <returns>
+        <para>The ReportItemBuilder object with the custom properties initialized.</para>
+      </returns>
+    </member>
+    <member name="M:Unity.ProjectAuditor.Editor.Core.ReportItemBuilder.WithDependencies(Unity.ProjectAuditor.Editor.DependencyNode)">
+      <summary>
+        <para>
+ Adds a DependencyNode to the ReportItem being built.
+ </para>
+      </summary>
+      <param name="dependencies">The root DependencyNode of a dependency chain to add</param>
+      <returns>
+        <para>The ReportItemBuilder object with the DependencyNode added</para>
+      </returns>
+    </member>
+    <member name="M:Unity.ProjectAuditor.Editor.Core.ReportItemBuilder.WithDescription(System.String)">
+      <summary>
+        <para>
+ Adds a description string to the ReportItem being built.
+ </para>
+      </summary>
+      <param name="description">Description string to add</param>
+      <returns>
+        <para>The ReportItemBuilder object with the description string added</para>
+      </returns>
+    </member>
+    <member name="M:Unity.ProjectAuditor.Editor.Core.ReportItemBuilder.WithLocation(Unity.ProjectAuditor.Editor.Location)">
+      <summary>
+        <para>
+ Adds a Location to the ReportItem being built.
+ </para>
+      </summary>
+      <param name="location">Location object describing where the specific item was found within the project</param>
+      <returns>
+        <para>The ReportItemBuilder object with the Location added</para>
+      </returns>
+    </member>
+    <member name="M:Unity.ProjectAuditor.Editor.Core.ReportItemBuilder.WithLocation(System.String,System.Int32)">
+      <summary>
+        <para>
+ Constructs a Location object and adds it to the ReportItem being built.
+ </para>
+      </summary>
+      <param name="path">File path within the project describing where the specific item was found</param>
+      <param name="line">A line number within the file</param>
+      <returns>
+        <para>The ReportItemBuilder object with the Location added</para>
+      </returns>
+    </member>
+    <member name="M:Unity.ProjectAuditor.Editor.Core.ReportItemBuilder.WithLogLevel(Unity.ProjectAuditor.Editor.LogLevel)">
+      <summary>
+        <para>
+ Adds a LogLevel to the ReportItem being built.
+ </para>
+      </summary>
+      <param name="logLevel">Log Level of the item</param>
+      <returns>
+        <para>The ReportItemBuilder object with the LogLevel added</para>
+      </returns>
+    </member>
+    <member name="M:Unity.ProjectAuditor.Editor.Core.ReportItemBuilder.WithSeverity(Unity.ProjectAuditor.Editor.Severity)">
+      <summary>
+        <para>
+ Adds a Severity to the ReportItem being built.
+ </para>
+      </summary>
+      <param name="severity">Severity of the item</param>
+      <returns>
+        <para>The ReportItemBuilder object with the LogLevel added</para>
+      </returns>
+    </member>
+    <member name="M:Unity.ProjectAuditor.Editor.Core.ReportItemBuilder.WithUpgradeProperties(System.String[])">
+      <summary>
+        <para>
+ Mark this issue as being an upgrade problem.
+ </para>
+      </summary>
+      <param name="properties">Upgrade properties</param>
+      <returns>
+        <para>The ReportItemBuilder object with the upgrade data added</para>
+      </returns>
+    </member>
+    <member name="M:Unity.ProjectAuditor.Editor.Core.ReportItemBuilder.WithUpgradeProperties(System.String,System.String,System.String)">
+      <summary>
+        <para>
+ Mark this issue as being an upgrade problem.
+ </para>
+      </summary>
+      <param name="minVersion">First affected version</param>
+      <param name="maxVersion">Last affected version, or null if not applicable</param>
+      <param name="recommendation">Recommended action</param>
+      <returns>
+        <para>The ReportItemBuilder object with the upgrade data added</para>
+      </returns>
+    </member>
+    <member name="T:Unity.ProjectAuditor.Editor.Core.SerializableEnum`1">
+      <summary>
+        <para>
+ A wrapper to enable serialization of enums
+ </para>
+      </summary>
+    </member>
+    <member name="M:Unity.ProjectAuditor.Editor.Core.SerializableEnum_1.#ctor(T)">
+      <summary>
+        <para>
+ Creates a new SerializableEnum.
+ </para>
+      </summary>
+      <param name="value"></param>
+    </member>
+    <member name="M:Unity.ProjectAuditor.Editor.Core.SerializableEnum_1.Equals(T)">
+      <summary>
+        <para>
+ Equals operator.
+ </para>
+      </summary>
+      <param name="other"></param>
+    </member>
+    <member name="M:Unity.ProjectAuditor.Editor.Core.SerializableEnum_1.Equals(Unity.ProjectAuditor.Editor.Core.SerializableEnum`1&lt;T&gt;)">
+      <summary>
+        <para>
+ Equals operator.
+ </para>
+      </summary>
+      <param name="other"></param>
+    </member>
+    <member name="M:Unity.ProjectAuditor.Editor.Core.SerializableEnum_1.Equals(System.Object)">
+      <summary>
+        <para>
+ Equals operator.
+ </para>
+      </summary>
+      <param name="obj"></param>
+    </member>
+    <member name="?:Unity.ProjectAuditor.Editor.Core.SerializableEnum_1.implop_SerializableEnum&lt;T&gt;(T)(T)">
+      <summary>
+        <para>
+ Generic implicit operator.
+ </para>
+      </summary>
+      <param name="value"></param>
+    </member>
+    <member name="?:Unity.ProjectAuditor.Editor.Core.SerializableEnum_1.implop_T(SerializableEnum&lt;T&gt;)(Unity.ProjectAuditor.Editor.Core.SerializableEnum`1&lt;T&gt;)">
+      <summary>
+        <para>
+ Implicit operator.
+ </para>
+      </summary>
+      <param name="obj"></param>
+    </member>
+    <member name="M:Unity.ProjectAuditor.Editor.Core.SerializableEnum_1.OnAfterDeserialize">
+      <summary>
+        <para>
+ Called after deserialization.
+ </para>
+      </summary>
+    </member>
+    <member name="M:Unity.ProjectAuditor.Editor.Core.SerializableEnum_1.OnBeforeSerialize">
+      <summary>
+        <para>
+ Called prior to serialization.
+ </para>
+      </summary>
+    </member>
+    <member name="P:Unity.ProjectAuditor.Editor.Core.SerializableEnum_1.Value">
+      <summary>
+        <para>
+ The value of this enum.
+ </para>
+      </summary>
+    </member>
+    <member name="T:Unity.ProjectAuditor.Editor.Core.SettingsAnalysisContext">
+      <summary>
+        <para>
+ A context object passed by SettingsModule to a SettingsModuleAnalyzer's Analyze() method.
+ </para>
+      </summary>
+    </member>
+    <member name="T:Unity.ProjectAuditor.Editor.Core.SettingsModuleAnalyzer">
+      <summary>
+        <para>
+ Abstract base class for an Analyzer to be invoked by SettingsModule
+ </para>
+      </summary>
+    </member>
+    <member name="M:Unity.ProjectAuditor.Editor.Core.SettingsModuleAnalyzer.Analyze(Unity.ProjectAuditor.Editor.Core.SettingsAnalysisContext)">
+      <summary>
+        <para>
+ Implement this method to detect Issues, construct ReportItem objects to describe them, and return them.
+ </para>
+      </summary>
+      <param name="context">Context object containing information necessary to perform analysis</param>
+      <returns>
+        <para>An enumerator for a collection of ReportItem objects</para>
+      </returns>
+    </member>
+    <member name="T:Unity.ProjectAuditor.Editor.Core.ShaderAnalysisContext">
+      <summary>
+        <para>
+ A context object passed by ShadersModule to a ShaderModuleAnalyzer's Analyze() method.
+ </para>
+      </summary>
+    </member>
+    <member name="F:Unity.ProjectAuditor.Editor.Core.ShaderAnalysisContext.AssetPath">
+      <summary>
+        <para>
+ A path to a shader asset in the project.
+ </para>
+      </summary>
+    </member>
+    <member name="F:Unity.ProjectAuditor.Editor.Core.ShaderAnalysisContext.Shader">
+      <summary>
+        <para>
+ The shader object to be analyzed.
+ </para>
+      </summary>
+    </member>
+    <member name="T:Unity.ProjectAuditor.Editor.Core.ShaderModuleAnalyzer">
+      <summary>
+        <para>
+ Abstract base class for an Analyzer to be invoked by ShaderModule
+ </para>
+      </summary>
+    </member>
+    <member name="M:Unity.ProjectAuditor.Editor.Core.ShaderModuleAnalyzer.Analyze(Unity.ProjectAuditor.Editor.Core.ShaderAnalysisContext)">
+      <summary>
+        <para>
+ Implement this method to detect Issues, construct ReportItem objects to describe them, and return them.
+ </para>
+      </summary>
+      <param name="context">Context object containing information necessary to perform analysis</param>
+      <returns>
+        <para>An enumerator for a collection of ReportItem objects</para>
+      </returns>
+    </member>
+    <member name="T:Unity.ProjectAuditor.Editor.Core.SpriteAtlasAnalysisContext">
+      <summary>
+        <para>
+ A context object passed by SpriteAtlasModule to a SpriteAtlasModuleAnalyzer's Analyze() method.
+ </para>
+      </summary>
+    </member>
+    <member name="F:Unity.ProjectAuditor.Editor.Core.SpriteAtlasAnalysisContext.AssetPath">
+      <summary>
+        <para>
+ The path to a Sprite Atlas asset in the project.
+ </para>
+      </summary>
+    </member>
+    <member name="F:Unity.ProjectAuditor.Editor.Core.SpriteAtlasAnalysisContext.EmptySpaceBytes">
+      <summary>
+        <para>
+ The empty space of the sprite atlas in bytes.
+ </para>
+      </summary>
+    </member>
+    <member name="F:Unity.ProjectAuditor.Editor.Core.SpriteAtlasAnalysisContext.EmptySpacePercentage">
+      <summary>
+        <para>
+ The empty space percentage of the sprite atlas.
+ </para>
+      </summary>
+    </member>
+    <member name="F:Unity.ProjectAuditor.Editor.Core.SpriteAtlasAnalysisContext.Name">
+      <summary>
+        <para>
+ The name of a sprite atlas asset in the project
+ </para>
+      </summary>
+    </member>
+    <member name="F:Unity.ProjectAuditor.Editor.Core.SpriteAtlasAnalysisContext.SpriteAtlas">
+      <summary>
+        <para>
+ The spriteatlas asset to be analyzed.
+ </para>
+      </summary>
+    </member>
+    <member name="T:Unity.ProjectAuditor.Editor.Core.SpriteAtlasModuleAnalyzer">
+      <summary>
+        <para>
+ Abstract base class for an Analyzer to be invoked by SpriteAtlasModule
+ </para>
+      </summary>
+    </member>
+    <member name="M:Unity.ProjectAuditor.Editor.Core.SpriteAtlasModuleAnalyzer.Analyze(Unity.ProjectAuditor.Editor.Core.SpriteAtlasAnalysisContext)">
+      <summary>
+        <para>
+ Implement this method to detect Issues, construct ReportItem objects to describe them, and return them.
+ </para>
+      </summary>
+      <param name="context">Context object containing information necessary to perform analysis</param>
+      <returns>
+        <para>An enumerator for a collection of ReportItem objects</para>
+      </returns>
+    </member>
+    <member name="T:Unity.ProjectAuditor.Editor.Core.TextureAnalysisContext">
+      <summary>
+        <para>
+ A context object passed by a TextureModule to a TextureModuleAnalyzer's Analyze() method.
+ </para>
+      </summary>
+    </member>
+    <member name="F:Unity.ProjectAuditor.Editor.Core.TextureAnalysisContext.Importer">
+      <summary>
+        <para>
+ The TextureImporter used to import the texture to be analyzed.
+ </para>
+      </summary>
+    </member>
+    <member name="F:Unity.ProjectAuditor.Editor.Core.TextureAnalysisContext.ImporterPlatformSettings">
+      <summary>
+        <para>
+ The texture importer's platform settings, matching the target analysis platform.
+ </para>
+      </summary>
+    </member>
+    <member name="F:Unity.ProjectAuditor.Editor.Core.TextureAnalysisContext.Name">
+      <summary>
+        <para>
+ The name of a texture asset in the project
+ </para>
+      </summary>
+    </member>
+    <member name="F:Unity.ProjectAuditor.Editor.Core.TextureAnalysisContext.Size">
+      <summary>
+        <para>
+ An estimate of the texture's runtime memory footprint.
+ </para>
+      </summary>
+    </member>
+    <member name="F:Unity.ProjectAuditor.Editor.Core.TextureAnalysisContext.Texture">
+      <summary>
+        <para>
+ The texture asset to be analyzed.
+ </para>
+      </summary>
+    </member>
+    <member name="T:Unity.ProjectAuditor.Editor.Core.TextureModuleAnalyzer">
+      <summary>
+        <para>
+ Abstract base class for an Analyzer to be invoked by TextureModule
+ </para>
+      </summary>
+    </member>
+    <member name="M:Unity.ProjectAuditor.Editor.Core.TextureModuleAnalyzer.Analyze(Unity.ProjectAuditor.Editor.Core.TextureAnalysisContext)">
+      <summary>
+        <para>
+ Implement this method to detect Issues, construct ReportItem objects to describe them, and return them.
+ </para>
+      </summary>
+      <param name="context">Context object containing information necessary to perform analysis</param>
+      <returns>
+        <para>An enumerator for a collection of ReportItem objects</para>
+      </returns>
+    </member>
+    <member name="T:Unity.ProjectAuditor.Editor.DependencyNode">
+      <summary>
+        <para>
+ Represents a node in a dependency tree for reporting issues in the UI.
+ This is used to represent call trees, and dependencies between assets, assemblies, or packages.
+ </para>
+      </summary>
+    </member>
+    <member name="M:Unity.ProjectAuditor.Editor.DependencyNode.AddChildren(System.Collections.Generic.IReadOnlyList`1&lt;Unity.ProjectAuditor.Editor.DependencyNode&gt;)">
+      <summary>
+        <para>
+ Adds multiple children to this node
+ </para>
+      </summary>
+      <param name="children">An array of nodes to add as children of this one.</param>
+    </member>
+    <member name="F:Unity.ProjectAuditor.Editor.DependencyNode.Location">
+      <summary>
+        <para>
+ The location represented by this node
+ </para>
+      </summary>
+    </member>
+    <member name="F:Unity.ProjectAuditor.Editor.DependencyNode.PerfCriticalContext">
+      <summary>
+        <para>
+ Whether this node forms part of a performance-critical context
+ </para>
+      </summary>
+    </member>
+    <member name="T:Unity.ProjectAuditor.Editor.Descriptor">
+      <summary>
+        <para>
+ Descriptor defines a potential problem and a recommended course of action.
+ </para>
+      </summary>
+    </member>
+    <member name="F:Unity.ProjectAuditor.Editor.Descriptor.Areas">
+      <summary>
+        <para>
+ Affected areas
+ </para>
+      </summary>
+    </member>
+    <member name="M:Unity.ProjectAuditor.Editor.Descriptor.#ctor(System.String,System.String,Unity.ProjectAuditor.Editor.Areas,System.String,System.String)">
+      <summary>
+        <para>
+ Initializes and returns an instance of Descriptor.
+ </para>
+      </summary>
+      <param name="id">The Issue ID string.</param>
+      <param name="title">A short human-readable 'name' for the issue</param>
+      <param name="areas">The area(s) affected by this issue.</param>
+      <param name="description">A description of the issue.</param>
+      <param name="recommendation">Advice on how to resolve the issue.</param>
+    </member>
+    <member name="F:Unity.ProjectAuditor.Editor.Descriptor.DefaultSeverity">
+      <summary>
+        <para>
+ Default Severity of the issue.
+ </para>
+      </summary>
+    </member>
+    <member name="F:Unity.ProjectAuditor.Editor.Descriptor.Description">
+      <summary>
+        <para>
+ Description of the issue.
+ </para>
+      </summary>
+    </member>
+    <member name="F:Unity.ProjectAuditor.Editor.Descriptor.DocumentationUrl">
+      <summary>
+        <para>
+ URL to documentation.
+ </para>
+      </summary>
+    </member>
+    <member name="M:Unity.ProjectAuditor.Editor.Descriptor.Equals(Unity.ProjectAuditor.Editor.Descriptor)">
+      <summary>
+        <para>Returns true if the Descriptor is equal to a given Descriptor, false otherwise.</para>
+      </summary>
+      <param name="other">The Descriptor to compare equality with.</param>
+      <returns>
+        <para>The result of the equality comparison.</para>
+      </returns>
+    </member>
+    <member name="M:Unity.ProjectAuditor.Editor.Descriptor.Equals(System.Object)">
+      <summary>
+        <para>Returns true if the Descriptor is equal to a given object, false otherwise.</para>
+      </summary>
+      <param name="obj">The object to compare equality with.</param>
+      <returns>
+        <para>The result of the equality comparison.</para>
+      </returns>
+    </member>
+    <member name="F:Unity.ProjectAuditor.Editor.Descriptor.Fixer">
+      <summary>
+        <para>
+ Optional Auto-Fixer
+ </para>
+      </summary>
+    </member>
+    <member name="F:Unity.ProjectAuditor.Editor.Descriptor.FixerLabel">
+      <summary>
+        <para>
+ The Auto-Fixer can have a custom label
+ </para>
+      </summary>
+    </member>
+    <member name="M:Unity.ProjectAuditor.Editor.Descriptor.GetHashCode">
+      <summary>
+        <para>Returns the hash code for the Descriptor's Issue ID.</para>
+      </summary>
+      <returns>
+        <para>The computed hash code.</para>
+      </returns>
+    </member>
+    <member name="F:Unity.ProjectAuditor.Editor.Descriptor.Id">
+      <summary>
+        <para>
+ An unique identifier for the issue. IDs must have exactly 3 upper case characters, followed by 4 digits.
+ </para>
+      </summary>
+    </member>
+    <member name="F:Unity.ProjectAuditor.Editor.Descriptor.IsEnabledByDefault">
+      <summary>
+        <para>
+ Returns true if the issue is enabled by default.
+ </para>
+      </summary>
+    </member>
+    <member name="F:Unity.ProjectAuditor.Editor.Descriptor.MaximumVersion">
+      <summary>
+        <para>
+ Maximum Unity version this issue applies to. If not specified, the issue applies to all versions.
+ </para>
+      </summary>
+    </member>
+    <member name="F:Unity.ProjectAuditor.Editor.Descriptor.MessageFormat">
+      <summary>
+        <para>
+ Message used to describe a specific instance of the issue.
+ </para>
+      </summary>
+    </member>
+    <member name="F:Unity.ProjectAuditor.Editor.Descriptor.Method">
+      <summary>
+        <para>
+ Name of the method of a known code API issue.
+ </para>
+      </summary>
+    </member>
+    <member name="F:Unity.ProjectAuditor.Editor.Descriptor.MinimumVersion">
+      <summary>
+        <para>
+ Minimum Unity version this issue applies to. If not specified, the issue applies to all versions.
+ </para>
+      </summary>
+    </member>
+    <member name="F:Unity.ProjectAuditor.Editor.Descriptor.Platforms">
+      <summary>
+        <para>
+ Affected platforms. If null, the issue applies to all platforms.
+ </para>
+      </summary>
+    </member>
+    <member name="F:Unity.ProjectAuditor.Editor.Descriptor.Recommendation">
+      <summary>
+        <para>
+ Recommendation to fix the issue.
+ </para>
+      </summary>
+    </member>
+    <member name="F:Unity.ProjectAuditor.Editor.Descriptor.ReturnType">
+      <summary>
+        <para>
+ Return type of a known code API issue. See https:jira.unity3d.combrowsePROFB-318 for more details on why this is useful.
+ </para>
+      </summary>
+    </member>
+    <member name="F:Unity.ProjectAuditor.Editor.Descriptor.Title">
+      <summary>
+        <para>
+ Issue title
+ </para>
+      </summary>
+    </member>
+    <member name="F:Unity.ProjectAuditor.Editor.Descriptor.Type">
+      <summary>
+        <para>
+ Name of the type (namespace and class/struct) of a known code API issue.
+ </para>
+      </summary>
+    </member>
+    <member name="F:Unity.ProjectAuditor.Editor.Descriptor.Value">
+      <summary>
+        <para>
+ The evaluated value of a know code API issue.
+ </para>
+      </summary>
+    </member>
+    <member name="T:Unity.ProjectAuditor.Editor.DescriptorId">
+      <summary>
+        <para>
+ An unique identifier for an Issue Descriptor. IDs must have exactly 3 upper case characters, followed by 4 digits.
+ </para>
+      </summary>
+    </member>
+    <member name="M:Unity.ProjectAuditor.Editor.DescriptorId.AsInt">
+      <summary>
+        <para>
+ Get the hashed integer representation of the ID
+ </para>
+      </summary>
+      <returns>
+        <para>The ID as an int</para>
+      </returns>
+    </member>
+    <member name="M:Unity.ProjectAuditor.Editor.DescriptorId.AsString">
+      <summary>
+        <para>
+ Get the string representation of the ID
+ </para>
+      </summary>
+      <returns>
+        <para>The ID as a string</para>
+      </returns>
+    </member>
+    <member name="M:Unity.ProjectAuditor.Editor.DescriptorId.#ctor(System.String)">
+      <summary>
+        <para>
+ Constructor
+ </para>
+      </summary>
+      <param name="id">String representing a valid and unique Descriptor ID. IDs must have exactly 3 upper case characters, followed by 4 digits.</param>
+    </member>
+    <member name="M:Unity.ProjectAuditor.Editor.DescriptorId.Equals(Unity.ProjectAuditor.Editor.DescriptorId)">
+      <summary>
+        <para>
+ Checks whether two DescriptorIDs contain the same ID.
+ </para>
+      </summary>
+      <param name="other">A DescriptorId to compare to.</param>
+      <returns>
+        <para>True if the descriptors are the same, false if they are different.</para>
+      </returns>
+    </member>
+    <member name="M:Unity.ProjectAuditor.Editor.DescriptorId.Equals(System.String)">
+      <summary>
+        <para>
+ Checks whether two DescriptorIDs contain the same ID.
+ </para>
+      </summary>
+      <param name="other">A string representing a descriptor ID to compare to.</param>
+      <returns>
+        <para>True if the descriptors are the same, false if they are different.</para>
+      </returns>
+    </member>
+    <member name="M:Unity.ProjectAuditor.Editor.DescriptorId.GetDescriptor">
+      <summary>
+        <para>
+ Get the Descriptor which corresponds to this ID.
+ </para>
+      </summary>
+      <returns>
+        <para>The Descriptor which corresponds to this ID. If the ID is invalid, throws an exception.</para>
+      </returns>
+    </member>
+    <member name="?:Unity.ProjectAuditor.Editor.DescriptorId.implop_DescriptorId(string)(System.String)">
+      <summary>
+        <para>Implicit conversion of string to DescriptorId.</para>
+      </summary>
+      <param name="id">A string to convert</param>
+      <returns>
+        <para>A DescriptorId constructed using the string ID</para>
+      </returns>
+    </member>
+    <member name="?:Unity.ProjectAuditor.Editor.DescriptorId.implop_int(DescriptorId)(Unity.ProjectAuditor.Editor.DescriptorId)">
+      <summary>
+        <para>Implicit conversion of DescriptorId to int.</para>
+      </summary>
+      <param name="d">A DescriptorId to convert</param>
+      <returns>
+        <para>The integer hash of the ID</para>
+      </returns>
+    </member>
+    <member name="?:Unity.ProjectAuditor.Editor.DescriptorId.implop_string(DescriptorId)(Unity.ProjectAuditor.Editor.DescriptorId)">
+      <summary>
+        <para>Implicit conversion of DescriptorId to string.</para>
+      </summary>
+      <param name="d">A DescriptorId to convert</param>
+      <returns>
+        <para>A string representation of the ID</para>
+      </returns>
+    </member>
+    <member name="M:Unity.ProjectAuditor.Editor.DescriptorId.IsValid">
+      <summary>
+        <para>
+ Checks whether the ID has been successfully constructed from a correctly-formatted string.
+ </para>
+      </summary>
+      <returns>
+        <para>True if the ID is valid</para>
+      </returns>
+    </member>
+    <member name="M:Unity.ProjectAuditor.Editor.DescriptorId.OnAfterDeserialize">
+      <summary>
+        <para>
+ Unity calls this method automatically after deserialization.
+ </para>
+      </summary>
+    </member>
+    <member name="M:Unity.ProjectAuditor.Editor.DescriptorId.OnBeforeSerialize">
+      <summary>
+        <para>
+ Unity calls this method automatically before serialization.
+ </para>
+      </summary>
+    </member>
+    <member name="M:Unity.ProjectAuditor.Editor.DescriptorId.ToString">
+      <summary>
+        <para>
+ Returns the string representation of the ID
+ </para>
+      </summary>
+      <returns>
+        <para>The DescriptorId in string form.</para>
+      </returns>
+    </member>
+    <member name="T:Unity.ProjectAuditor.Editor.DiagnosticParams">
+      <summary>
+        <para>
+ Provides numeric parameters with arbitrary names and defaults, with optional overrides for individual target build platforms.
+ </para>
+      </summary>
+    </member>
+    <member name="M:Unity.ProjectAuditor.Editor.DiagnosticParams.#ctor">
+      <summary>
+        <para>
+ Default constructor
+ </para>
+      </summary>
+    </member>
+    <member name="M:Unity.ProjectAuditor.Editor.DiagnosticParams.#ctor(Unity.ProjectAuditor.Editor.DiagnosticParams)">
+      <summary>
+        <para>
+ Copy constructor
+ </para>
+      </summary>
+      <param name="copyFrom">The DiagnosticParams object to copy from.</param>
+    </member>
+    <member name="M:Unity.ProjectAuditor.Editor.DiagnosticParams.DoGUI(UnityEditor.BuildTargetGroup)">
+      <summary>
+        <para>
+ Draw project settings GUI for a specific BuildTargetGroup.
+ </para>
+      </summary>
+      <param name="btg">The BuildTargetGroup to draw the project settings UI for.</param>
+    </member>
+    <member name="M:Unity.ProjectAuditor.Editor.DiagnosticParams.GetDefault(System.String)">
+      <summary>
+        <para>
+ Get the default value for this parameter.
+ </para>
+      </summary>
+      <param name="paramKey">Parameter key to look up.</param>
+      <returns>
+        <para>The default value for the key if it can be found, or 0 if not.</para>
+      </returns>
+    </member>
+    <member name="M:Unity.ProjectAuditor.Editor.DiagnosticParams.GetParameter(System.String)">
+      <summary>
+        <para>
+ Get the value of a named parameter. The parameter must have previously been registered with the RegisterParameter method.
+ </para>
+      </summary>
+      <param name="paramName">Parameter name to look up.</param>
+      <returns>
+        <para>The parameter value for the currently-set analysis platform.</para>
+      </returns>
+    </member>
+    <member name="M:Unity.ProjectAuditor.Editor.DiagnosticParams.OnAfterDeserialize">
+      <summary>
+        <para>
+ Unity calls this method automatically after deserialization.
+ </para>
+      </summary>
+    </member>
+    <member name="M:Unity.ProjectAuditor.Editor.DiagnosticParams.OnBeforeSerialize">
+      <summary>
+        <para>
+ Unity calls this method automatically before serialization.
+ </para>
+      </summary>
+    </member>
+    <member name="M:Unity.ProjectAuditor.Editor.DiagnosticParams.RegisterParameter(System.String,System.String,System.String,System.Int32)">
+      <summary>
+        <para>
+ Register a parameter by declaring its name and default value. Parameters are registered on the "default" platform, so are available for retrieval on every target platform.
+ </para>
+      </summary>
+      <param name="paramName">Parameter name.</param>
+      <param name="userFriendlyName">A user friendly name to show in the Project Settings.</param>
+      <param name="tooltip">Text to show on a tooltip in the Project Settings.</param>
+      <param name="defaultValue">The default value this parameter will have, unless it has already been registered.</param>
+    </member>
+    <member name="M:Unity.ProjectAuditor.Editor.DiagnosticParams.RegisterParameter(System.String,System.String,System.String,System.Int32,System.Int32,System.Int32)">
+      <summary>
+        <para>
+ Register a parameter by declaring its name and default value. Parameters are registered on the "default" platform, so are available for retrieval on every target platform.
+ </para>
+      </summary>
+      <param name="paramName">Parameter name.</param>
+      <param name="userFriendlyName">A user friendly name to show in the Project Settings.</param>
+      <param name="tooltip">Text to show on a tooltip in the Project Settings.</param>
+      <param name="defaultValue">The default value this parameter will have, unless it has already been registered.</param>
+      <param name="minValue">The minimum valid value this parameter may have.</param>
+      <param name="maxValue">The maximum valid value this parameter may have.</param>
+    </member>
+    <member name="M:Unity.ProjectAuditor.Editor.DiagnosticParams.SetAnalysisPlatform(UnityEditor.BuildTarget)">
+      <summary>
+        <para>
+ Sets the target analysis platform. When retrieving parameters, DiagnosticParams will first check the values specific to this platform.
+ </para>
+      </summary>
+      <param name="platform">Target platform for analysis.</param>
+    </member>
+    <member name="M:Unity.ProjectAuditor.Editor.DiagnosticParams.SetParameter(System.String,System.String,System.String,System.Int32,UnityEditor.BuildTargetGroup)">
+      <summary>
+        <para>
+ Set the value of a named parameter for a given analysis platform.
+ </para>
+      </summary>
+      <param name="paramName">Parameter name to set.</param>
+      <param name="userFriendlyName">A user friendly name to show in project settings.</param>
+      <param name="tooltip">Text to show on a tooltip in project settings.</param>
+      <param name="value">Value to set the parameter to.</param>
+      <param name="platform">Analysis target platform for which to set the value. Defaults to BuildTarget.NoTarget which sets the value for the default platform.</param>
+    </member>
+    <member name="?:Unity.ProjectAuditor.Editor.IProgress">
+      <summary>
+        <para>
+ Provides methods to create and manage an object which can represent progress of the project analysis process.
+ </para>
+      </summary>
+    </member>
+    <member name="M:Unity.ProjectAuditor.Editor.IProgress.Advance(Unity.ProjectAuditor.Editor.AsyncProgressState,System.String)">
+      <summary>
+        <para>
+ Advances the progress object by one step.
+ </para>
+      </summary>
+      <param name="state">The state data returned by Start</param>
+      <param name="description">Updated message</param>
+    </member>
+    <member name="M:Unity.ProjectAuditor.Editor.IProgress.AdvanceRoot(Unity.ProjectAuditor.Editor.AsyncProgressState)">
+      <summary>
+        <para>
+ Advances the root progress object by one step.
+ </para>
+      </summary>
+      <param name="state">The state data returned by StartParent</param>
+    </member>
+    <member name="M:Unity.ProjectAuditor.Editor.IProgress.Cancel">
+      <summary>
+        <para>
+ Cancels the progress object.
+ </para>
+      </summary>
+    </member>
+    <member name="M:Unity.ProjectAuditor.Editor.IProgress.Clear(Unity.ProjectAuditor.Editor.AsyncProgressState)">
+      <summary>
+        <para>
+ Clear and hide the progress object.
+ </para>
+      </summary>
+      <param name="state">The state data returned by Start</param>
+    </member>
+    <member name="M:Unity.ProjectAuditor.Editor.IProgress.ClearRoot(Unity.ProjectAuditor.Editor.AsyncProgressState)">
+      <summary>
+        <para>
+ Clear and hide the root progress object.
+ </para>
+      </summary>
+      <param name="state">The state data returned by StartParent</param>
+    </member>
+    <member name="P:Unity.ProjectAuditor.Editor.IProgress.IsCancelled">
+      <summary>
+        <para>
+ Checks if the progress operation has been cancelled.
+ </para>
+      </summary>
+    </member>
+    <member name="M:Unity.ProjectAuditor.Editor.IProgress.Start(System.String,System.Int32)">
+      <summary>
+        <para>
+ Initializes the progress object.
+ </para>
+      </summary>
+      <param name="title">Title</param>
+      <param name="total">Number of steps</param>
+    </member>
+    <member name="M:Unity.ProjectAuditor.Editor.IProgress.StartRoot(System.String,System.String,System.Int32)">
+      <summary>
+        <para>
+ Initializes the root progress object.
+ </para>
+      </summary>
+      <param name="title">Title</param>
+      <param name="description">Description</param>
+      <param name="total">Number of steps</param>
+    </member>
+    <member name="T:Unity.ProjectAuditor.Editor.IssueCategory">
+      <summary>
+        <para>
+ Identifiers for all the categories of issues reported by Project Auditor.
+ </para>
+      </summary>
+    </member>
+    <member name="F:Unity.ProjectAuditor.Editor.IssueCategory.AnimationClip">
+      <summary>
+        <para>
+ Issues relating to animation clips
+ </para>
+      </summary>
+    </member>
+    <member name="F:Unity.ProjectAuditor.Editor.IssueCategory.AnimatorController">
+      <summary>
+        <para>
+ Issues relating to animator controllers
+ </para>
+      </summary>
+    </member>
+    <member name="F:Unity.ProjectAuditor.Editor.IssueCategory.Assembly">
+      <summary>
+        <para>
+ Category for information about all of the code assemblies in the project
+ </para>
+      </summary>
+    </member>
+    <member name="F:Unity.ProjectAuditor.Editor.IssueCategory.AssetIssue">
+      <summary>
+        <para>
+ Issues relating to asset data or asset import settings
+ </para>
+      </summary>
+    </member>
+    <member name="F:Unity.ProjectAuditor.Editor.IssueCategory.AudioClip">
+      <summary>
+        <para>
+ Issues relating to Audio Clip assets and import settings
+ </para>
+      </summary>
+    </member>
+    <member name="F:Unity.ProjectAuditor.Editor.IssueCategory.Avatar">
+      <summary>
+        <para>
+ Issues relating to avatars
+ </para>
+      </summary>
+    </member>
+    <member name="F:Unity.ProjectAuditor.Editor.IssueCategory.AvatarMask">
+      <summary>
+        <para>
+ Issues relating to avatar masks
+ </para>
+      </summary>
+    </member>
+    <member name="F:Unity.ProjectAuditor.Editor.IssueCategory.BuildFile">
+      <summary>
+        <para>
+ Category for displaying information about files created during the project build process
+ </para>
+      </summary>
+    </member>
+    <member name="F:Unity.ProjectAuditor.Editor.IssueCategory.BuildStep">
+      <summary>
+        <para>
+ Category for displaying information about the steps of the build process and how long they took
+ </para>
+      </summary>
+    </member>
+    <member name="F:Unity.ProjectAuditor.Editor.IssueCategory.BuildSummary">
+      <summary>
+        <para>
+ Category for build summary information
+ </para>
+      </summary>
+    </member>
+    <member name="F:Unity.ProjectAuditor.Editor.IssueCategory.Code">
+      <summary>
+        <para>
+ Code Issues, discovered by static code analysis
+ </para>
+      </summary>
+    </member>
+    <member name="F:Unity.ProjectAuditor.Editor.IssueCategory.CodeCompilerMessage">
+      <summary>
+        <para>
+ Compiler errors and warnings generated whilst compiling code for static analysis
+ </para>
+      </summary>
+    </member>
+    <member name="F:Unity.ProjectAuditor.Editor.IssueCategory.ComputeShaderVariant">
+      <summary>
+        <para>
+ Category for displaying variants of compute shaders
+ </para>
+      </summary>
+    </member>
+    <member name="F:Unity.ProjectAuditor.Editor.IssueCategory.DomainReload">
+      <summary>
+        <para>
+ Issues that could result in undesired behavior if domain reloading is disabled
+ </para>
+      </summary>
+    </member>
+    <member name="F:Unity.ProjectAuditor.Editor.IssueCategory.FirstCustomCategory">
+      <summary>
+        <para>
+ Enum value indicating the first available custom category
+ </para>
+      </summary>
+    </member>
+    <member name="F:Unity.ProjectAuditor.Editor.IssueCategory.GameObject">
+      <summary>
+        <para>
+ Category for showing GameObjects
+ </para>
+      </summary>
+    </member>
+    <member name="F:Unity.ProjectAuditor.Editor.IssueCategory.Material">
+      <summary>
+        <para>
+ Category for showing materials grouped by shader
+ </para>
+      </summary>
+    </member>
+    <member name="F:Unity.ProjectAuditor.Editor.IssueCategory.Mesh">
+      <summary>
+        <para>
+ Issues relating to Mesh assets and import settings
+ </para>
+      </summary>
+    </member>
+    <member name="F:Unity.ProjectAuditor.Editor.IssueCategory.MeshCollider">
+      <summary>
+        <para>
+ Category for showing MeshColliders
+ </para>
+      </summary>
+    </member>
+    <member name="F:Unity.ProjectAuditor.Editor.IssueCategory.Metadata">
+      <summary>
+        <para>
+ Category for General statistics about the analysis process and its results.
+ </para>
+      </summary>
+    </member>
+    <member name="F:Unity.ProjectAuditor.Editor.IssueCategory.ObsoleteAPI">
+      <summary>
+        <para>
+ A library of deprecated API
+ </para>
+      </summary>
+    </member>
+    <member name="F:Unity.ProjectAuditor.Editor.IssueCategory.Package">
+      <summary>
+        <para>
+ Category for displaying installed packages
+ </para>
+      </summary>
+    </member>
+    <member name="F:Unity.ProjectAuditor.Editor.IssueCategory.PrecompiledAssembly">
+      <summary>
+        <para>
+ Category for information about precompiled assemblies
+ </para>
+      </summary>
+    </member>
+    <member name="F:Unity.ProjectAuditor.Editor.IssueCategory.ProjectSetting">
+      <summary>
+        <para>
+ Issues relating to project settings
+ </para>
+      </summary>
+    </member>
+    <member name="F:Unity.ProjectAuditor.Editor.IssueCategory.Shader">
+      <summary>
+        <para>
+ Category for reporting shaders in the project
+ </para>
+      </summary>
+    </member>
+    <member name="F:Unity.ProjectAuditor.Editor.IssueCategory.ShaderCompilerMessage">
+      <summary>
+        <para>
+ Issues reported by the shader compiler
+ </para>
+      </summary>
+    </member>
+    <member name="F:Unity.ProjectAuditor.Editor.IssueCategory.ShaderVariant">
+      <summary>
+        <para>
+ Category for reporting shader variants
+ </para>
+      </summary>
+    </member>
+    <member name="F:Unity.ProjectAuditor.Editor.IssueCategory.SpriteAtlas">
+      <summary>
+        <para>
+ Issues relating to Sprite Atlas assets and import settings
+ </para>
+      </summary>
+    </member>
+    <member name="F:Unity.ProjectAuditor.Editor.IssueCategory.Texture">
+      <summary>
+        <para>
+ Issues relating to texture assets and texture import settings
+ </para>
+      </summary>
+    </member>
+    <member name="T:Unity.ProjectAuditor.Editor.Location">
+      <summary>
+        <para>
+ Represents the location of a reported issue.
+ </para>
+      </summary>
+    </member>
+    <member name="M:Unity.ProjectAuditor.Editor.Location.#ctor">
+      <summary>
+        <para>
+ Constructor
+ </para>
+      </summary>
+    </member>
+    <member name="M:Unity.ProjectAuditor.Editor.Location.#ctor(System.String)">
+      <summary>
+        <para>
+ Constructor
+ </para>
+      </summary>
+      <param name="path">File path</param>
+    </member>
+    <member name="M:Unity.ProjectAuditor.Editor.Location.#ctor(System.String,System.Int32)">
+      <summary>
+        <para>
+ Constructor with line number
+ </para>
+      </summary>
+      <param name="path">File path</param>
+      <param name="line">Line number</param>
+    </member>
+    <member name="P:Unity.ProjectAuditor.Editor.Location.Extension">
+      <summary>
+        <para>
+ File extension
+ </para>
+      </summary>
+    </member>
+    <member name="P:Unity.ProjectAuditor.Editor.Location.Filename">
+      <summary>
+        <para>
+ Filename
+ </para>
+      </summary>
+    </member>
+    <member name="P:Unity.ProjectAuditor.Editor.Location.FormattedFilename">
+      <summary>
+        <para>
+ Formatted filename with line number
+ </para>
+      </summary>
+    </member>
+    <member name="P:Unity.ProjectAuditor.Editor.Location.FormattedPath">
+      <summary>
+        <para>
+ Formatted path with line number
+ </para>
+      </summary>
+    </member>
+    <member name="P:Unity.ProjectAuditor.Editor.Location.IsValid">
+      <summary>
+        <para>
+ Checks whether the location is valid
+ </para>
+      </summary>
+    </member>
+    <member name="P:Unity.ProjectAuditor.Editor.Location.Line">
+      <summary>
+        <para>
+ Line number
+ </para>
+      </summary>
+    </member>
+    <member name="M:Unity.ProjectAuditor.Editor.Location.OnAfterDeserialize">
+      <summary>
+        <para>
+ Post-serialize callback.
+ </para>
+      </summary>
+    </member>
+    <member name="M:Unity.ProjectAuditor.Editor.Location.OnBeforeSerialize">
+      <summary>
+        <para>
+ Pre-serialize callback.
+ </para>
+      </summary>
+    </member>
+    <member name="P:Unity.ProjectAuditor.Editor.Location.Path">
+      <summary>
+        <para>
+ Full path
+ </para>
+      </summary>
+    </member>
+    <member name="T:Unity.ProjectAuditor.Editor.LogLevel">
+      <summary>
+        <para>
+ Describes the message log level of a code issue
+ </para>
+      </summary>
+    </member>
+    <member name="F:Unity.ProjectAuditor.Editor.LogLevel.Error">
+      <summary>
+        <para>
+ An error message
+ </para>
+      </summary>
+    </member>
+    <member name="F:Unity.ProjectAuditor.Editor.LogLevel.Info">
+      <summary>
+        <para>
+ A general information message
+ </para>
+      </summary>
+    </member>
+    <member name="F:Unity.ProjectAuditor.Editor.LogLevel.Warning">
+      <summary>
+        <para>
+ A warning message
+ </para>
+      </summary>
+    </member>
+    <member name="T:Unity.ProjectAuditor.Editor.Modules.AnimationClipAnalysisContext">
+      <summary>
+        <para>
+ A context object passed by AnimationModule to an AnimationClipAnalyzer's Analyze() method.
+ </para>
+      </summary>
+    </member>
+    <member name="F:Unity.ProjectAuditor.Editor.Modules.AnimationClipAnalysisContext.Clip">
+      <summary>
+        <para>
+ The animation clip.
+ </para>
+      </summary>
+    </member>
+    <member name="T:Unity.ProjectAuditor.Editor.Modules.AnimationClipAnalyzer">
+      <summary>
+        <para>
+ Abstract base class for an Analyzer to be invoked by AnimationModule.
+ </para>
+      </summary>
+    </member>
+    <member name="M:Unity.ProjectAuditor.Editor.Modules.AnimationClipAnalyzer.Analyze(Unity.ProjectAuditor.Editor.Modules.AnimationClipAnalysisContext)">
+      <summary>
+        <para>
+ Implement this method to detect Issues, construct ReportItem objects to describe them, and return them.
+ </para>
+      </summary>
+      <param name="context">Context object containing information necessary to perform analysis</param>
+      <returns>
+        <para>An enumerator for a collection of ReportItem objects</para>
+      </returns>
+    </member>
+    <member name="T:Unity.ProjectAuditor.Editor.ProjectAuditor">
+      <summary>
+        <para>
+ The ProjectAuditor class is responsible for auditing the Unity project.
+ </para>
+      </summary>
+    </member>
+    <member name="P:Unity.ProjectAuditor.Editor.ProjectAuditor.callbackOrder">
+      <summary>
+        <para>
+ Returns the relative callback order for callbacks. Callbacks with lower values are called before ones with higher values.
+ </para>
+      </summary>
+    </member>
+    <member name="M:Unity.ProjectAuditor.Editor.ProjectAuditor.Audit(Unity.ProjectAuditor.Editor.IProgress)">
+      <summary>
+        <para>
+ Performs static analysis of the project, using default parameters.
+ </para>
+      </summary>
+      <param name="progress"> Progress bar, if applicable </param>
+      <returns>
+        <para> Generated report </para>
+      </returns>
+    </member>
+    <member name="M:Unity.ProjectAuditor.Editor.ProjectAuditor.Audit(Unity.ProjectAuditor.Editor.AnalysisParams,Unity.ProjectAuditor.Editor.IProgress)">
+      <summary>
+        <para>
+ Performs static analysis of the project, using the supplied analysis parameters.
+ </para>
+      </summary>
+      <param name="analysisParams"> Parameters to control the audit process </param>
+      <param name="progress"> Progress bar, if applicable </param>
+      <returns>
+        <para> Generated report </para>
+      </returns>
+    </member>
+    <member name="M:Unity.ProjectAuditor.Editor.ProjectAuditor.AuditAsync(Unity.ProjectAuditor.Editor.AnalysisParams,Unity.ProjectAuditor.Editor.IProgress)">
+      <summary>
+        <para>
+ Performs asynchronous static analysis of the project, using the supplied analysis parameters.
+ Provide a callback to the OnCompleted Action in analysisParams to obtain the Unity.ProjectAuditor.Editor.Report when analysis is completed.
+ </para>
+      </summary>
+      <param name="analysisParams"> Parameters to control the audit process </param>
+      <param name="progress"> Progress bar, if applicable </param>
+    </member>
+    <member name="M:Unity.ProjectAuditor.Editor.ProjectAuditor.#ctor">
+      <summary>
+        <para>
+ ProjectAuditor default constructor
+ </para>
+      </summary>
+    </member>
+    <member name="P:Unity.ProjectAuditor.Editor.ProjectAuditor.KnownUnityVersions">
+      <summary>
+        <para>
+ Returns a list of Unity versions that is known to Project Auditor. It is based on the content in the Obsolete API Database.
+ </para>
+      </summary>
+    </member>
+    <member name="M:Unity.ProjectAuditor.Editor.ProjectAuditor.OnPostprocessBuild(UnityEditor.Build.Reporting.BuildReport)">
+      <summary>
+        <para>
+ Callback function which is called after a build is completed.
+ If UserPreferences.AnalyzeAfterBuild is true, performs a full audit and logs the number of issues found.
+ </para>
+      </summary>
+      <param name="report">A report containing information about the build, such as its target platform and output path.</param>
+    </member>
+    <member name="T:Unity.ProjectAuditor.Editor.Report">
+      <summary>
+        <para>
+ Report contains a list of all issues found by ProjectAuditor.
+ </para>
+      </summary>
+    </member>
+    <member name="F:Unity.ProjectAuditor.Editor.Report.DisplayName">
+      <summary>
+        <para>
+ A name to display along with the Report, configurable by the user.
+ </para>
+      </summary>
+    </member>
+    <member name="M:Unity.ProjectAuditor.Editor.Report.FindByCategory(Unity.ProjectAuditor.Editor.IssueCategory)">
+      <summary>
+        <para>
+ find all issues for a specific IssueCategory.
+ </para>
+      </summary>
+      <param name="category"> Desired IssueCategory</param>
+      <returns>
+        <para> Array of project issues</para>
+      </returns>
+    </member>
+    <member name="M:Unity.ProjectAuditor.Editor.Report.FindByDescriptorId(System.String)">
+      <summary>
+        <para>
+ Find all Issues that match a specific ID.
+ </para>
+      </summary>
+      <param name="id"> Desired Descriptor ID</param>
+      <returns>
+        <para> Array of project issues</para>
+      </returns>
+    </member>
+    <member name="M:Unity.ProjectAuditor.Editor.Report.GetAllIssues">
+      <summary>
+        <para>
+ Gets a read-only collection of all of the ProjectIssues included in the report.
+ </para>
+      </summary>
+      <returns>
+        <para>All the issues in the report</para>
+      </returns>
+    </member>
+    <member name="M:Unity.ProjectAuditor.Editor.Report.GetNumIssues(Unity.ProjectAuditor.Editor.IssueCategory)">
+      <summary>
+        <para>
+ Get total number of issues for a specific IssueCategory.
+ </para>
+      </summary>
+      <param name="category"> Desired IssueCategory</param>
+      <returns>
+        <para> Number of project issues</para>
+      </returns>
+    </member>
+    <member name="M:Unity.ProjectAuditor.Editor.Report.HasCategory(Unity.ProjectAuditor.Editor.IssueCategory)">
+      <summary>
+        <para>
+ Checks whether the Report includes analysis for a given IssueCategory.
+ </para>
+      </summary>
+      <param name="category">The IssuesCategory to check</param>
+      <returns>
+        <para>True if ProjectAuditor ran one or more Modules that reports issues of the specified IssueCategory. Otherwise, returns false.</para>
+      </returns>
+    </member>
+    <member name="M:Unity.ProjectAuditor.Editor.Report.IsValid">
+      <summary>
+        <para>
+ Check whether all issues in the report are valid.
+ </para>
+      </summary>
+      <returns>
+        <para>True is none of the issues in the report have a null description string. Otherwise returns false.</para>
+      </returns>
+    </member>
+    <member name="M:Unity.ProjectAuditor.Editor.Report.Load(System.String,System.String&amp;)">
+      <summary>
+        <para>
+ Load a Report from a JSON file at the specified path.
+ </para>
+      </summary>
+      <param name="path">File path of the report to load</param>
+      <param name="errorMessage">Error message if load fails</param>
+      <returns>
+        <para>A loaded Report object</para>
+      </returns>
+    </member>
+    <member name="P:Unity.ProjectAuditor.Editor.Report.NumTotalIssues">
+      <summary>
+        <para>
+ The total number of ProjectIssues included in this report.
+ </para>
+      </summary>
+    </member>
+    <member name="P:Unity.ProjectAuditor.Editor.Report.ReportVersion">
+      <summary>
+        <para>
+ File format version of the Report (read-only).
+ </para>
+      </summary>
+    </member>
+    <member name="M:Unity.ProjectAuditor.Editor.Report.Save(System.String)">
+      <summary>
+        <para>
+ Save the Report as a JSON file.
+ </para>
+      </summary>
+      <param name="path">The file path at which to save the file</param>
+    </member>
+    <member name="T:Unity.ProjectAuditor.Editor.ReportItem">
+      <summary>
+        <para>
+ Describes an issue that ProjectAuditor reports in the Unity project.
+ </para>
+      </summary>
+    </member>
+    <member name="P:Unity.ProjectAuditor.Editor.ReportItem.Category">
+      <summary>
+        <para>
+ This issue's category (read-only).
+ </para>
+      </summary>
+    </member>
+    <member name="P:Unity.ProjectAuditor.Editor.ReportItem.CustomProperties">
+      <summary>
+        <para>
+ Custom properties.
+ See the "moduleMetadata" section of an exported Report JSON file for information on the formats and
+ meanings of the custom properties for each IssueCategory.
+ </para>
+      </summary>
+    </member>
+    <member name="P:Unity.ProjectAuditor.Editor.ReportItem.Description">
+      <summary>
+        <para>
+ Project issue Description (read-only).
+ </para>
+      </summary>
+    </member>
+    <member name="P:Unity.ProjectAuditor.Editor.ReportItem.FileExtension">
+      <summary>
+        <para>
+ File extension of the file that contains this issue.
+ </para>
+      </summary>
+    </member>
+    <member name="P:Unity.ProjectAuditor.Editor.ReportItem.Filename">
+      <summary>
+        <para>
+ Name of the file that contains this issue.
+ </para>
+      </summary>
+    </member>
+    <member name="M:Unity.ProjectAuditor.Editor.ReportItem.GetCustomPropertyBool(T)">
+      <summary>
+        <para>
+ Check whether a custom property is a boolean type and whether its value is true.
+ </para>
+      </summary>
+      <param name="propertyEnum">Enum value indicating a property.</param>
+      <returns>
+        <para>Returns the property's value if the property is valid and if the value type is boolean. Otherwise, returns false.</para>
+      </returns>
+    </member>
+    <member name="M:Unity.ProjectAuditor.Editor.ReportItem.GetCustomPropertyDouble(T)">
+      <summary>
+        <para>
+ Check whether a custom property is a double type and return its value.
+ </para>
+      </summary>
+      <param name="propertyEnum">Enum value indicating a property.</param>
+      <returns>
+        <para>Returns the property's value if the property is valid and if the value is a double type. Otherwise, returns 0.0.</para>
+      </returns>
+    </member>
+    <member name="M:Unity.ProjectAuditor.Editor.ReportItem.GetCustomPropertyFloat(T)">
+      <summary>
+        <para>
+ Check whether a custom property is a float type and return its value.
+ </para>
+      </summary>
+      <param name="propertyEnum">Enum value indicating a property.</param>
+      <returns>
+        <para>Returns the property's value if the property is valid and if the value is a float type. Otherwise, returns 0.0f.</para>
+      </returns>
+    </member>
+    <member name="M:Unity.ProjectAuditor.Editor.ReportItem.GetCustomPropertyInt32(T)">
+      <summary>
+        <para>
+ Check whether a custom property is an integer type and return its value.
+ </para>
+      </summary>
+      <param name="propertyEnum">Enum value indicating a property.</param>
+      <returns>
+        <para>Returns the property's value if the property is valid and if the value is an integer type. Otherwise, returns 0.</para>
+      </returns>
+    </member>
+    <member name="M:Unity.ProjectAuditor.Editor.ReportItem.GetCustomPropertyInt64(T)">
+      <summary>
+        <para>
+ Check whether a custom property is a long type and return its value.
+ </para>
+      </summary>
+      <param name="propertyEnum">Enum value indicating a property.</param>
+      <returns>
+        <para>Returns the property's value if the property is valid and if the value is a long type. Otherwise, returns 0.</para>
+      </returns>
+    </member>
+    <member name="M:Unity.ProjectAuditor.Editor.ReportItem.GetCustomPropertyUInt32(T)">
+      <summary>
+        <para>
+ Check whether a custom property is a uint type and return its value.
+ </para>
+      </summary>
+      <param name="propertyEnum">Enum value indicating a property.</param>
+      <returns>
+        <para>Returns the property's value if the property is valid and if the value is a uint type. Otherwise, returns 0.</para>
+      </returns>
+    </member>
+    <member name="M:Unity.ProjectAuditor.Editor.ReportItem.GetCustomPropertyUInt64(T)">
+      <summary>
+        <para>
+ Check whether a custom property is a ulong type and return its value.
+ </para>
+      </summary>
+      <param name="propertyEnum">Enum value indicating a property.</param>
+      <returns>
+        <para>Returns the property's value if the property is valid and if the value is a ulong type. Otherwise, returns 0.</para>
+      </returns>
+    </member>
+    <member name="P:Unity.ProjectAuditor.Editor.ReportItem.Id">
+      <summary>
+        <para>
+ An unique identifier for the issue descriptor (read-only).
+ </para>
+      </summary>
+    </member>
+    <member name="M:Unity.ProjectAuditor.Editor.ReportItem.IsIssue">
+      <summary>
+        <para>
+ Checks whether this ReportItem represents an Issue.
+ </para>
+      </summary>
+      <returns>
+        <para>True if the issue's descriptor ID is valid. Otherwise, returns false.</para>
+      </returns>
+    </member>
+    <member name="P:Unity.ProjectAuditor.Editor.ReportItem.IsUpgradeIssue">
+      <summary>
+        <para>
+ Determines whether this issue is an upgrade issue.
+ </para>
+      </summary>
+    </member>
+    <member name="M:Unity.ProjectAuditor.Editor.ReportItem.IsValid">
+      <summary>
+        <para>
+ Checks whether this issue is valid.
+ </para>
+      </summary>
+      <returns>
+        <para>True if the issue has a valid description string. Otherwise, returns false.</para>
+      </returns>
+    </member>
+    <member name="P:Unity.ProjectAuditor.Editor.ReportItem.Line">
+      <summary>
+        <para>
+ Line in the file that contains this issue.
+ </para>
+      </summary>
+    </member>
+    <member name="P:Unity.ProjectAuditor.Editor.ReportItem.Location">
+      <summary>
+        <para>
+ Location of the Insight or Issue (read-only).
+ </para>
+      </summary>
+    </member>
+    <member name="P:Unity.ProjectAuditor.Editor.ReportItem.LogLevel">
+      <summary>
+        <para>
+ Log level.
+ </para>
+      </summary>
+    </member>
+    <member name="P:Unity.ProjectAuditor.Editor.ReportItem.RelativePath">
+      <summary>
+        <para>
+ Relative path of the file that contains this issue.
+ </para>
+      </summary>
+    </member>
+    <member name="P:Unity.ProjectAuditor.Editor.ReportItem.Severity">
+      <summary>
+        <para>
+ Issue-specific Severity (read-only).
+ </para>
+      </summary>
+    </member>
+    <member name="P:Unity.ProjectAuditor.Editor.ReportItem.UpgradeProperties">
+      <summary>
+        <para>
+ Properties relating to upgrade issues
+ </para>
+      </summary>
+    </member>
+    <member name="T:Unity.ProjectAuditor.Editor.Rule">
+      <summary>
+        <para>
+ Represents a rule which modifies the Unity.ProjectAuditor.Editor.Rule.Severity of an Issue Unity.ProjectAuditor.Editor.ReportItem
+ or all of the ProjectIssues that share a Unity.ProjectAuditor.Editor.Descriptor.
+ </para>
+      </summary>
+    </member>
+    <member name="P:Unity.ProjectAuditor.Editor.Rule.Filter">
+      <summary>
+        <para>
+ An optional location filter representing a ReportItem's location.
+ If specified, this Rule applies to a single ReportItem. If the string is null or empty, this Rule applies to every ReportItem matching the Id.
+ </para>
+      </summary>
+    </member>
+    <member name="M:Unity.ProjectAuditor.Editor.Rule.GetHashCode">
+      <summary>
+        <para>Get the hashed integer representation of the Rule.</para>
+      </summary>
+      <returns>
+        <para>The computed hash code.</para>
+      </returns>
+    </member>
+    <member name="P:Unity.ProjectAuditor.Editor.Rule.Id">
+      <summary>
+        <para>
+ The Descriptor ID
+ </para>
+      </summary>
+    </member>
+    <member name="P:Unity.ProjectAuditor.Editor.Rule.Severity">
+      <summary>
+        <para>
+ The Severity level to apply to the issue(s) represented by this Rule
+ </para>
+      </summary>
+    </member>
+    <member name="T:Unity.ProjectAuditor.Editor.Severity">
+      <summary>
+        <para>
+ Severity of an issue
+ </para>
+      </summary>
+    </member>
+    <member name="F:Unity.ProjectAuditor.Editor.Severity.Critical">
+      <summary>
+        <para>
+ Critical impact on performance, quality or functionality
+ </para>
+      </summary>
+    </member>
+    <member name="F:Unity.ProjectAuditor.Editor.Severity.Default">
+      <summary>
+        <para>
+ Default Severity
+ </para>
+      </summary>
+    </member>
+    <member name="F:Unity.ProjectAuditor.Editor.Severity.Error">
+      <summary>
+        <para>
+ An error that will prevent a successful build - for example, a code compile error encountered during code analysis
+ </para>
+      </summary>
+    </member>
+    <member name="F:Unity.ProjectAuditor.Editor.Severity.Hidden">
+      <summary>
+        <para>
+ Not visible to user
+ </para>
+      </summary>
+    </member>
+    <member name="F:Unity.ProjectAuditor.Editor.Severity.Info">
+      <summary>
+        <para>
+ Something which is reported for informational purposes only, not necessarily a problem
+ </para>
+      </summary>
+    </member>
+    <member name="F:Unity.ProjectAuditor.Editor.Severity.Major">
+      <summary>
+        <para>
+ Significant impact
+ </para>
+      </summary>
+    </member>
+    <member name="F:Unity.ProjectAuditor.Editor.Severity.Minor">
+      <summary>
+        <para>
+ Minor impact
+ </para>
+      </summary>
+    </member>
+    <member name="F:Unity.ProjectAuditor.Editor.Severity.Moderate">
+      <summary>
+        <para>
+ Moderate impact
+ </para>
+      </summary>
+    </member>
+    <member name="F:Unity.ProjectAuditor.Editor.Severity.None">
+      <summary>
+        <para>
+ Suppressed, ignored by UI and build
+ </para>
+      </summary>
+    </member>
+    <member name="F:Unity.ProjectAuditor.Editor.Severity.Warning">
+      <summary>
+        <para>
+ A compiler warning encountered during code analysis
+ </para>
+      </summary>
+    </member>
+    <member name="T:Unity.ProjectAuditor.Editor.UpgradeProperties">
+      <summary>
+        <para>
+ The various supported upgrade properties in a ReportItem.
+ </para>
+      </summary>
+    </member>
+    <member name="F:Unity.ProjectAuditor.Editor.UpgradeProperties.MaxVersion">
+      <summary>
+        <para>
+ The maximum version this issue applies to.
+ </para>
+      </summary>
+    </member>
+    <member name="F:Unity.ProjectAuditor.Editor.UpgradeProperties.MinVersion">
+      <summary>
+        <para>
+ The minimum version this issue applies to.
+ </para>
+      </summary>
+    </member>
+    <member name="F:Unity.ProjectAuditor.Editor.UpgradeProperties.Recommendation">
+      <summary>
+        <para>
+ The recommended way to fix this upgrade issue.
+ </para>
+      </summary>
+    </member>
+    <member name="T:Unity.ProjectAuditor.Editor.Utils.Formatting">
+      <summary>
+        <para>
+ Methods for consistently formatting values
+ </para>
+      </summary>
+    </member>
+    <member name="M:Unity.ProjectAuditor.Editor.Utils.Formatting.FormatDateTime(System.DateTime)">
+      <summary>
+        <para>
+ Formats a given DateTime object as a string in the format "yyyyMMdd HH:mm".
+ </para>
+      </summary>
+      <param name="dateTime">The DateTime object to format.</param>
+      <returns>
+        <para>A string representation of the input DateTime object in the specified format.</para>
+      </returns>
+    </member>
+    <member name="M:Unity.ProjectAuditor.Editor.Utils.Formatting.FormatDuration(System.TimeSpan)">
+      <summary>
+        <para>
+ Formats a given TimeSpan object as a string in the format "HH:mm:ss".
+ </para>
+      </summary>
+      <param name="timeSpan">The TimeSpan object to format.</param>
+      <returns>
+        <para>A string representation of the input value.</para>
+      </returns>
+    </member>
+    <member name="M:Unity.ProjectAuditor.Editor.Utils.Formatting.FormatDurationWithMs(System.TimeSpan)">
+      <summary>
+        <para>
+ Formats a given TimeSpan object as a string in the format "HH:mm:ss".
+ </para>
+      </summary>
+      <param name="timeSpan">The TimeSpan object to format.</param>
+      <returns>
+        <para>A string representation of the input value.</para>
+      </returns>
+    </member>
+    <member name="M:Unity.ProjectAuditor.Editor.Utils.Formatting.FormatFloat(System.Single,System.Int32)">
+      <summary>
+        <para>
+ Formats a given float as a string.
+ </para>
+      </summary>
+      <param name="val">Value to format.</param>
+      <param name="decimalPlaces">Number of decimal places to print.</param>
+      <returns>
+        <para>A string representation of the input value as a float.</para>
+      </returns>
+    </member>
+    <member name="M:Unity.ProjectAuditor.Editor.Utils.Formatting.FormatFramerate(System.Single)">
+      <summary>
+        <para>
+ Formats a given float framerate as a string in the format "X fps".
+ </para>
+      </summary>
+      <param name="framerate">Framerate value to format.</param>
+      <returns>
+        <para>A string representation of the input value as a framerate.</para>
+      </returns>
+    </member>
+    <member name="M:Unity.ProjectAuditor.Editor.Utils.Formatting.FormatHz(System.Int32)">
+      <summary>
+        <para>
+ Formats a given frequency as a string in the format "X Hz" or "X kHz".
+ </para>
+      </summary>
+      <param name="frequency">Frequency value to format.</param>
+      <returns>
+        <para>A string representation of the input value as a frequency in Hz or kHz.</para>
+      </returns>
+    </member>
+    <member name="M:Unity.ProjectAuditor.Editor.Utils.Formatting.FormatLengthInSeconds(System.Single)">
+      <summary>
+        <para>
+ Formats a given float duration as a string in the format "X.XXX s".
+ </para>
+      </summary>
+      <param name="length">Length value to format.</param>
+      <returns>
+        <para>A string representation of the input value as a duration in seconds.</para>
+      </returns>
+    </member>
+    <member name="M:Unity.ProjectAuditor.Editor.Utils.Formatting.FormatPercentage(System.Single,System.Int32)">
+      <summary>
+        <para>
+ Formats a decimal number as a percentage with a specified number of decimal places.
+ </para>
+      </summary>
+      <param name="number">The decimal number to format.</param>
+      <param name="numDecimalPlaces">Number of decimals.</param>
+      <returns>
+        <para>A string representation of the decimal number as a percentage.</para>
+      </returns>
+    </member>
+    <member name="M:Unity.ProjectAuditor.Editor.Utils.Formatting.FormatSize(System.UInt64)">
+      <summary>
+        <para>
+ Formats a given size in bytes as a string in the format "X bytes".
+ </para>
+      </summary>
+      <param name="size">Size value to format.</param>
+      <returns>
+        <para>A string representation of the input value as a size.</para>
+      </returns>
+    </member>
+    <member name="M:Unity.ProjectAuditor.Editor.Utils.Formatting.FormatTime(System.TimeSpan)">
+      <summary>
+        <para>
+ Formats a given TimeSpan object as a string in the format "X ms", "X s", or "X min", depending on the length of the time span.
+ </para>
+      </summary>
+      <param name="timeSpan">The TimeSpan object to format.</param>
+      <returns>
+        <para>A string representation of the input TimeSpan object.</para>
+      </returns>
+    </member>
+    <member name="M:Unity.ProjectAuditor.Editor.Utils.Formatting.FormatTime(System.Single)">
+      <summary>
+        <para>
+ Formats a given time value as a string in the format "X ms", "X s", or "X min"
+ </para>
+      </summary>
+      <param name="timeMs">The time value to format, in milliseconds.</param>
+      <returns>
+        <para>A string representation of the input float value.</para>
+      </returns>
+    </member>
+  </members>
+</doc>

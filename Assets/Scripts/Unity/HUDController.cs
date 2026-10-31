@@ -35,6 +35,11 @@ namespace Oopsmeinfecto
         private int _playerConciencia;
         private int _zombieConciencia;
         private bool _infected;
+        private int _playerHighlightedCount;
+        private int _zombieHighlightedCount;
+
+        public int PlayerHighlightedArrowCount => _playerHighlightedCount;
+        public int ZombieHighlightedArrowCount => _zombieHighlightedCount;
 
         public void Build(GameTuning tuning)
         {
@@ -250,30 +255,44 @@ namespace Oopsmeinfecto
         public void SetHistories(IReadOnlyList<Direction> playerHistory,
             IReadOnlyList<Direction> zombieHistory)
         {
-            UpdateSlots(_playerArrows, _playerSlotBackgrounds, playerHistory, _tuning.playerHistoryColor);
-            UpdateSlots(_zombieArrows, _zombieSlotBackgrounds, zombieHistory, _tuning.zombieHistoryColor);
+            _playerHighlightedCount = UpdateSlots(
+                _playerArrows, _playerSlotBackgrounds, playerHistory,
+                _tuning.playerHistoryColor, _tuning.playerHistoryHighlightColor,
+                _playerConciencia);
+            _zombieHighlightedCount = UpdateSlots(
+                _zombieArrows, _zombieSlotBackgrounds, zombieHistory,
+                _tuning.zombieHistoryColor, _tuning.zombieHistoryHighlightColor,
+                _zombieConciencia);
         }
 
-        private void UpdateSlots(Image[] arrows, Image[] backgrounds,
-            IReadOnlyList<Direction> history, Color arrowColor)
+        private int UpdateSlots(Image[] arrows, Image[] backgrounds,
+            IReadOnlyList<Direction> history, Color arrowColor, Color highlightColor,
+            int highlightCount)
         {
             int count = history != null ? history.Count : 0;
             int start = Mathf.Max(0, count - SlotCount);
             int visible = count - start;
             int firstSlot = SlotCount - visible;
+            int highlighted = Mathf.Clamp(highlightCount, 0, SlotCount);
             Color emptyColor = Color.Lerp(_tuning.historySlotColor, Color.black, 0.28f);
+            Color dimmedArrow = Color.Lerp(arrowColor, _tuning.historySlotColor, 0.60f);
+            dimmedArrow.a = Mathf.Clamp01(_tuning.historyDimmedAlpha);
 
             for (int i = 0; i < SlotCount; i++)
             {
                 bool filled = i >= firstSlot && i - firstSlot < visible;
                 if (filled)
                 {
-                    var direction = history[start + (i - firstSlot)];
+                    int indexInHistory = start + (i - firstSlot);
+                    bool isHighlighted = indexInHistory >= count - highlighted;
+                    var direction = history[indexInHistory];
                     arrows[i].enabled = true;
-                    arrows[i].color = arrowColor;
+                    arrows[i].color = isHighlighted ? highlightColor : dimmedArrow;
                     arrows[i].rectTransform.localEulerAngles =
                         new Vector3(0f, 0f, AngleFor(direction));
-                    backgrounds[i].color = Color.Lerp(_tuning.historySlotColor, arrowColor, 0.10f);
+                    backgrounds[i].color = isHighlighted
+                        ? Color.Lerp(_tuning.historySlotColor, highlightColor, 0.24f)
+                        : Color.Lerp(_tuning.historySlotColor, arrowColor, 0.06f);
                 }
                 else
                 {
@@ -281,6 +300,8 @@ namespace Oopsmeinfecto
                     backgrounds[i].color = emptyColor;
                 }
             }
+
+            return Mathf.Min(visible, highlighted);
         }
 
         private static float AngleFor(Direction direction)

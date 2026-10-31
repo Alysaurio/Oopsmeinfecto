@@ -1,0 +1,15 @@
+C:\Users\JAVIER\Desktop\AAAA\Oopsmeinfecto\Tools\LevelGenHarness\bin\Debug\net10.0\LevelGenHarness.exe
+C:\Users\JAVIER\Desktop\AAAA\Oopsmeinfecto\Tools\LevelGenHarness\bin\Debug\net10.0\LevelGenHarness.deps.json
+C:\Users\JAVIER\Desktop\AAAA\Oopsmeinfecto\Tools\LevelGenHarness\bin\Debug\net10.0\LevelGenHarness.runtimeconfig.json
+C:\Users\JAVIER\Desktop\AAAA\Oopsmeinfecto\Tools\LevelGenHarness\bin\Debug\net10.0\LevelGenHarness.dll
+C:\Users\JAVIER\Desktop\AAAA\Oopsmeinfecto\Tools\LevelGenHarness\bin\Debug\net10.0\LevelGenHarness.pdb
+C:\Users\JAVIER\Desktop\AAAA\Oopsmeinfecto\Tools\LevelGenHarness\obj\Debug\net10.0\LevelGenHarness.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\JAVIER\Desktop\AAAA\Oopsmeinfecto\Tools\LevelGenHarness\obj\Debug\net10.0\LevelGenHarness.AssemblyInfoInputs.cache
+C:\Users\JAVIER\Desktop\AAAA\Oopsmeinfecto\Tools\LevelGenHarness\obj\Debug\net10.0\LevelGenHarness.AssemblyInfo.cs
+C:\Users\JAVIER\Desktop\AAAA\Oopsmeinfecto\Tools\LevelGenHarness\obj\Debug\net10.0\LevelGenHarness.csproj.CoreCompileInputs.cache
+C:\Users\JAVIER\Desktop\AAAA\Oopsmeinfecto\Tools\LevelGenHarness\obj\Debug\net10.0\LevelGenHarness.sourcelink.json
+C:\Users\JAVIER\Desktop\AAAA\Oopsmeinfecto\Tools\LevelGenHarness\obj\Debug\net10.0\LevelGenHarness.dll
+C:\Users\JAVIER\Desktop\AAAA\Oopsmeinfecto\Tools\LevelGenHarness\obj\Debug\net10.0\refint\LevelGenHarness.dll
+C:\Users\JAVIER\Desktop\AAAA\Oopsmeinfecto\Tools\LevelGenHarness\obj\Debug\net10.0\LevelGenHarness.pdb
+C:\Users\JAVIER\Desktop\AAAA\Oopsmeinfecto\Tools\LevelGenHarness\obj\Debug\net10.0\LevelGenHarness.genruntimeconfig.cache
+C:\Users\JAVIER\Desktop\AAAA\Oopsmeinfecto\Tools\LevelGenHarness\obj\Debug\net10.0\ref\LevelGenHarness.dll

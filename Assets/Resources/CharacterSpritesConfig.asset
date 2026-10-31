@@ -1,0 +1,74 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9b8c7d6e5f4a3b2c1d0e9f8a7b6c5d4e, type: 3}
+  m_Name: CharacterSpritesConfig
+  m_EditorClassIdentifier: Assembly-CSharp::Oopsmeinfecto.CharacterSpritesConfig
+  playerAnimatorController: {fileID: 9100000, guid: e1b2c3d4e5f60718293a4b5c6d7e8f94, type: 2}
+  zombieAnimatorController: {fileID: 9100000, guid: f1b2c3d4e5f60718293a4b5c6d7e8f09, type: 2}
+  playerIdle:
+  - {fileID: 978942612559604503, guid: e9553a375afc5cb428464cfd0d8291ee, type: 3}
+  - {fileID: 3499389992042037492, guid: e9553a375afc5cb428464cfd0d8291ee, type: 3}
+  - {fileID: 6272215952258405886, guid: e9553a375afc5cb428464cfd0d8291ee, type: 3}
+  - {fileID: 5525604288434156929, guid: e9553a375afc5cb428464cfd0d8291ee, type: 3}
+  playerJump:
+  - {fileID: 444702640956841479, guid: 1de5aca8b26ed35469dab9edd9c58858, type: 3}
+  - {fileID: -7941400250425145444, guid: 1de5aca8b26ed35469dab9edd9c58858, type: 3}
+  - {fileID: 496497603323687001, guid: 1de5aca8b26ed35469dab9edd9c58858, type: 3}
+  - {fileID: 8691810124558177054, guid: 1de5aca8b26ed35469dab9edd9c58858, type: 3}
+  - {fileID: -2098300212452292270, guid: 1de5aca8b26ed35469dab9edd9c58858, type: 3}
+  - {fileID: -2178818368794951686, guid: 1de5aca8b26ed35469dab9edd9c58858, type: 3}
+  playerInfected:
+  - {fileID: 701013760937102744, guid: 18dc6b0015aa0bf40a44311eadeffb28, type: 3}
+  - {fileID: 8438485036262654764, guid: 18dc6b0015aa0bf40a44311eadeffb28, type: 3}
+  - {fileID: -3775359493592330971, guid: 18dc6b0015aa0bf40a44311eadeffb28, type: 3}
+  - {fileID: 4893978711555405598, guid: 18dc6b0015aa0bf40a44311eadeffb28, type: 3}
+  playerLimitTime: {fileID: 21300000, guid: b849e06c248e6ad4190d90ad3681d890, type: 3}
+  zombieUp:
+  - {fileID: -3264790916454577778, guid: 44e3e785f42ab03478573686357d0e0b, type: 3}
+  - {fileID: -2055060312931941095, guid: 44e3e785f42ab03478573686357d0e0b, type: 3}
+  - {fileID: -9194369233116374735, guid: 44e3e785f42ab03478573686357d0e0b, type: 3}
+  - {fileID: -41448800134497472, guid: 44e3e785f42ab03478573686357d0e0b, type: 3}
+  zombieUpRight:
+  - {fileID: 4030138509829395715, guid: c060c48d90b2f0745afb857aff9dacbc, type: 3}
+  - {fileID: -127772374263540554, guid: c060c48d90b2f0745afb857aff9dacbc, type: 3}
+  - {fileID: -2844601185618142700, guid: c060c48d90b2f0745afb857aff9dacbc, type: 3}
+  - {fileID: -1926022380318106938, guid: c060c48d90b2f0745afb857aff9dacbc, type: 3}
+  zombieRight:
+  - {fileID: 3085434666926019136, guid: d1a86cbe08e359141bcdfe7f1015a4f2, type: 3}
+  - {fileID: 2331134508038095591, guid: d1a86cbe08e359141bcdfe7f1015a4f2, type: 3}
+  - {fileID: -2892923703412785961, guid: d1a86cbe08e359141bcdfe7f1015a4f2, type: 3}
+  - {fileID: 8223437269762674198, guid: d1a86cbe08e359141bcdfe7f1015a4f2, type: 3}
+  zombieDownRight:
+  - {fileID: 8640280974536219787, guid: 8f40e4b2cc2baf045bceb79f885c0bd8, type: 3}
+  - {fileID: -5065589433140884849, guid: 8f40e4b2cc2baf045bceb79f885c0bd8, type: 3}
+  - {fileID: 2800354762924783982, guid: 8f40e4b2cc2baf045bceb79f885c0bd8, type: 3}
+  - {fileID: 1059726499707274132, guid: 8f40e4b2cc2baf045bceb79f885c0bd8, type: 3}
+  zombieDown:
+  - {fileID: -2334934483261545338, guid: 011fe00f8b64c7946bc47a04bc9b0fcc, type: 3}
+  - {fileID: -5317836911937396562, guid: 011fe00f8b64c7946bc47a04bc9b0fcc, type: 3}
+  - {fileID: 449718750080044698, guid: 011fe00f8b64c7946bc47a04bc9b0fcc, type: 3}
+  - {fileID: -6910595721245046774, guid: 011fe00f8b64c7946bc47a04bc9b0fcc, type: 3}
+  zombieDownLeft:
+  - {fileID: -2646493546337406353, guid: c882a553f00bbda40a574acc2fdd1296, type: 3}
+  - {fileID: 7795450802737874356, guid: c882a553f00bbda40a574acc2fdd1296, type: 3}
+  - {fileID: 9166365199856099565, guid: c882a553f00bbda40a574acc2fdd1296, type: 3}
+  - {fileID: -5390938074377979128, guid: c882a553f00bbda40a574acc2fdd1296, type: 3}
+  zombieLeft:
+  - {fileID: -5362680866874337443, guid: 543f3253768e8bf4ca4fd0b13f7964c9, type: 3}
+  - {fileID: 8188736431871749819, guid: 543f3253768e8bf4ca4fd0b13f7964c9, type: 3}
+  - {fileID: -4960728867445122402, guid: 543f3253768e8bf4ca4fd0b13f7964c9, type: 3}
+  - {fileID: -6409261228997600111, guid: 543f3253768e8bf4ca4fd0b13f7964c9, type: 3}
+  zombieUpLeft:
+  - {fileID: 3575216118323918522, guid: 7c5520c460df2804a9f3f9ce4d7b60e9, type: 3}
+  - {fileID: -8135459160495018744, guid: 7c5520c460df2804a9f3f9ce4d7b60e9, type: 3}
+  - {fileID: 8291986305589692650, guid: 7c5520c460df2804a9f3f9ce4d7b60e9, type: 3}
+  - {fileID: -2763355559318245313, guid: 7c5520c460df2804a9f3f9ce4d7b60e9, type: 3}

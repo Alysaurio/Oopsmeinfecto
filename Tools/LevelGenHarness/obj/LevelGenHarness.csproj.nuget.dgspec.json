@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "C:\\Users\\JAVIER\\Oopsmeinfecto\\Tools\\LevelGenHarness\\LevelGenHarness.csproj": {}
+    "C:\\Users\\JAVIER\\Desktop\\AAAA\\Oopsmeinfecto\\Tools\\LevelGenHarness\\LevelGenHarness.csproj": {}
   },
   "projects": {
-    "C:\\Users\\JAVIER\\Oopsmeinfecto\\Tools\\LevelGenHarness\\LevelGenHarness.csproj": {
+    "C:\\Users\\JAVIER\\Desktop\\AAAA\\Oopsmeinfecto\\Tools\\LevelGenHarness\\LevelGenHarness.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\JAVIER\\Oopsmeinfecto\\Tools\\LevelGenHarness\\LevelGenHarness.csproj",
+        "projectUniqueName": "C:\\Users\\JAVIER\\Desktop\\AAAA\\Oopsmeinfecto\\Tools\\LevelGenHarness\\LevelGenHarness.csproj",
         "projectName": "LevelGenHarness",
-        "projectPath": "C:\\Users\\JAVIER\\Oopsmeinfecto\\Tools\\LevelGenHarness\\LevelGenHarness.csproj",
+        "projectPath": "C:\\Users\\JAVIER\\Desktop\\AAAA\\Oopsmeinfecto\\Tools\\LevelGenHarness\\LevelGenHarness.csproj",
         "packagesPath": "C:\\Users\\JAVIER\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\JAVIER\\Oopsmeinfecto\\Tools\\LevelGenHarness\\obj\\",
+        "outputPath": "C:\\Users\\JAVIER\\Desktop\\AAAA\\Oopsmeinfecto\\Tools\\LevelGenHarness\\obj\\",
         "projectStyle": "PackageReference",
         "configFilePaths": [
           "C:\\Users\\JAVIER\\AppData\\Roaming\\NuGet\\NuGet.Config"

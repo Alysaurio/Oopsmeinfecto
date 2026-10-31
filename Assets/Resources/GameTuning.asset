@@ -12,14 +12,16 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 26ff84fa411a6b541b0679d693a1f6f0, type: 3}
   m_Name: GameTuning
   m_EditorClassIdentifier: 
-  baseSeed: 12345
+  useFixedSeed: 0
+  fixedSeed: 12345
   minWidth: 6
   maxWidth: 16
   minHeight: 6
   maxHeight: 16
   minZombieConciencia: 2
-  maxZombieConciencia: 4
-  playerConciencia: 3
+  maxZombieConciencia: 5
+  minPlayerConciencia: 2
+  maxPlayerConciencia: 5
   historyCapacity: 7
   minEnergy: 5
   maxEnergy: 10
@@ -31,13 +33,39 @@ MonoBehaviour:
   maxValidatorStates: 120000
   requireUniqueSolution: 1
   maxPlanCandidates: 12
-  initialRepeatDelay: 0.14
-  repeatInterval: 0.09
+  initialRepeatDelay: 0.3
+  repeatInterval: 0.2
   autoStepInterval: 0.18
+  playbackExtraDelay: 0.25
+  transformationDuration: 0.5
   barDrainDuration: 0.5
   defeatDuration: 1.5
   cameraMargin: 1
   hudViewportFraction: 0.18
+  ambientParticleCount: 28
+  ambientParticleSize: 0.11
+  ambientRadius: 0.85
+  ambientEmissionRate: 26
+  ambientParticleLifetime: 0.9
+  ambientParticleRise: 0.45
+  ambientParticleColor: {r: 0.45, g: 1, b: 0.55, a: 1}
+  ambientParticleHotColor: {r: 0.85, g: 1, b: 0.25, a: 1}
+  transformationTint: {r: 0.55, g: 0.95, b: 0.45, a: 1}
+  zombieFacingUp: {fileID: 0}
+  zombieFacingUpRight: {fileID: 0}
+  zombieFacingRight: {fileID: 0}
+  zombieFacingDownRight: {fileID: 0}
+  zombieFacingDown: {fileID: 0}
+  zombieFacingDownLeft: {fileID: 0}
+  zombieFacingLeft: {fileID: 0}
+  zombieFacingUpLeft: {fileID: 0}
+  patrolGroundSpriteA: {fileID: 0}
+  patrolGroundSpriteB: {fileID: 0}
+  patrolGroundColorA: {r: 0.28, g: 0.45, b: 0.58, a: 1}
+  patrolGroundColorB: {r: 0.22, g: 0.38, b: 0.5, a: 1}
+  patrolGroundAlpha: 0.45
+  tilesetConfig: {fileID: 11400000, guid: 4d700bcc33729404c88165df968d8360, type: 2}
+  characterSpritesConfig: {fileID: 11400000, guid: 8a7b6c5d4e3f2a1b0c9d8e7f6a5b4c3d, type: 2}
   floorColorA: {r: 0.2, g: 0.22, b: 0.25, a: 1}
   floorColorB: {r: 0.17, g: 0.19, b: 0.22, a: 1}
   wallColor: {r: 0.07, g: 0.08, b: 0.1, a: 1}
@@ -55,4 +83,7 @@ MonoBehaviour:
   historySlotColor: {r: 0.08, g: 0.09, b: 0.11, a: 1}
   playerHistoryColor: {r: 0.35, g: 0.8, b: 1, a: 1}
   zombieHistoryColor: {r: 0.55, g: 1, b: 0.35, a: 1}
+  playerHistoryHighlightColor: {r: 0.3, g: 0.65, b: 1, a: 1}
+  zombieHistoryHighlightColor: {r: 0.35, g: 1, b: 0.2, a: 1}
+  historyDimmedAlpha: 0.42
   defeatOverlayColor: {r: 0, g: 0, b: 0, a: 1}

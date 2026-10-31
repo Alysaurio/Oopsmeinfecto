@@ -15,6 +15,9 @@ namespace Oopsmeinfecto
             BoardData board,
             IReadOnlyList<GridPos> optionalCells,
             HashSet<GridPos> protectedCells,
+            IReadOnlyList<GridPos> previousTrajectory,
+            IReadOnlyList<GridPos> finalTrajectory,
+            IReadOnlyList<GridPos> npcRoute,
             int maxHazardsCap,
             SeededRandom rng)
         {
@@ -23,28 +26,96 @@ namespace Oopsmeinfecto
             int maxHazards = GetMaxHazards(board.Width, board.Height, maxHazardsCap);
             int count = rng.Range(1, maxHazards);
 
-            var eligible = new List<GridPos>();
+            var trajectory = new HashSet<GridPos>();
+            AddTrajectory(trajectory, previousTrajectory);
+            AddTrajectory(trajectory, finalTrajectory);
+            AddTrajectory(trajectory, npcRoute);
+
+            var preferred = new List<GridPos>();
+            var relaxed = new List<GridPos>();
             for (int i = 0; i < optionalCells.Count; i++)
             {
                 var p = optionalCells[i];
                 if (!board.IsWalkable(p)) continue;
-                if (board.IsSwitch(p)) continue;
+                if (board.IsSwitch(p) || board.IsDamage(p)) continue;
                 if (protectedCells.Contains(p)) continue;
-                eligible.Add(p);
+                if (!IsInterior(board, p)) continue;
+                if (CountWalkableNeighbors(board, p) == 0) continue;
+
+                int distance = DistanceToTrajectory(p, trajectory);
+                if (distance >= 1 && distance <= 2) preferred.Add(p);
+                else if (distance <= 3) relaxed.Add(p);
             }
 
-            if (eligible.Count < count) return null;
-            rng.Shuffle(eligible);
+            if (preferred.Count < count) return null;
+
+            rng.Shuffle(preferred);
+            rng.Shuffle(relaxed);
 
             var hazards = new List<GridPos>(count);
-            for (int i = 0; i < count; i++)
+            for (int i = 0; i < preferred.Count && hazards.Count < count; i++)
             {
-                var p = eligible[i];
-                board.SetTile(p, TileType.Damage);
-                hazards.Add(p);
+                var candidate = preferred[i];
+                if (TooCloseToHazards(candidate, hazards)) continue;
+                hazards.Add(candidate);
             }
 
+            // If the spread rule was too strict, fill from the same useful candidates.
+            for (int i = 0; i < preferred.Count && hazards.Count < count; i++)
+            {
+                var candidate = preferred[i];
+                if (hazards.Contains(candidate)) continue;
+                hazards.Add(candidate);
+            }
+
+            if (hazards.Count < count) return null;
+
+            for (int i = 0; i < hazards.Count; i++)
+                board.SetTile(hazards[i], TileType.Damage);
+
             return hazards;
+        }
+
+        private static void AddTrajectory(HashSet<GridPos> set, IReadOnlyList<GridPos> cells)
+        {
+            if (cells == null) return;
+            for (int i = 0; i < cells.Count; i++) set.Add(cells[i]);
+        }
+
+        private static bool IsInterior(BoardData board, GridPos p)
+        {
+            return p.X >= 1 && p.Y >= 1 && p.X <= board.Width - 2 && p.Y <= board.Height - 2;
+        }
+
+        private static int CountWalkableNeighbors(BoardData board, GridPos p)
+        {
+            int count = 0;
+            for (int i = 0; i < Directions.All.Length; i++)
+            {
+                if (board.IsWalkable(p + Directions.Delta(Directions.All[i]))) count++;
+            }
+            return count;
+        }
+
+        private static int DistanceToTrajectory(GridPos p, HashSet<GridPos> trajectory)
+        {
+            if (trajectory.Count == 0) return int.MaxValue;
+            int best = int.MaxValue;
+            foreach (var cell in trajectory)
+            {
+                int distance = p.ManhattanDistance(cell);
+                if (distance < best) best = distance;
+            }
+            return best;
+        }
+
+        private static bool TooCloseToHazards(GridPos candidate, List<GridPos> hazards)
+        {
+            for (int i = 0; i < hazards.Count; i++)
+            {
+                if (candidate.ManhattanDistance(hazards[i]) < 2) return true;
+            }
+            return false;
         }
     }
 }

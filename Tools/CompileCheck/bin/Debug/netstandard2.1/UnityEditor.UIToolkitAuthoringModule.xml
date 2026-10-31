@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<doc>
+  <members>
+    <assembly>
+      <name>UnityEditor.UIToolkitAuthoringModule</name>
+    </assembly>
+    <member name="T:UnityEditor.UIElements.VisualElementReferenceField">
+      <summary>
+        <para>
+ Makes a field to receive any UIElements.VisualElementReference type.
+ </para>
+      </summary>
+    </member>
+    <member name="P:UnityEditor.UIElements.VisualElementReferenceField.elementType">
+      <summary>
+        <para>
+ The type that can be assigned, must be a UIElements.VisualElement or derive from it.
+ </para>
+      </summary>
+    </member>
+    <member name="F:UnityEditor.UIElements.VisualElementReferenceField.inputUssClassName">
+      <summary>
+        <para>
+ USS class name of input elements in elements of this type.
+ </para>
+      </summary>
+    </member>
+    <member name="F:UnityEditor.UIElements.VisualElementReferenceField.labelUssClassName">
+      <summary>
+        <para>
+ USS class name of labels in elements of this type.
+ </para>
+      </summary>
+    </member>
+    <member name="F:UnityEditor.UIElements.VisualElementReferenceField.objectUssClassName">
+      <summary>
+        <para>
+ USS class name of object elements in elements of this type.
+ </para>
+      </summary>
+    </member>
+    <member name="F:UnityEditor.UIElements.VisualElementReferenceField.selectorUssClassName">
+      <summary>
+        <para>
+ USS class name of selector elements in elements of this type.
+ </para>
+      </summary>
+    </member>
+    <member name="F:UnityEditor.UIElements.VisualElementReferenceField.ussClassName">
+      <summary>
+        <para>
+ USS class name of elements of this type.
+ </para>
+      </summary>
+    </member>
+    <member name="M:UnityEditor.UIElements.VisualElementReferenceField.#ctor(System.String)">
+      <summary>
+        <para>
+ Initializes a new instance of the VisualElementReferenceField class with the specified label.
+ </para>
+      </summary>
+      <param name="label">The text to display as the label for the field. Can be null or empty to display no label.</param>
+    </member>
+  </members>
+</doc>
