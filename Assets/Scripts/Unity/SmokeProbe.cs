@@ -170,7 +170,7 @@ namespace Oopsmeinfecto
                 "hazards=" + (level.HazardPositions == null ? 0 : level.HazardPositions.Length));
             Require(level.UniqueConfirmed, "uniqueConfirmed=false");
             Require(level.PlannedSequence != null &&
-                    level.PlannedSequence.Length == 3 + level.PlayerConciencia,
+                    level.PlannedSequence.Length == level.ZombieConciencia + level.PlayerConciencia,
                 "sequence length=" + (level.PlannedSequence == null ? 0 : level.PlannedSequence.Length));
             Require(level.PlannedAutoPositions != null &&
                     level.PlannedAutoPositions.Length - 1 == level.PlannedSequence.Length,

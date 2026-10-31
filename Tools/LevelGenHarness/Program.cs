@@ -30,6 +30,7 @@ internal static class Program
         TestHistoryAndSequence();
         TestTurnRules();
         TestPlaybackLastStep();
+        TestZombieConcienciaDiscrepancies();
         bool quick = args.Length > 0 && args[0] == "quick";
         TestGeneration(seedCount: quick ? 2 : 20, requireUnique: true, attempts: quick ? 12 : 80);
         TestGeneration(seedCount: quick ? 1 : 5, requireUnique: false, attempts: quick ? 8 : 40);
@@ -80,27 +81,27 @@ internal static class Program
         Check(zombie.HistoryCount == 7, "zombie history cap is not 7");
         Check(player.HistoryCount == 7, "player history cap is not 7");
 
-        // The infected entity contributes its own Conciencia, not the infector's.
+        // The infected entity contributes its own Conciencia, and the infector contributes its own Conciencia.
         var sequence = InfectionSystem.BuildSequence(zombie, player);
-        Check(sequence.Count == 3 + player.Conciencia,
-            "sequence should be 3 + infected conciencia = 5, got " + sequence.Count);
-        var expectedZombie = zombie.GetLastDirections(3);
+        Check(sequence.Count == zombie.Conciencia + player.Conciencia,
+            $"sequence should be {zombie.Conciencia} + {player.Conciencia} = {zombie.Conciencia + player.Conciencia}, got {sequence.Count}");
+        var expectedZombie = zombie.GetLastDirections(zombie.Conciencia);
         var expectedPlayer = player.GetLastDirections(player.Conciencia);
-        for (int i = 0; i < 3; i++)
+        for (int i = 0; i < zombie.Conciencia; i++)
             Check(sequence[i] == expectedZombie[i], "zombie part of sequence mismatch");
         for (int i = 0; i < player.Conciencia; i++)
-            Check(sequence[3 + i] == expectedPlayer[i], "infected part of sequence mismatch");
+            Check(sequence[zombie.Conciencia + i] == expectedPlayer[i], "infected part of sequence mismatch");
 
         // Same infector, different infected conciencia: the length must change accordingly.
         var player2 = new EntityState(0, EntityKind.Player, new GridPos(0, 0), 4, 7);
         for (int i = 0; i < 6; i++) player2.RecordMove(Directions.All[i % 4]);
         var sequence2 = InfectionSystem.BuildSequence(zombie, player2);
-        Check(sequence2.Count == 3 + player2.Conciencia,
-            "sequence should follow the infected entity's conciencia");
+        Check(sequence2.Count == zombie.Conciencia + player2.Conciencia,
+            "sequence should follow both entities' conciencia");
 
         // Chronological order inside each group: oldest first.
-        Check(sequence2[0] == zombie.GetLastDirections(3)[0], "zombie group is not chronological");
-        Check(sequence2[3] == player2.GetLastDirections(4)[0], "infected group is not chronological");
+        Check(sequence2[0] == zombie.GetLastDirections(zombie.Conciencia)[0], "zombie group is not chronological");
+        Check(sequence2[zombie.Conciencia] == player2.GetLastDirections(4)[0], "infected group is not chronological");
 
         var shortEntity = new EntityState(0, EntityKind.Player, new GridPos(0, 0), 3, 7);
         shortEntity.RecordMove(Direction.Right);
@@ -237,6 +238,132 @@ internal static class Program
         Console.WriteLine("Playback last step & victory/exhaustion order verified successfully");
     }
 
+    private static void TestZombieConcienciaDiscrepancies()
+    {
+        Console.WriteLine("\n-- Zombie Conciencia Discrepancies & Single Source of Truth --");
+
+        int[] testConciencias = { 1, 2, 3, 4, 5 };
+        foreach (int zc in testConciencias)
+        {
+            int pc = 2;
+            var board = new BoardData(35, 5, TileType.Floor);
+            var route = new[] { new GridPos(20, 2), new GridPos(21, 2) };
+
+            // T is even and strictly greater than both zc and pc
+            int T = 2 * (Math.Max(zc, pc) + 1);
+            var playerStart = new GridPos(20 - T, 2);
+            var state = new GameState(board, playerStart, route, zc, pc, T + 10, 7);
+
+            for (int step = 0; step < T; step++)
+            {
+                var res = state.TryManualMove(Direction.Right);
+                if (step == T - 1)
+                {
+                    Check(res.Outcome == TurnOutcome.Infected, $"ZC={zc}: expected contact at step {step}, got {res.Outcome}");
+                    Check(state.Phase == GamePhase.InfectedPlayback, $"ZC={zc}: expected InfectedPlayback");
+                }
+                else
+                {
+                    Check(res.Outcome == TurnOutcome.Moved, $"ZC={zc}: step {step} failed with {res.Outcome}");
+                }
+            }
+
+            Check(state.Zombie.Conciencia == zc, $"ZC={zc}: Zombie.Conciencia is {state.Zombie.Conciencia}");
+            Check(state.Player.Conciencia == pc, $"ZC={zc}: Player.Conciencia is {state.Player.Conciencia}");
+
+            var selectedZombie = InfectionSystem.GetSelectedMoves(state.Zombie);
+            var selectedPlayer = InfectionSystem.GetSelectedMoves(state.Player);
+            Check(selectedZombie.Count == zc, $"ZC={zc}: selected zombie moves count={selectedZombie.Count}, expected {zc}");
+            Check(selectedPlayer.Count == pc, $"ZC={zc}: selected player moves count={selectedPlayer.Count}, expected {pc}");
+
+            Check(state.PlaybackSequence.Count == zc + pc,
+                $"ZC={zc}: sequence count {state.PlaybackSequence.Count} != {zc} + {pc}");
+
+            for (int i = 0; i < zc; i++)
+            {
+                Check(state.PlaybackSequence[i] == selectedZombie[i],
+                    $"ZC={zc}: zombie move {i} mismatch: {state.PlaybackSequence[i]} vs {selectedZombie[i]}");
+            }
+            for (int i = 0; i < pc; i++)
+            {
+                Check(state.PlaybackSequence[zc + i] == selectedPlayer[i],
+                    $"ZC={zc}: player move {i} mismatch: {state.PlaybackSequence[zc + i]} vs {selectedPlayer[i]}");
+            }
+
+            var expectedLastZombieMove = state.Zombie.History[state.Zombie.HistoryCount - 1];
+            Check(selectedZombie[selectedZombie.Count - 1] == expectedLastZombieMove,
+                $"ZC={zc}: last selected zombie move is not the contact move");
+
+            int zombieHistoryBeforePlayback = state.Zombie.HistoryCount;
+            int playerHistoryBeforePlayback = state.Player.HistoryCount;
+            var zombieHistorySnapshot = new List<Direction>(state.Zombie.History);
+            var playerHistorySnapshot = new List<Direction>(state.Player.History);
+
+            while (state.Phase == GamePhase.InfectedPlayback)
+            {
+                state.AdvancePlaybackStep();
+                Check(state.Zombie.HistoryCount == zombieHistoryBeforePlayback,
+                    $"ZC={zc}: Zombie history grew during playback from {zombieHistoryBeforePlayback} to {state.Zombie.HistoryCount}!");
+                Check(state.Player.HistoryCount == playerHistoryBeforePlayback,
+                    $"ZC={zc}: Player history grew during playback from {playerHistoryBeforePlayback} to {state.Player.HistoryCount}!");
+            }
+
+            for (int i = 0; i < zombieHistorySnapshot.Count; i++)
+                Check(state.Zombie.History[i] == zombieHistorySnapshot[i], $"ZC={zc}: Zombie history mutated during playback at {i}");
+            for (int i = 0; i < playerHistorySnapshot.Count; i++)
+                Check(state.Player.History[i] == playerHistorySnapshot[i], $"ZC={zc}: Player history mutated during playback at {i}");
+        }
+
+        // 2. Cyclic repetition: zombie completes 6 full loops before contact
+        {
+            var board = new BoardData(35, 5, TileType.Floor);
+            var route = new[] { new GridPos(20, 2), new GridPos(21, 2) };
+            int zc = 3;
+            int pc = 2;
+            int T = 12; // 6 round trips
+            var playerStart = new GridPos(20 - T, 2);
+            var state = new GameState(board, playerStart, route, zc, pc, 25, 7);
+
+            for (int s = 0; s < T; s++)
+            {
+                state.TryManualMove(Direction.Right);
+            }
+            Check(state.Phase == GamePhase.InfectedPlayback, "Loop test failed to infect");
+            Check(state.PlaybackSequence.Count == zc + pc,
+                $"Loop test sequence count {state.PlaybackSequence.Count} != {zc + pc}");
+            var selZ = InfectionSystem.GetSelectedMoves(state.Zombie);
+            Check(selZ.Count == zc, $"Loop test selected zombie count={selZ.Count}, expected {zc}");
+            for (int i = 0; i < zc; i++)
+                Check(state.PlaybackSequence[i] == selZ[i], $"Loop test move {i} mismatch");
+        }
+
+        // 3. Different initial phases (4-cycle route)
+        for (int initialPhase = 0; initialPhase < 4; initialPhase++)
+        {
+            var board = new BoardData(35, 10, TileType.Floor);
+            var route = new[] { new GridPos(20, 5), new GridPos(21, 5), new GridPos(21, 6), new GridPos(20, 6) };
+            int zc = 3;
+            int pc = 3;
+            int steps = 8; // two full cycles
+            var pattern = new CyclicRoutePattern(route);
+            var contactPos = pattern.PositionAt(initialPhase + steps);
+            var playerStart = new GridPos(contactPos.X - steps, contactPos.Y);
+            var state = new GameState(board, playerStart, route, zc, pc, 15, 7, initialZombiePhase: initialPhase);
+
+            for (int s = 0; s < steps; s++)
+                state.TryManualMove(Direction.Right);
+
+            Check(state.Phase == GamePhase.InfectedPlayback, $"Phase {initialPhase}: failed to infect");
+            Check(state.PlaybackSequence.Count == zc + pc, $"Phase {initialPhase}: sequence count mismatch");
+            var selZ = InfectionSystem.GetSelectedMoves(state.Zombie);
+            Check(selZ.Count == zc, $"Phase {initialPhase}: selected zombie count mismatch");
+            for (int i = 0; i < zc; i++)
+                Check(state.PlaybackSequence[i] == selZ[i], $"Phase {initialPhase}: move {i} mismatch");
+        }
+
+        Console.WriteLine("Zombie Conciencia discrepancies and single source of truth OK");
+    }
+
     private static void TestGeneration(int seedCount, bool requireUnique, int attempts)
     {
         Console.WriteLine($"\n-- Generation ({seedCount} seeds, unique={requireUnique}, attempts={attempts}) --");
@@ -278,7 +405,7 @@ internal static class Program
                 Check(level.MaxEnergy >= 5 && level.MaxEnergy <= 10, $"seed {i}: bad energy");
                 Check(level.ZombieConciencia >= 2 && level.ZombieConciencia <= 5, $"seed {i}: bad zombie conciencia");
                 Check(level.PlayerConciencia >= 2 && level.PlayerConciencia <= 5, $"seed {i}: bad player conciencia");
-                Check(level.PlannedSequence.Length == 3 + level.PlayerConciencia, $"seed {i}: wrong sequence length");
+                Check(level.PlannedSequence.Length == level.ZombieConciencia + level.PlayerConciencia, $"seed {i}: wrong sequence length");
                 Check(level.PlannedAutoPositions.Length - 1 == level.PlannedSequence.Length,
                     $"seed {i}: automatic trajectory does not consume the whole sequence");
                 Check(level.PlannedAutoPositions.Length - 1 >= level.ZombieConciencia + 2,
@@ -324,7 +451,7 @@ internal static class Program
             if (i == level.PlannedManualDirections.Length - 1 && result.Outcome != TurnOutcome.Infected) return false;
         }
         if (state.Phase != GamePhase.InfectedPlayback) return false;
-        if (state.PlaybackSequence.Count != 3 + level.PlayerConciencia) return false;
+        if (state.PlaybackSequence.Count != level.ZombieConciencia + level.PlayerConciencia) return false;
         int guard = 0;
         while (state.Phase == GamePhase.InfectedPlayback && guard++ < 256)
         {

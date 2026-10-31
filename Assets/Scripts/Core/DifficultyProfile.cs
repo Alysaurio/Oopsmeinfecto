@@ -152,7 +152,7 @@ namespace Oopsmeinfecto
             if (plan.ImmediateReversals > MaxImmediateReversals) return false;
             if (plan.RevisitedCells > MaxRevisitedCells) return false;
             if (plan.InitialOptions < MinInitialOptions) return false;
-            if (plan.Sequence.Count != InfectionSystem.InfectorMoveCount + playerConciencia) return false;
+            if (plan.Sequence.Count != zombieConciencia + playerConciencia) return false;
             if (plan.AutomaticSteps < zombieConciencia + 2) return false;
             if (plan.SwitchPosition == plan.ContactPosition) return false;
             return true;

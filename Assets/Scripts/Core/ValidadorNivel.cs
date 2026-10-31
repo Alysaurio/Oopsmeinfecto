@@ -33,7 +33,7 @@ namespace Oopsmeinfecto
                 report.AddError("zombie conciencia outside 2..5");
             if (level.PlayerConciencia < 2 || level.PlayerConciencia > 5)
                 report.AddError("player conciencia outside 2..5");
-            if (InfectionSystem.InfectorMoveCount + level.PlayerConciencia < level.ZombieConciencia + 2)
+            if (level.ZombieConciencia + level.PlayerConciencia < level.ZombieConciencia + 2)
                 report.AddError("automatic sequence is shorter than zombie conciencia + 2");
             if (level.HistoryCapacity < 7)
                 report.AddError("history capacity below 7");
@@ -119,8 +119,8 @@ namespace Oopsmeinfecto
                 (level.PlannedManualDirections?.Length ?? 0) + 1)
                 report.AddError("planned manual positions do not match directions");
             if (level.PlannedSequence == null ||
-                level.PlannedSequence.Length != InfectionSystem.InfectorMoveCount + level.PlayerConciencia)
-                report.AddError("planned inherited sequence does not have 3 + player conciencia moves");
+                level.PlannedSequence.Length != level.ZombieConciencia + level.PlayerConciencia)
+                report.AddError("planned inherited sequence does not match zombie conciencia + player conciencia moves");
             if (level.PlannedAutoPositions == null || level.PlannedAutoPositions.Length < 2)
                 report.AddError("planned automatic trajectory is empty");
             if (level.PlannedAutoPositions != null && level.PlannedAutoPositions.Length > 0 &&

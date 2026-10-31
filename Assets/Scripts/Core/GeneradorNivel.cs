@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 
 namespace Oopsmeinfecto
@@ -43,7 +43,7 @@ namespace Oopsmeinfecto
                             $"zc={zombieConciencia} pc={playerConciencia} tier={profile.Tier}");
 
                 var starts = BuildStartCandidates(
-                    openBoard, placement.Route, rng, 12, planningEnergy, profile, playerConciencia);
+                    openBoard, placement.Route, rng, 12, planningEnergy, profile, zombieConciencia, playerConciencia);
                 for (int s = 0; s < starts.Count; s++)
                 {
                     var start = starts[s];
@@ -273,13 +273,13 @@ namespace Oopsmeinfecto
 
         private static List<GridPos> BuildStartCandidates(
             BoardData board, GridPos[] route, SeededRandom rng, int maxStarts,
-            int maxEnergy, DifficultyProfile profile, int playerConciencia)
+            int maxEnergy, DifficultyProfile profile, int zombieConciencia, int playerConciencia)
         {
             var routeSet = new HashSet<GridPos>(route);
             var preferred = new List<GridPos>();
             var fallback = new List<GridPos>();
 
-            int minDepth = Math.Max(3, Math.Max(profile.MinManualMoves, playerConciencia));
+            int minDepth = Math.Max(Math.Max(zombieConciencia, playerConciencia), profile.MinManualMoves);
             int maxDepth = Math.Min(maxEnergy, profile.MaxManualMoves);
             if (minDepth > maxDepth) return new List<GridPos>();
 

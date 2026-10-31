@@ -38,7 +38,7 @@ namespace Oopsmeinfecto
             int initialOptions = CountInitialOptions(openBoard, playerStart, routeSet);
             if (initialOptions < profile.MinInitialOptions) return results;
 
-            int minDepth = Math.Max(3, Math.Max(profile.MinManualMoves, playerConciencia));
+            int minDepth = Math.Max(Math.Max(zombieConciencia, playerConciencia), profile.MinManualMoves);
             int maxDepth = Math.Min(maxEnergy, profile.MaxManualMoves);
             if (minDepth > maxDepth) return results;
 

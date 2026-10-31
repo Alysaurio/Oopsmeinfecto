@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 
 namespace Oopsmeinfecto
@@ -49,7 +49,7 @@ namespace Oopsmeinfecto
 
             if (state.Phase != GamePhase.InfectedPlayback) return Reject("not in playback");
             if (!state.ContactHasRequiredHistory()) return Reject("missing history");
-            if (state.PlaybackSequence.Count != InfectionSystem.InfectorMoveCount + playerConciencia)
+            if (state.PlaybackSequence.Count != zombieConciencia + playerConciencia)
                 return Reject("sequence length " + state.PlaybackSequence.Count);
 
             var simulationState = state.Clone();

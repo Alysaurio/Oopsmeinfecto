@@ -225,7 +225,6 @@ namespace Oopsmeinfecto
             if (Board.IsWalkable(target))
             {
                 Player.Position = target;
-                Player.RecordMove(direction);
                 result.Moved = true;
                 result.To = target;
             }
@@ -265,7 +264,10 @@ namespace Oopsmeinfecto
             var newPosition = Pattern.PositionAt(ZombiePhase);
             var direction = Directions.FromDelta(newPosition - oldPosition);
             Zombie.Position = newPosition;
-            Zombie.RecordMove(direction);
+            if (Phase == GamePhase.HumanControlled)
+            {
+                Zombie.RecordMove(direction);
+            }
         }
 
         /// <summary>Used by the planner to inspect a contact that has just happened.</summary>
