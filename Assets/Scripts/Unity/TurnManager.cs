@@ -451,7 +451,7 @@ namespace Oopsmeinfecto
                 int energiaMaxima = Mathf.Max(1, _state.MaxEnergy);
                 float ratio = 1.0f - ((float)energiaActual / (float)energiaMaxima);
                 float curve = Mathf.Pow(Mathf.Clamp01(ratio), 3.0f);
-                _crtMaterial.SetFloat(InfectionProgressId, curve * 0.315f);
+                _crtMaterial.SetFloat(InfectionProgressId, curve * 0.252f);
             }
         }
 

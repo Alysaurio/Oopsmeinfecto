@@ -138,11 +138,19 @@ namespace Oopsmeinfecto
 
             BuildBoard();
             BuildEntities();
+            BuildLighting();
             BuildAmbientVfx();
             FitCamera(true);
 
             _lastScreenWidth = Screen.width;
             _lastScreenHeight = Screen.height;
+        }
+
+        private void BuildLighting()
+        {
+            if (_contentRoot == null || _level == null) return;
+            var lightManager = _contentRoot.gameObject.AddComponent<GridLightManager>();
+            lightManager.Initialize(_level, _contentRoot, _playerRenderer, _zombieRenderer);
         }
 
         private void BuildBoard()
@@ -157,25 +165,28 @@ namespace Oopsmeinfecto
             grid.cellSize = new Vector3(1f, 1f, 0f);
             grid.cellSwizzle = GridLayout.CellSwizzle.XYZ;
 
-            Material tileMaterial = PixelArtFactory.SpriteMaterial;
+            Material fallbackMaterial = PixelArtFactory.SpriteMaterial;
+            Material floorMaterial = RetroLitMaterials.Get(RetroLitMode.Floor) ?? fallbackMaterial;
+            Material wallTopMaterial = RetroLitMaterials.Get(RetroLitMode.WallTop) ?? fallbackMaterial;
+            Material unlitWallMaterial = RetroLitMaterials.Get(RetroLitMode.Unlit) ?? fallbackMaterial;
 
             // 4 floor/decoration layers
-            _groundTilemap = CreateTilemapLayer(gridObject.transform, "GroundBaseTilemap", 0, tileMaterial);
-            _cracksTilemap = CreateTilemapLayer(gridObject.transform, "CracksTilemap", 1, tileMaterial);
-            _mossTilemap = CreateTilemapLayer(gridObject.transform, "MossTilemap", 2, tileMaterial);
-            _zombieTrailTilemap = CreateTilemapLayer(gridObject.transform, "ZombieTrailTilemap", 3, tileMaterial);
+            _groundTilemap = CreateTilemapLayer(gridObject.transform, "GroundBaseTilemap", 0, floorMaterial);
+            _cracksTilemap = CreateTilemapLayer(gridObject.transform, "CracksTilemap", 1, floorMaterial);
+            _mossTilemap = CreateTilemapLayer(gridObject.transform, "MossTilemap", 2, floorMaterial);
+            _zombieTrailTilemap = CreateTilemapLayer(gridObject.transform, "ZombieTrailTilemap", 3, floorMaterial);
 
             // 5 independent Tilemap layers for walls (Individual mode + TopLeft sorting for Y-descending order)
             // Priority: paredes arriba (order 6) se dibujan por delante de paredes laterales (order 5), esquinas (order 7)
-            _wallsBottomTilemap = CreateTilemapLayer(gridObject.transform, "WallsBottomTilemap", 4, tileMaterial,
+            _wallsBottomTilemap = CreateTilemapLayer(gridObject.transform, "WallsBottomTilemap", 4, unlitWallMaterial,
                 TilemapRenderer.Mode.Individual, TilemapRenderer.SortOrder.TopLeft);
-            _wallsLeftTilemap = CreateTilemapLayer(gridObject.transform, "WallsLeftTilemap", 5, tileMaterial,
+            _wallsLeftTilemap = CreateTilemapLayer(gridObject.transform, "WallsLeftTilemap", 5, unlitWallMaterial,
                 TilemapRenderer.Mode.Individual, TilemapRenderer.SortOrder.TopLeft);
-            _wallsRightTilemap = CreateTilemapLayer(gridObject.transform, "WallsRightTilemap", 5, tileMaterial,
+            _wallsRightTilemap = CreateTilemapLayer(gridObject.transform, "WallsRightTilemap", 5, unlitWallMaterial,
                 TilemapRenderer.Mode.Individual, TilemapRenderer.SortOrder.TopLeft);
-            _wallsTopTilemap = CreateTilemapLayer(gridObject.transform, "WallsTopTilemap", 6, tileMaterial,
+            _wallsTopTilemap = CreateTilemapLayer(gridObject.transform, "WallsTopTilemap", 6, wallTopMaterial,
                 TilemapRenderer.Mode.Individual, TilemapRenderer.SortOrder.TopLeft);
-            _wallsCornersTilemap = CreateTilemapLayer(gridObject.transform, "WallsCornersTilemap", 7, tileMaterial,
+            _wallsCornersTilemap = CreateTilemapLayer(gridObject.transform, "WallsCornersTilemap", 7, unlitWallMaterial,
                 TilemapRenderer.Mode.Individual, TilemapRenderer.SortOrder.TopLeft);
 
             _wallsTilemap = _wallsTopTilemap;
@@ -187,6 +198,53 @@ namespace Oopsmeinfecto
             _specialEffectsRoot = fxObj.transform;
 
             PopulateTilesAndEffects();
+            ApplyEnvironmentColorUnification();
+        }
+
+        private void ApplyEnvironmentColorUnification()
+        {
+            var envColor = new Color(0.45f, 0.50f, 0.60f, 1f);
+
+            if (_contentRoot != null)
+            {
+                var spriteRenderers = _contentRoot.GetComponentsInChildren<SpriteRenderer>(true);
+                for (int i = 0; i < spriteRenderers.Length; i++)
+                {
+                    var sr = spriteRenderers[i];
+                    if (sr == null || sr.gameObject == null) continue;
+
+                    if (sr == _playerRenderer || sr == _zombieRenderer) continue;
+                    if (sr.GetComponentInParent<ParticleSystem>() != null) continue;
+                    if (sr.GetComponentInParent<DamageTileEffect>() != null || sr.GetComponentInParent<GoalGlowEffect>() != null) continue;
+
+                    string goName = sr.gameObject.name;
+                    string spriteName = sr.sprite != null ? sr.sprite.name : null;
+
+                    bool isTile = RetroLitMaterials.IsTintTarget(goName) || RetroLitMaterials.IsTintTarget(spriteName);
+                    if (isTile)
+                    {
+                        sr.color = envColor;
+
+                        RetroLitMode mode = RetroLitMaterials.Classify(goName);
+                        if (mode == RetroLitMode.None) mode = RetroLitMaterials.Classify(spriteName);
+                        if (mode != RetroLitMode.None)
+                        {
+                            Material litMat = RetroLitMaterials.Get(mode);
+                            if (litMat != null) sr.sharedMaterial = litMat;
+                        }
+                    }
+                }
+            }
+
+            if (_groundTilemap != null) _groundTilemap.color = envColor;
+            if (_wallsBottomTilemap != null) _wallsBottomTilemap.color = envColor;
+            if (_wallsLeftTilemap != null) _wallsLeftTilemap.color = envColor;
+            if (_wallsRightTilemap != null) _wallsRightTilemap.color = envColor;
+            if (_wallsTopTilemap != null) _wallsTopTilemap.color = envColor;
+            if (_wallsCornersTilemap != null) _wallsCornersTilemap.color = envColor;
+            if (_cracksTilemap != null) _cracksTilemap.color = envColor;
+            if (_mossTilemap != null) _mossTilemap.color = envColor;
+            if (_zombieTrailTilemap != null) _zombieTrailTilemap.color = envColor;
         }
 
         private static Tilemap CreateTilemapLayer(Transform parent, string name, int sortingOrder, Material material,
@@ -606,9 +664,10 @@ namespace Oopsmeinfecto
             renderer.sprite = sprite;
             renderer.color = Color.white;
             renderer.sortingOrder = sortingOrder;
-            if (renderer.sharedMaterial == null && PixelArtFactory.SpriteMaterial != null)
+            Material entityMaterial = RetroLitMaterials.Get(RetroLitMode.Entity) ?? PixelArtFactory.SpriteMaterial;
+            if (entityMaterial != null)
             {
-                renderer.sharedMaterial = PixelArtFactory.SpriteMaterial;
+                renderer.sharedMaterial = entityMaterial;
             }
             return renderer;
         }
@@ -623,6 +682,12 @@ namespace Oopsmeinfecto
             _playerTarget = new Vector3(state.Player.Position.X, state.Player.Position.Y, 0f);
             _zombieTarget = new Vector3(state.Zombie.Position.X, state.Zombie.Position.Y, 0f);
             _hasState = true;
+
+            bool infected = state.Player.Infected || state.Phase == GamePhase.InfectedPlayback;
+            if (_playerVisual != null)
+            {
+                _playerVisual.SetInfected(infected);
+            }
 
             if (instant)
             {
@@ -639,6 +704,10 @@ namespace Oopsmeinfecto
             {
                 if (Vector3.Distance(prevPlayerTarget, _playerTarget) > 0.01f && _playerVisual != null)
                 {
+                    if (infected && _playerRenderer != null)
+                    {
+                        RetroGhostTrail.Spawn(prevPlayerTarget, _playerRenderer.sprite, _playerRenderer.flipX, _playerRenderer.sortingOrder - 1, PixelArtFactory.SpriteMaterial);
+                    }
                     _playerVisual.OnMoveStarted(_playerRenderer.transform.position, _playerTarget);
                 }
                 if (Vector3.Distance(prevZombieTarget, _zombieTarget) > 0.01f && _facing != null)
@@ -649,12 +718,6 @@ namespace Oopsmeinfecto
                         Mathf.RoundToInt(displacement.y)));
                     _facing.StartMovement(moveFacing);
                 }
-            }
-
-            bool infected = state.Player.Infected || state.Phase == GamePhase.InfectedPlayback;
-            if (_playerVisual != null)
-            {
-                _playerVisual.SetInfected(infected);
             }
 
             if (!_transforming)

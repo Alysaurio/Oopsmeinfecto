@@ -112,7 +112,7 @@ namespace Oopsmeinfecto
         {
             if (_sfxSource != null && _movePlayer != null)
             {
-                _sfxSource.PlayOneShot(_movePlayer, 1.20f);
+                _sfxSource.PlayOneShot(_movePlayer, 1.50f);
             }
         }
 
@@ -120,7 +120,7 @@ namespace Oopsmeinfecto
         {
             if (_sfxSource != null && _moveEnemy != null)
             {
-                _sfxSource.PlayOneShot(_moveEnemy, 1.20f);
+                _sfxSource.PlayOneShot(_moveEnemy, 1.50f);
             }
         }
 

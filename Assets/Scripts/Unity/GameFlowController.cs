@@ -68,6 +68,8 @@ namespace Oopsmeinfecto
             _camera.clearFlags = CameraClearFlags.SolidColor;
             _camera.backgroundColor = _tuning.cameraBackground;
 
+            AmbientDustController.AttachToCamera(_camera);
+
             _renderer = GetComponent<LevelRenderer>();
             if (_renderer == null) _renderer = gameObject.AddComponent<LevelRenderer>();
 
