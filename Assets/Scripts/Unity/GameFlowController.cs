@@ -72,7 +72,7 @@ namespace Oopsmeinfecto
 
             _hud = GetComponent<HUDController>();
             if (_hud == null) _hud = gameObject.AddComponent<HUDController>();
-            _hud.Build(_tuning);
+            _hud.Build(_tuning, _camera);
 
             _defeat = GetComponent<DefeatPresentationController>();
             if (_defeat == null) _defeat = gameObject.AddComponent<DefeatPresentationController>();

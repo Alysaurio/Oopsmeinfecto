@@ -22,6 +22,7 @@ namespace Oopsmeinfecto
         private static Sprite _player;
         private static Sprite _zombie;
         private static Sprite _arrow;
+        private static Sprite _arrowHollow;
         private static Sprite _infectionParticle;
         private static Sprite _patrolGroundA;
         private static Sprite _patrolGroundB;
@@ -109,6 +110,15 @@ namespace Oopsmeinfecto
             }
         }
 
+        public static Sprite ArrowHollowSprite
+        {
+            get
+            {
+                if (_arrowHollow == null) _arrowHollow = CreateArrowHollow();
+                return _arrowHollow;
+            }
+        }
+
         public static Sprite InfectionParticleSprite
         {
             get
@@ -174,6 +184,7 @@ namespace Oopsmeinfecto
             DestroySprite(ref _player);
             DestroySprite(ref _zombie);
             DestroySprite(ref _arrow);
+            DestroySprite(ref _arrowHollow);
             DestroySprite(ref _infectionParticle);
             DestroySprite(ref _patrolGroundA);
             DestroySprite(ref _patrolGroundB);
@@ -393,6 +404,40 @@ namespace Oopsmeinfecto
                 }
             }
             return MakeSprite("Arrow", size, p);
+        }
+
+        private static Sprite CreateArrowHollow()
+        {
+            const int size = 16;
+            var p = new Color32[size * size];
+            var white = C(255, 255, 255);
+
+            bool InArrow(int x, int y)
+            {
+                if (x < 0 || x >= size || y < 0 || y >= size) return false;
+                bool head = y >= 9 && y <= 14 && Mathf.Abs(x - 7.5f) <= (14 - y) * 0.85f;
+                bool stem = y >= 2 && y <= 9 && x >= 6 && x <= 9;
+                return head || stem;
+            }
+
+            for (int y = 0; y < size; y++)
+            {
+                for (int x = 0; x < size; x++)
+                {
+                    if (!InArrow(x, y)) continue;
+
+                    bool onBorder = !InArrow(x - 1, y) ||
+                                    !InArrow(x + 1, y) ||
+                                    !InArrow(x, y - 1) ||
+                                    !InArrow(x, y + 1);
+
+                    if (onBorder)
+                    {
+                        p[y * size + x] = white;
+                    }
+                }
+            }
+            return MakeSprite("ArrowHollow", size, p);
         }
 
         private static Sprite CreateInfectionParticle()

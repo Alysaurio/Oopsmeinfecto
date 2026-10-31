@@ -746,7 +746,7 @@ namespace Oopsmeinfecto
             _lastScreenHeight = Screen.height;
 
             float hudFraction = Mathf.Clamp(_tuning.hudViewportFraction, 0.10f, 0.30f);
-            _camera.rect = new Rect(0f, hudFraction, 1f, 1f - hudFraction);
+            _camera.rect = new Rect(0f, 0f, 1f, 1f);
             _camera.orthographic = true;
             _camera.clearFlags = CameraClearFlags.SolidColor;
             _camera.backgroundColor = _tuning.cameraBackground;
@@ -767,9 +767,13 @@ namespace Oopsmeinfecto
 
             float verticalSize = boardHeight * 0.5f;
             float horizontalSize = boardWidth / (2f * Mathf.Max(0.01f, viewAspect));
-            _camera.orthographicSize = Mathf.Max(verticalSize, horizontalSize);
+            float targetHalfHeight = Mathf.Max(verticalSize, horizontalSize);
 
-            _camera.transform.position = new Vector3(centerX, centerY, -10f);
+            float totalOrthoSize = targetHalfHeight / (1f - hudFraction);
+            _camera.orthographicSize = totalOrthoSize;
+
+            float cameraCenterY = centerY - totalOrthoSize * hudFraction;
+            _camera.transform.position = new Vector3(centerX, cameraCenterY, -10f);
         }
 
         private void Update()
