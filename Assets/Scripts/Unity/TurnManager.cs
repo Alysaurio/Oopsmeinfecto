@@ -120,6 +120,11 @@ namespace Oopsmeinfecto
 
         public void ClearInfectionVisuals()
         {
+            if (_hud != null)
+            {
+                _hud.ResetAllArrowPulses();
+            }
+
             if (_renderer != null && _renderer.PlayerConcienciaVfx != null)
             {
                 _renderer.PlayerConcienciaVfx.StopGlow();
@@ -319,6 +324,7 @@ namespace Oopsmeinfecto
             if (_autoTimer > 0f && !manualStep) return;
             _autoTimer = stepInterval;
 
+            int executedStepIndex = _state.PlaybackIndex;
             var result = _state.AdvancePlaybackStep();
 
             if (_renderer != null && _renderer.PlayerConcienciaVfx != null && _renderer.PlayerConcienciaVfx.IsActive)
@@ -350,6 +356,19 @@ namespace Oopsmeinfecto
 
             _renderer.SyncFromState(_state);
             _hud.SetHistories(_state.Player.History, _state.Zombie.History);
+
+            if (_hud != null)
+            {
+                if (result.Outcome != TurnOutcome.PlaybackExhausted && result.Outcome != TurnOutcome.NoPlayback)
+                {
+                    float pulseDuration = Mathf.Clamp(stepInterval * 0.65f, 0.22f, 0.30f);
+                    _hud.PulsePlaybackArrow(executedStepIndex, pulseDuration);
+                }
+                else
+                {
+                    _hud.ResetAllArrowPulses();
+                }
+            }
 
             if (result.Outcome == TurnOutcome.PlaybackStep)
             {

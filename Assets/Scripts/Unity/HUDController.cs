@@ -46,13 +46,30 @@ namespace Oopsmeinfecto
 
         private readonly Image[] _playerSlotBorders = new Image[SlotCount];
         private readonly Image[] _playerSlotBackgrounds = new Image[SlotCount];
+        private readonly Image[] _playerBoxGlows = new Image[SlotCount];
+        private readonly Outline[] _playerBoxOutlines = new Outline[SlotCount];
+        private readonly Image[] _playerArrowGlows = new Image[SlotCount];
         private readonly Image[] _playerArrows = new Image[SlotCount];
-        private readonly Shadow[] _playerArrowShadows = new Shadow[SlotCount];
+        private readonly Outline[] _playerArrowShadows = new Outline[SlotCount];
 
         private readonly Image[] _zombieSlotBorders = new Image[SlotCount];
         private readonly Image[] _zombieSlotBackgrounds = new Image[SlotCount];
+        private readonly Image[] _zombieBoxGlows = new Image[SlotCount];
+        private readonly Outline[] _zombieBoxOutlines = new Outline[SlotCount];
+        private readonly Image[] _zombieArrowGlows = new Image[SlotCount];
         private readonly Image[] _zombieArrows = new Image[SlotCount];
-        private readonly Shadow[] _zombieArrowShadows = new Shadow[SlotCount];
+        private readonly Outline[] _zombieArrowShadows = new Outline[SlotCount];
+
+        private static Sprite _cachedArrowGlowSprite;
+        private static Sprite _cachedBoxGlowSprite;
+        private bool _pulseActive;
+        private bool _pulseIsPlayer;
+        private int _pulseSlotIndex = -1;
+        private float _pulseElapsed;
+        private float _pulseDuration = 0.26f;
+        private const float PulseBoxMaxScale = 1.25f;
+        private const float PulseArrowLocalMaxScale = 1.16f; // 1.25f * 1.16f = 1.45f escala visual combinada
+        private const float PulseMaxGlowAlpha = 0.40f;
 
         private GameObject _loadingRoot;
         private Text _loadingLabel;
@@ -401,12 +418,37 @@ namespace Oopsmeinfecto
                 var slotBorder = CreateImage(slots, "Slot Border " + i,
                     player ? _tuning.hudBorderColor : ZombieBoxBorderColor);
                 SetRect(slotBorder.rectTransform,
-                    new Vector2(0f, 0f), new Vector2(0f, 0f), new Vector2(0f, 0f),
-                    new Vector2(i * (slotSize + gap), 0f), new Vector2(slotSize, slotSize));
+                    new Vector2(0f, 0f), new Vector2(0f, 0f), new Vector2(0.5f, 0.5f),
+                    new Vector2(i * (slotSize + gap) + slotSize * 0.5f, slotSize * 0.5f), new Vector2(slotSize, slotSize));
+
+                var boxOutline = slotBorder.gameObject.AddComponent<Outline>();
+                boxOutline.effectDistance = new Vector2(2.5f, 2.5f);
+                boxOutline.useGraphicAlpha = true;
+                boxOutline.enabled = false;
+
+                var boxGlow = CreateImage(slotBorder.transform, "Box Glow " + i,
+                    player ? _tuning.playerHistoryHighlightColor : ZombieHighlightColor);
+                boxGlow.sprite = GetOrCreateBoxGlowSprite();
+                boxGlow.preserveAspect = true;
+                boxGlow.raycastTarget = false;
+                boxGlow.enabled = false;
+                SetRect(boxGlow.rectTransform,
+                    new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
+                    Vector2.zero, new Vector2(84f, 84f));
 
                 var background = CreateImage(slotBorder.transform, "Slot " + i,
                     player ? _tuning.historySlotColor : ZombieBoxBgColor);
                 Stretch(background.rectTransform, 2f);
+
+                var arrowGlow = CreateImage(background.transform, "Arrow Glow " + i,
+                    player ? _tuning.playerHistoryHighlightColor : ZombieHighlightColor);
+                arrowGlow.sprite = GetOrCreateArrowGlowSprite();
+                arrowGlow.preserveAspect = true;
+                arrowGlow.raycastTarget = false;
+                arrowGlow.enabled = false;
+                SetRect(arrowGlow.rectTransform,
+                    new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
+                    Vector2.zero, new Vector2(58f, 58f));
 
                 var arrow = CreateImage(background.transform, "Arrow " + i,
                     player ? _tuning.playerHistoryColor : ZombieHighlightColor);
@@ -417,8 +459,8 @@ namespace Oopsmeinfecto
                     new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
                     Vector2.zero, new Vector2(48f, 48f));
 
-                var shadow = arrow.gameObject.AddComponent<Shadow>();
-                shadow.effectDistance = Vector2.zero;
+                var shadow = arrow.gameObject.AddComponent<Outline>();
+                shadow.effectDistance = new Vector2(2f, 2f);
                 shadow.useGraphicAlpha = true;
                 shadow.enabled = false;
 
@@ -426,6 +468,9 @@ namespace Oopsmeinfecto
                 {
                     _playerSlotBorders[i] = slotBorder;
                     _playerSlotBackgrounds[i] = background;
+                    _playerBoxGlows[i] = boxGlow;
+                    _playerBoxOutlines[i] = boxOutline;
+                    _playerArrowGlows[i] = arrowGlow;
                     _playerArrows[i] = arrow;
                     _playerArrowShadows[i] = shadow;
                 }
@@ -433,6 +478,9 @@ namespace Oopsmeinfecto
                 {
                     _zombieSlotBorders[i] = slotBorder;
                     _zombieSlotBackgrounds[i] = background;
+                    _zombieBoxGlows[i] = boxGlow;
+                    _zombieBoxOutlines[i] = boxOutline;
+                    _zombieArrowGlows[i] = arrowGlow;
                     _zombieArrows[i] = arrow;
                     _zombieArrowShadows[i] = shadow;
                 }
@@ -580,14 +628,14 @@ namespace Oopsmeinfecto
             _volumeSlider = BuildVolumeSlider(volRow);
 
             // 3) Sección de Créditos con salto de línea exacto
-            string creditsContent = "Créditos:\n- Aly Quispe Borda.\n- Anderson Estrada Barzola.";
+            string creditsContent = "Créditos:\n- Aly Quispe Borda.\n- Anderson Estrada Barzola.\n\"Los muchanchos\"";
             var creditsText = CreateText(menuBg.transform, "Credits Label", creditsContent, 24,
                 _tuning.hudTextColor, TextAnchor.MiddleCenter);
             creditsText.font = _font;
             creditsText.lineSpacing = 1.18f;
             SetRect(creditsText.rectTransform,
                 new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
-                new Vector2(0f, -22f), new Vector2(460f, 110f));
+                new Vector2(0f, -22f), new Vector2(460f, 130f));
 
             // 4) Botón "Salir": Fondo verde muy desaturado (#4A6B53) con texto centrado "Salir"
             Color desaturatedGreen = new Color(0x4A / 255f, 0x6B / 255f, 0x53 / 255f, 1f);
@@ -826,6 +874,7 @@ namespace Oopsmeinfecto
             _playerConciencia = level.PlayerConciencia;
             _zombieConciencia = level.ZombieConciencia;
             _infected = false;
+            ResetAllArrowPulses();
 
             if (_levelLabel != null)
             {
@@ -905,6 +954,10 @@ namespace Oopsmeinfecto
         public void SetInfected(bool infected)
         {
             _infected = infected;
+            if (!infected)
+            {
+                ResetAllArrowPulses();
+            }
             UpdateEntityTitles();
         }
 
@@ -912,20 +965,330 @@ namespace Oopsmeinfecto
         {
         }
 
+        /// <summary>
+        /// Dispara el pulso diferencial de escala y brillo ligero sincronizado (alpha 0 -> 0.40 -> 0)
+        /// tanto en el cuadro de fondo (1.0 -> 1.25 -> 1.0) como en la flecha interior (escala local 1.0 -> 1.16 -> 1.0,
+        /// escala visual combinada ~1.45) correspondiente al paso actual de la secuencia de infección.
+        /// </summary>
+        public void PulsePlaybackArrow(int stepIndex, float duration = 0.26f)
+        {
+            ResetAllArrowPulses();
+
+            if (stepIndex < 0) return;
+
+            int zCount = Mathf.Clamp(_zombieHighlightedCount, 0, SlotCount);
+            int pCount = Mathf.Clamp(_playerHighlightedCount, 0, SlotCount);
+
+            if (stepIndex < zCount)
+            {
+                int slotIndex = (SlotCount - zCount) + stepIndex;
+                if (slotIndex >= 0 && slotIndex < SlotCount)
+                {
+                    _pulseActive = true;
+                    _pulseIsPlayer = false;
+                    _pulseSlotIndex = slotIndex;
+                    _pulseElapsed = 0f;
+                    _pulseDuration = Mathf.Max(0.10f, duration);
+                    if (_zombieSlotBorders[slotIndex] != null)
+                    {
+                        _zombieSlotBorders[slotIndex].transform.SetAsLastSibling();
+                    }
+                }
+            }
+            else
+            {
+                int playerOffset = stepIndex - zCount;
+                if (playerOffset >= 0 && playerOffset < pCount)
+                {
+                    int slotIndex = (SlotCount - pCount) + playerOffset;
+                    if (slotIndex >= 0 && slotIndex < SlotCount)
+                    {
+                        _pulseActive = true;
+                        _pulseIsPlayer = true;
+                        _pulseSlotIndex = slotIndex;
+                        _pulseElapsed = 0f;
+                        _pulseDuration = Mathf.Max(0.10f, duration);
+                        if (_playerSlotBorders[slotIndex] != null)
+                        {
+                            _playerSlotBorders[slotIndex].transform.SetAsLastSibling();
+                        }
+                    }
+                }
+            }
+        }
+
+        public void ResetAllArrowPulses()
+        {
+            _pulseActive = false;
+            _pulseSlotIndex = -1;
+            _pulseElapsed = 0f;
+
+            Color pColor = _tuning != null ? _tuning.playerHistoryHighlightColor : new Color(0.30f, 0.65f, 1.00f, 1f);
+            Color zColor = ZombieHighlightColor;
+
+            for (int i = 0; i < SlotCount; i++)
+            {
+                if (_playerSlotBorders[i] != null)
+                {
+                    _playerSlotBorders[i].rectTransform.localScale = Vector3.one;
+                }
+                if (_playerSlotBackgrounds[i] != null)
+                {
+                    _playerSlotBackgrounds[i].rectTransform.localScale = Vector3.one;
+                }
+                if (_playerBoxGlows[i] != null)
+                {
+                    _playerBoxGlows[i].rectTransform.localScale = Vector3.one;
+                    _playerBoxGlows[i].color = new Color(pColor.r, pColor.g, pColor.b, 0f);
+                    _playerBoxGlows[i].enabled = false;
+                }
+                if (_playerBoxOutlines[i] != null)
+                {
+                    _playerBoxOutlines[i].effectColor = new Color(pColor.r, pColor.g, pColor.b, 0f);
+                    _playerBoxOutlines[i].enabled = false;
+                }
+                if (_playerArrows[i] != null)
+                {
+                    _playerArrows[i].rectTransform.localScale = Vector3.one;
+                }
+                if (_playerArrowGlows[i] != null)
+                {
+                    _playerArrowGlows[i].rectTransform.localScale = Vector3.one;
+                    _playerArrowGlows[i].color = new Color(pColor.r, pColor.g, pColor.b, 0f);
+                    _playerArrowGlows[i].enabled = false;
+                }
+                if (_playerArrowShadows[i] != null)
+                {
+                    _playerArrowShadows[i].effectColor = new Color(pColor.r, pColor.g, pColor.b, 0f);
+                    _playerArrowShadows[i].enabled = false;
+                }
+
+                if (_zombieSlotBorders[i] != null)
+                {
+                    _zombieSlotBorders[i].rectTransform.localScale = Vector3.one;
+                }
+                if (_zombieSlotBackgrounds[i] != null)
+                {
+                    _zombieSlotBackgrounds[i].rectTransform.localScale = Vector3.one;
+                }
+                if (_zombieBoxGlows[i] != null)
+                {
+                    _zombieBoxGlows[i].rectTransform.localScale = Vector3.one;
+                    _zombieBoxGlows[i].color = new Color(zColor.r, zColor.g, zColor.b, 0f);
+                    _zombieBoxGlows[i].enabled = false;
+                }
+                if (_zombieBoxOutlines[i] != null)
+                {
+                    _zombieBoxOutlines[i].effectColor = new Color(zColor.r, zColor.g, zColor.b, 0f);
+                    _zombieBoxOutlines[i].enabled = false;
+                }
+                if (_zombieArrows[i] != null)
+                {
+                    _zombieArrows[i].rectTransform.localScale = Vector3.one;
+                }
+                if (_zombieArrowGlows[i] != null)
+                {
+                    _zombieArrowGlows[i].rectTransform.localScale = Vector3.one;
+                    _zombieArrowGlows[i].color = new Color(zColor.r, zColor.g, zColor.b, 0f);
+                    _zombieArrowGlows[i].enabled = false;
+                }
+                if (_zombieArrowShadows[i] != null)
+                {
+                    _zombieArrowShadows[i].effectColor = new Color(zColor.r, zColor.g, zColor.b, 0f);
+                    _zombieArrowShadows[i].enabled = false;
+                }
+            }
+        }
+
+        private void UpdateArrowPulse()
+        {
+            if (!_pulseActive || _pulseSlotIndex < 0 || _pulseSlotIndex >= SlotCount) return;
+
+            if (!_isPaused && !IsPauseMenuOpen)
+            {
+                _pulseElapsed += Time.unscaledDeltaTime;
+            }
+
+            float t = Mathf.Clamp01(_pulseElapsed / Mathf.Max(0.01f, _pulseDuration));
+            float curve = Mathf.Sin(t * Mathf.PI);
+
+            float boxScale = Mathf.Lerp(1.0f, PulseBoxMaxScale, curve);
+            float arrowLocalScale = Mathf.Lerp(1.0f, PulseArrowLocalMaxScale, curve);
+            float glowAlpha = Mathf.Lerp(0.0f, PulseMaxGlowAlpha, curve);
+
+            Image slotBorder = _pulseIsPlayer ? _playerSlotBorders[_pulseSlotIndex] : _zombieSlotBorders[_pulseSlotIndex];
+            Image boxGlow = _pulseIsPlayer ? _playerBoxGlows[_pulseSlotIndex] : _zombieBoxGlows[_pulseSlotIndex];
+            Outline boxOutline = _pulseIsPlayer ? _playerBoxOutlines[_pulseSlotIndex] : _zombieBoxOutlines[_pulseSlotIndex];
+            Image arrow = _pulseIsPlayer ? _playerArrows[_pulseSlotIndex] : _zombieArrows[_pulseSlotIndex];
+            Image arrowGlow = _pulseIsPlayer ? _playerArrowGlows[_pulseSlotIndex] : _zombieArrowGlows[_pulseSlotIndex];
+            Outline arrowShadow = _pulseIsPlayer ? _playerArrowShadows[_pulseSlotIndex] : _zombieArrowShadows[_pulseSlotIndex];
+
+            Color baseColor = _pulseIsPlayer
+                ? (_tuning != null ? _tuning.playerHistoryHighlightColor : new Color(0.30f, 0.65f, 1.00f, 1f))
+                : ZombieHighlightColor;
+
+            if (t >= 1.0f)
+            {
+                if (slotBorder != null) slotBorder.rectTransform.localScale = Vector3.one;
+                if (boxGlow != null)
+                {
+                    boxGlow.rectTransform.localScale = Vector3.one;
+                    boxGlow.color = new Color(baseColor.r, baseColor.g, baseColor.b, 0f);
+                    boxGlow.enabled = false;
+                }
+                if (boxOutline != null)
+                {
+                    boxOutline.effectColor = new Color(baseColor.r, baseColor.g, baseColor.b, 0f);
+                    boxOutline.enabled = false;
+                }
+                if (arrow != null) arrow.rectTransform.localScale = Vector3.one;
+                if (arrowGlow != null)
+                {
+                    arrowGlow.rectTransform.localScale = Vector3.one;
+                    arrowGlow.color = new Color(baseColor.r, baseColor.g, baseColor.b, 0f);
+                    arrowGlow.enabled = false;
+                }
+                if (arrowShadow != null)
+                {
+                    arrowShadow.effectColor = new Color(baseColor.r, baseColor.g, baseColor.b, 0f);
+                    arrowShadow.enabled = false;
+                }
+
+                _pulseActive = false;
+                _pulseSlotIndex = -1;
+                _pulseElapsed = 0f;
+                return;
+            }
+
+            if (slotBorder != null)
+            {
+                slotBorder.rectTransform.localScale = new Vector3(boxScale, boxScale, 1f);
+            }
+            if (boxGlow != null)
+            {
+                boxGlow.rectTransform.localScale = Vector3.one;
+                boxGlow.color = new Color(baseColor.r, baseColor.g, baseColor.b, glowAlpha);
+                boxGlow.enabled = glowAlpha > 0.001f;
+            }
+            if (boxOutline != null)
+            {
+                boxOutline.effectColor = new Color(baseColor.r, baseColor.g, baseColor.b, glowAlpha);
+                boxOutline.enabled = glowAlpha > 0.001f;
+            }
+
+            if (arrow != null)
+            {
+                arrow.rectTransform.localScale = new Vector3(arrowLocalScale, arrowLocalScale, 1f);
+            }
+            if (arrowGlow != null)
+            {
+                arrowGlow.rectTransform.localScale = new Vector3(arrowLocalScale, arrowLocalScale, 1f);
+                arrowGlow.color = new Color(baseColor.r, baseColor.g, baseColor.b, glowAlpha);
+                arrowGlow.enabled = glowAlpha > 0.001f;
+            }
+            if (arrowShadow != null)
+            {
+                arrowShadow.effectColor = new Color(baseColor.r, baseColor.g, baseColor.b, glowAlpha);
+                arrowShadow.enabled = glowAlpha > 0.001f;
+            }
+        }
+
+        private static Sprite GetOrCreateBoxGlowSprite()
+        {
+            if (_cachedBoxGlowSprite != null) return _cachedBoxGlowSprite;
+
+            const int size = 64;
+            var tex = new Texture2D(size, size, TextureFormat.RGBA32, false);
+            tex.filterMode = FilterMode.Bilinear;
+            tex.wrapMode = TextureWrapMode.Clamp;
+
+            float center = (size - 1) * 0.5f;
+            float maxRadius = center;
+            var pixels = new Color[size * size];
+
+            for (int y = 0; y < size; y++)
+            {
+                for (int x = 0; x < size; x++)
+                {
+                    float dx = Mathf.Abs(x - center) / maxRadius;
+                    float dy = Mathf.Abs(y - center) / maxRadius;
+                    // Distancia suave a un cuadrado con esquinas redondeadas
+                    float qx = Mathf.Max(0f, dx - 0.55f) / 0.45f;
+                    float qy = Mathf.Max(0f, dy - 0.55f) / 0.45f;
+                    float dist = Mathf.Sqrt(qx * qx + qy * qy);
+                    float falloff = Mathf.Clamp01(1f - dist);
+                    float alpha = falloff * falloff;
+                    pixels[y * size + x] = new Color(1f, 1f, 1f, alpha);
+                }
+            }
+
+            tex.SetPixels(pixels);
+            tex.Apply(false, false);
+
+            _cachedBoxGlowSprite = Sprite.Create(
+                tex,
+                new Rect(0f, 0f, size, size),
+                new Vector2(0.5f, 0.5f),
+                64f);
+            _cachedBoxGlowSprite.name = "HUDBoxPulseGlowSprite";
+            return _cachedBoxGlowSprite;
+        }
+
+        private static Sprite GetOrCreateArrowGlowSprite()
+        {
+            if (_cachedArrowGlowSprite != null) return _cachedArrowGlowSprite;
+
+            const int size = 64;
+            var tex = new Texture2D(size, size, TextureFormat.RGBA32, false);
+            tex.filterMode = FilterMode.Bilinear;
+            tex.wrapMode = TextureWrapMode.Clamp;
+
+            float center = (size - 1) * 0.5f;
+            float maxRadius = center;
+            var pixels = new Color[size * size];
+
+            for (int y = 0; y < size; y++)
+            {
+                for (int x = 0; x < size; x++)
+                {
+                    float dx = (x - center) / maxRadius;
+                    float dy = (y - center) / maxRadius;
+                    float dist = Mathf.Sqrt(dx * dx + dy * dy);
+                    float falloff = Mathf.Clamp01(1f - dist);
+                    float alpha = falloff * falloff;
+                    pixels[y * size + x] = new Color(1f, 1f, 1f, alpha);
+                }
+            }
+
+            tex.SetPixels(pixels);
+            tex.Apply(false, false);
+
+            _cachedArrowGlowSprite = Sprite.Create(
+                tex,
+                new Rect(0f, 0f, size, size),
+                new Vector2(0.5f, 0.5f),
+                64f);
+            _cachedArrowGlowSprite.name = "HUDArrowPulseGlowSprite";
+            return _cachedArrowGlowSprite;
+        }
+
         public void SetHistories(IReadOnlyList<Direction> playerHistory,
             IReadOnlyList<Direction> zombieHistory)
         {
             _playerHighlightedCount = UpdateSlots(
-                _playerArrows, _playerSlotBackgrounds, _playerSlotBorders, _playerArrowShadows, playerHistory,
+                _playerArrows, _playerArrowGlows, _playerBoxGlows, _playerBoxOutlines,
+                _playerSlotBackgrounds, _playerSlotBorders, _playerArrowShadows, playerHistory,
                 _tuning.playerHistoryColor, _tuning.playerHistoryHighlightColor,
                 _playerConciencia, true);
             _zombieHighlightedCount = UpdateSlots(
-                _zombieArrows, _zombieSlotBackgrounds, _zombieSlotBorders, _zombieArrowShadows, zombieHistory,
+                _zombieArrows, _zombieArrowGlows, _zombieBoxGlows, _zombieBoxOutlines,
+                _zombieSlotBackgrounds, _zombieSlotBorders, _zombieArrowShadows, zombieHistory,
                 _tuning.zombieHistoryColor, ZombieHighlightColor,
                 _zombieConciencia, false);
         }
 
-        private int UpdateSlots(Image[] arrows, Image[] backgrounds, Image[] borders, Shadow[] shadows,
+        private int UpdateSlots(Image[] arrows, Image[] arrowGlows, Image[] boxGlows, Outline[] boxOutlines,
+            Image[] backgrounds, Image[] borders, Outline[] shadows,
             IReadOnlyList<Direction> history, Color arrowColor, Color highlightColor,
             int highlightCount, bool isPlayer)
         {
@@ -937,6 +1300,8 @@ namespace Oopsmeinfecto
 
             for (int i = 0; i < SlotCount; i++)
             {
+                bool isCurrentlyPulsing = _pulseActive && (_pulseIsPlayer == isPlayer) && (_pulseSlotIndex == i);
+
                 bool filled = i >= firstSlot && i - firstSlot < visible;
                 if (filled)
                 {
@@ -947,9 +1312,38 @@ namespace Oopsmeinfecto
                     arrows[i].enabled = true;
                     arrows[i].rectTransform.localEulerAngles = new Vector3(0f, 0f, AngleFor(direction));
 
+                    if (!isCurrentlyPulsing)
+                    {
+                        borders[i].rectTransform.localScale = Vector3.one;
+                        backgrounds[i].rectTransform.localScale = Vector3.one;
+                        arrows[i].rectTransform.localScale = Vector3.one;
+                        if (boxGlows[i] != null)
+                        {
+                            boxGlows[i].rectTransform.localScale = Vector3.one;
+                            boxGlows[i].color = new Color(highlightColor.r, highlightColor.g, highlightColor.b, 0f);
+                            boxGlows[i].enabled = false;
+                        }
+                        if (boxOutlines[i] != null)
+                        {
+                            boxOutlines[i].effectColor = new Color(highlightColor.r, highlightColor.g, highlightColor.b, 0f);
+                            boxOutlines[i].enabled = false;
+                        }
+                        if (arrowGlows[i] != null)
+                        {
+                            arrowGlows[i].rectTransform.localScale = Vector3.one;
+                            arrowGlows[i].color = new Color(highlightColor.r, highlightColor.g, highlightColor.b, 0f);
+                            arrowGlows[i].enabled = false;
+                        }
+                        if (shadows[i] != null)
+                        {
+                            shadows[i].effectColor = new Color(highlightColor.r, highlightColor.g, highlightColor.b, 0f);
+                            shadows[i].enabled = false;
+                        }
+                    }
+
                     if (isHighlighted)
                     {
-                        // Flecha activa (con cuadro): conserva cuadro, relleno sólido y brillo sutil
+                        // Flecha activa (con cuadro): conserva cuadro y relleno sólido
                         arrows[i].sprite = PixelArtFactory.ArrowSprite;
                         arrows[i].color = isPlayer ? highlightColor : ZombieHighlightColor;
 
@@ -960,10 +1354,6 @@ namespace Oopsmeinfecto
                         backgrounds[i].color = isPlayer
                             ? Color.Lerp(_tuning.historySlotColor, highlightColor, 0.24f)
                             : ZombieBoxBgColor;
-
-                        shadows[i].enabled = true;
-                        shadows[i].effectDistance = Vector2.zero;
-                        shadows[i].effectColor = new Color(arrows[i].color.r, arrows[i].color.g, arrows[i].color.b, 0.40f);
                     }
                     else
                     {
@@ -975,16 +1365,35 @@ namespace Oopsmeinfecto
 
                         borders[i].enabled = false;
                         backgrounds[i].enabled = false;
-                        shadows[i].enabled = false;
                     }
                 }
                 else
                 {
                     // Casilla vacía (sin turno en el historial)
                     arrows[i].enabled = false;
+                    arrows[i].rectTransform.localScale = Vector3.one;
                     borders[i].enabled = false;
+                    borders[i].rectTransform.localScale = Vector3.one;
                     backgrounds[i].enabled = false;
-                    shadows[i].enabled = false;
+                    backgrounds[i].rectTransform.localScale = Vector3.one;
+                    if (boxGlows[i] != null)
+                    {
+                        boxGlows[i].rectTransform.localScale = Vector3.one;
+                        boxGlows[i].enabled = false;
+                    }
+                    if (boxOutlines[i] != null)
+                    {
+                        boxOutlines[i].enabled = false;
+                    }
+                    if (arrowGlows[i] != null)
+                    {
+                        arrowGlows[i].rectTransform.localScale = Vector3.one;
+                        arrowGlows[i].enabled = false;
+                    }
+                    if (shadows[i] != null)
+                    {
+                        shadows[i].enabled = false;
+                    }
                 }
             }
 
@@ -1049,6 +1458,7 @@ namespace Oopsmeinfecto
             }
 
             HandleEscapeKey();
+            UpdateArrowPulse();
 
             // Garantía estricta de exclusión mutua: nunca mostrar "Generando nivel..." si el banner ("bien") está visible
             if (_infectionBanner != null && _infectionBanner.gameObject.activeSelf)
