@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using System.IO;
 using TMPro;
 using UnityEngine;
+using UnityEngine.InputSystem;
 using UnityEngine.UI;
 
 namespace Oopsmeinfecto
@@ -14,7 +15,7 @@ namespace Oopsmeinfecto
     {
         private const int SlotCount = 6;
 
-        private static readonly Color ZombieHighlightColor = new Color(0.70f, 0.25f, 0.25f, 1f);
+        public static readonly Color ZombieHighlightColor = new Color(0.70f, 0.25f, 0.25f, 1f);
         private static readonly Color ZombieBoxBgColor = new Color(0.290f, 0.125f, 0.125f, 0.90f);
         private static readonly Color ZombieBoxBorderColor = new Color(0.45f, 0.20f, 0.20f, 0.95f);
 
@@ -28,7 +29,16 @@ namespace Oopsmeinfecto
         private Image _zombieIconImage;
         private Text _statusLabel;
         private Text _hintLabel;
+        private Text _escHintLabel;
         private Text _infectionBanner;
+
+        private GameObject _menuWindowRoot;
+        private GameObject _confirmWindowRoot;
+        private Slider _volumeSlider;
+        private bool _isPaused;
+
+        public bool IsPaused => _isPaused;
+        public static bool IsPauseMenuOpen { get; private set; }
 
         private GameObject _tooltipRoot;
         private Text _tooltipSeedLabel;
@@ -36,13 +46,30 @@ namespace Oopsmeinfecto
 
         private readonly Image[] _playerSlotBorders = new Image[SlotCount];
         private readonly Image[] _playerSlotBackgrounds = new Image[SlotCount];
+        private readonly Image[] _playerBoxGlows = new Image[SlotCount];
+        private readonly Outline[] _playerBoxOutlines = new Outline[SlotCount];
+        private readonly Image[] _playerArrowGlows = new Image[SlotCount];
         private readonly Image[] _playerArrows = new Image[SlotCount];
-        private readonly Shadow[] _playerArrowShadows = new Shadow[SlotCount];
+        private readonly Outline[] _playerArrowShadows = new Outline[SlotCount];
 
         private readonly Image[] _zombieSlotBorders = new Image[SlotCount];
         private readonly Image[] _zombieSlotBackgrounds = new Image[SlotCount];
+        private readonly Image[] _zombieBoxGlows = new Image[SlotCount];
+        private readonly Outline[] _zombieBoxOutlines = new Outline[SlotCount];
+        private readonly Image[] _zombieArrowGlows = new Image[SlotCount];
         private readonly Image[] _zombieArrows = new Image[SlotCount];
-        private readonly Shadow[] _zombieArrowShadows = new Shadow[SlotCount];
+        private readonly Outline[] _zombieArrowShadows = new Outline[SlotCount];
+
+        private static Sprite _cachedArrowGlowSprite;
+        private static Sprite _cachedBoxGlowSprite;
+        private bool _pulseActive;
+        private bool _pulseIsPlayer;
+        private int _pulseSlotIndex = -1;
+        private float _pulseElapsed;
+        private float _pulseDuration = 0.26f;
+        private const float PulseBoxMaxScale = 1.25f;
+        private const float PulseArrowLocalMaxScale = 1.16f; // 1.25f * 1.16f = 1.45f escala visual combinada
+        private const float PulseMaxGlowAlpha = 0.40f;
 
         private GameObject _loadingRoot;
         private Text _loadingLabel;
@@ -96,6 +123,7 @@ namespace Oopsmeinfecto
             BuildHistoryPanel(root);
             BuildInfectionBanner(root);
             BuildLoadingOverlay(root);
+            BuildPauseMenu(root);
         }
 
         private static Camera ResolveCamera(Camera candidate)
@@ -121,7 +149,7 @@ namespace Oopsmeinfecto
             var border = CreateImage(root, "Info Tooltip Border", new Color(0.42f, 0.18f, 0.18f, 0.90f));
             SetRect(border.rectTransform,
                 new Vector2(1f, 1f), new Vector2(1f, 1f), new Vector2(1f, 1f),
-                new Vector2(-28f, -86f), new Vector2(460f, 124f));
+                new Vector2(-28f, -114f), new Vector2(460f, 124f));
             _tooltipRoot = border.gameObject;
 
             var panel = CreateImage(border.transform, "Info Tooltip Panel", new Color(0.290f, 0.125f, 0.125f, 0.88f));
@@ -151,13 +179,25 @@ namespace Oopsmeinfecto
 
         private void BuildHint(RectTransform root)
         {
+            Color hintColor = Color.Lerp(_tuning.hudTextColor, _tuning.hudBorderColor, 0.35f);
+
             _hintLabel = CreateText(root, "Controls Hint",
                 "WASD / ← ↑ ↓ →\nInfo (i)", 21,
-                Color.Lerp(_tuning.hudTextColor, _tuning.hudBorderColor, 0.35f), TextAnchor.MiddleRight);
+                hintColor, TextAnchor.MiddleRight);
             _hintLabel.raycastTarget = true;
             SetRect(_hintLabel.rectTransform,
                 new Vector2(1f, 1f), new Vector2(1f, 1f), new Vector2(1f, 1f),
                 new Vector2(-28f, -22f), new Vector2(400f, 56f));
+
+            // Justo debajo de "info (i)", añade un texto con exactamente la misma fuente, estilo y color: "Esc - menú"
+            _escHintLabel = CreateText(root, "Esc Menu Hint",
+                "Esc - menú", _hintLabel.fontSize,
+                _hintLabel.color, TextAnchor.MiddleRight);
+            _escHintLabel.font = _hintLabel.font;
+            _escHintLabel.fontStyle = _hintLabel.fontStyle;
+            SetRect(_escHintLabel.rectTransform,
+                new Vector2(1f, 1f), new Vector2(1f, 1f), new Vector2(1f, 1f),
+                new Vector2(-28f, -78f), new Vector2(400f, 28f));
 
             var infoHitArea = CreateRect(_hintLabel.transform, "Info (i) Area",
                 new Vector2(1f, 0f), new Vector2(1f, 0.5f), new Vector2(1f, 0f),
@@ -378,12 +418,37 @@ namespace Oopsmeinfecto
                 var slotBorder = CreateImage(slots, "Slot Border " + i,
                     player ? _tuning.hudBorderColor : ZombieBoxBorderColor);
                 SetRect(slotBorder.rectTransform,
-                    new Vector2(0f, 0f), new Vector2(0f, 0f), new Vector2(0f, 0f),
-                    new Vector2(i * (slotSize + gap), 0f), new Vector2(slotSize, slotSize));
+                    new Vector2(0f, 0f), new Vector2(0f, 0f), new Vector2(0.5f, 0.5f),
+                    new Vector2(i * (slotSize + gap) + slotSize * 0.5f, slotSize * 0.5f), new Vector2(slotSize, slotSize));
+
+                var boxOutline = slotBorder.gameObject.AddComponent<Outline>();
+                boxOutline.effectDistance = new Vector2(2.5f, 2.5f);
+                boxOutline.useGraphicAlpha = true;
+                boxOutline.enabled = false;
+
+                var boxGlow = CreateImage(slotBorder.transform, "Box Glow " + i,
+                    player ? _tuning.playerHistoryHighlightColor : ZombieHighlightColor);
+                boxGlow.sprite = GetOrCreateBoxGlowSprite();
+                boxGlow.preserveAspect = true;
+                boxGlow.raycastTarget = false;
+                boxGlow.enabled = false;
+                SetRect(boxGlow.rectTransform,
+                    new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
+                    Vector2.zero, new Vector2(84f, 84f));
 
                 var background = CreateImage(slotBorder.transform, "Slot " + i,
                     player ? _tuning.historySlotColor : ZombieBoxBgColor);
                 Stretch(background.rectTransform, 2f);
+
+                var arrowGlow = CreateImage(background.transform, "Arrow Glow " + i,
+                    player ? _tuning.playerHistoryHighlightColor : ZombieHighlightColor);
+                arrowGlow.sprite = GetOrCreateArrowGlowSprite();
+                arrowGlow.preserveAspect = true;
+                arrowGlow.raycastTarget = false;
+                arrowGlow.enabled = false;
+                SetRect(arrowGlow.rectTransform,
+                    new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
+                    Vector2.zero, new Vector2(58f, 58f));
 
                 var arrow = CreateImage(background.transform, "Arrow " + i,
                     player ? _tuning.playerHistoryColor : ZombieHighlightColor);
@@ -394,8 +459,8 @@ namespace Oopsmeinfecto
                     new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
                     Vector2.zero, new Vector2(48f, 48f));
 
-                var shadow = arrow.gameObject.AddComponent<Shadow>();
-                shadow.effectDistance = Vector2.zero;
+                var shadow = arrow.gameObject.AddComponent<Outline>();
+                shadow.effectDistance = new Vector2(2f, 2f);
                 shadow.useGraphicAlpha = true;
                 shadow.enabled = false;
 
@@ -403,6 +468,9 @@ namespace Oopsmeinfecto
                 {
                     _playerSlotBorders[i] = slotBorder;
                     _playerSlotBackgrounds[i] = background;
+                    _playerBoxGlows[i] = boxGlow;
+                    _playerBoxOutlines[i] = boxOutline;
+                    _playerArrowGlows[i] = arrowGlow;
                     _playerArrows[i] = arrow;
                     _playerArrowShadows[i] = shadow;
                 }
@@ -410,6 +478,9 @@ namespace Oopsmeinfecto
                 {
                     _zombieSlotBorders[i] = slotBorder;
                     _zombieSlotBackgrounds[i] = background;
+                    _zombieBoxGlows[i] = boxGlow;
+                    _zombieBoxOutlines[i] = boxOutline;
+                    _zombieArrowGlows[i] = arrowGlow;
                     _zombieArrows[i] = arrow;
                     _zombieArrowShadows[i] = shadow;
                 }
@@ -448,14 +519,27 @@ namespace Oopsmeinfecto
         {
             if (_infectionBanner != null)
             {
-                if (show && !string.IsNullOrEmpty(message))
-                {
-                    _infectionBanner.text = message;
-                }
-                _infectionBanner.gameObject.SetActive(show);
                 if (show)
                 {
+                    if (!string.IsNullOrEmpty(message))
+                    {
+                        _infectionBanner.text = message;
+                    }
+                    // Asegura que "Generando nivel..." jamás coincida en pantalla mientras el banner sea visible
+                    if (_loadingRoot != null)
+                    {
+                        _loadingRoot.SetActive(false);
+                    }
+                    _loading = false;
+
+                    _infectionBanner.gameObject.SetActive(true);
                     _infectionBanner.transform.SetAsLastSibling();
+                    KeepPauseMenuOnTop();
+                }
+                else
+                {
+                    _infectionBanner.text = "";
+                    _infectionBanner.gameObject.SetActive(false);
                 }
             }
         }
@@ -480,12 +564,317 @@ namespace Oopsmeinfecto
             ShowInfectionBanner(false);
         }
 
+        private void BuildPauseMenu(RectTransform root)
+        {
+            _isPaused = false;
+            IsPauseMenuOpen = false;
+
+            Font oopsFont = _infectionBanner != null && _infectionBanner.font != null ? _infectionBanner.font : _font;
+            FontStyle oopsStyle = _infectionBanner != null ? _infectionBanner.fontStyle : FontStyle.Bold;
+
+            Font nivelFont = _levelLabel != null && _levelLabel.font != null ? _levelLabel.font : _font;
+            FontStyle nivelStyle = _levelLabel != null ? _levelLabel.fontStyle : FontStyle.Bold;
+
+            Color windowBgColor = new Color(0f, 0f, 0f, 0.75f);
+
+            // =========================================================
+            // 1. VENTANA MENÚ
+            // =========================================================
+            var menuBg = CreateImage(root, "Ventana Menu", windowBgColor);
+            menuBg.raycastTarget = true;
+            SetRect(menuBg.rectTransform,
+                new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
+                Vector2.zero, new Vector2(560f, 430f));
+            _menuWindowRoot = menuBg.gameObject;
+
+            // Esquina superior derecha: Botón "X" en color rojo exacto de las flechas inferiores derechas del HUD (ZombieHighlightColor)
+            var closeBtnImg = CreateImage(menuBg.transform, "Close Button X", new Color(0f, 0f, 0f, 0f));
+            closeBtnImg.raycastTarget = true;
+            SetRect(closeBtnImg.rectTransform,
+                new Vector2(1f, 1f), new Vector2(1f, 1f), new Vector2(1f, 1f),
+                new Vector2(-14f, -14f), new Vector2(48f, 48f));
+            var closeBtn = closeBtnImg.gameObject.AddComponent<Button>();
+            closeBtn.targetGraphic = closeBtnImg;
+            closeBtn.onClick.AddListener(ClosePauseMenuAndResume);
+
+            var closeBtnText = CreateText(closeBtnImg.transform, "X Label", "X", 34,
+                ZombieHighlightColor, TextAnchor.MiddleCenter);
+            closeBtnText.font = nivelFont;
+            closeBtnText.fontStyle = FontStyle.Bold;
+            Stretch(closeBtnText.rectTransform, 0f);
+
+            // 1) Título superior centrado horizontalmente: "Menú"
+            var titleText = CreateText(menuBg.transform, "Menu Title", "Menú", 38,
+                _tuning.hudTextColor, TextAnchor.MiddleCenter);
+            titleText.font = nivelFont;
+            titleText.fontStyle = FontStyle.Bold;
+            SetRect(titleText.rectTransform,
+                new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0.5f, 1f),
+                new Vector2(0f, -24f), new Vector2(360f, 52f));
+
+            // 2) Control de Audio: "Volumen" a la izquierda + UI Slider horizontal (0 a 1) a su derecha
+            var volRow = CreateRect(menuBg.transform, "Volume Row",
+                new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0.5f, 0.5f),
+                new Vector2(0f, -120f), new Vector2(460f, 48f));
+
+            var volLabel = CreateText(volRow, "Volume Label", "Volumen", 26,
+                _tuning.hudTextColor, TextAnchor.MiddleLeft);
+            volLabel.font = nivelFont;
+            volLabel.fontStyle = FontStyle.Bold;
+            SetRect(volLabel.rectTransform,
+                new Vector2(0f, 0.5f), new Vector2(0f, 0.5f), new Vector2(0f, 0.5f),
+                new Vector2(0f, 0f), new Vector2(140f, 40f));
+
+            _volumeSlider = BuildVolumeSlider(volRow);
+
+            // 3) Sección de Créditos con salto de línea exacto
+            string creditsContent = "Créditos:\n- Aly Quispe Borda.\n- Anderson Estrada Barzola.\n\"Los muchanchos\"";
+            var creditsText = CreateText(menuBg.transform, "Credits Label", creditsContent, 24,
+                _tuning.hudTextColor, TextAnchor.MiddleCenter);
+            creditsText.font = _font;
+            creditsText.lineSpacing = 1.18f;
+            SetRect(creditsText.rectTransform,
+                new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
+                new Vector2(0f, -22f), new Vector2(460f, 130f));
+
+            // 4) Botón "Salir": Fondo verde muy desaturado (#4A6B53) con texto centrado "Salir"
+            Color desaturatedGreen = new Color(0x4A / 255f, 0x6B / 255f, 0x53 / 255f, 1f);
+            var exitBtnImg = CreateImage(menuBg.transform, "Salir Button", desaturatedGreen);
+            exitBtnImg.raycastTarget = true;
+            SetRect(exitBtnImg.rectTransform,
+                new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(0.5f, 0f),
+                new Vector2(0f, 28f), new Vector2(200f, 54f));
+            var exitBtn = exitBtnImg.gameObject.AddComponent<Button>();
+            exitBtn.targetGraphic = exitBtnImg;
+            exitBtn.onClick.AddListener(OpenConfirmationWindow);
+
+            var exitBtnText = CreateText(exitBtnImg.transform, "Salir Label", "Salir", 28,
+                _tuning.hudTextColor, TextAnchor.MiddleCenter);
+            exitBtnText.font = nivelFont;
+            exitBtnText.fontStyle = nivelStyle;
+            Stretch(exitBtnText.rectTransform, 0f);
+
+            // =========================================================
+            // 2. VENTANA CONFIRMACIÓN (¿Salir?)
+            // =========================================================
+            var confirmBg = CreateImage(root, "Ventana Confirmacion", windowBgColor);
+            confirmBg.raycastTarget = true;
+            SetRect(confirmBg.rectTransform,
+                new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
+                Vector2.zero, new Vector2(640f, 300f));
+            _confirmWindowRoot = confirmBg.gameObject;
+
+            // Mensaje superior centrado con EXACTAMENTE la misma fuente que "Oops, me infectó"
+            var confirmMsg = CreateText(confirmBg.transform, "Confirm Question",
+                "¿Estás seguro que quieres salir?", 34,
+                _tuning.hudTextColor, TextAnchor.MiddleCenter);
+            confirmMsg.font = oopsFont;
+            confirmMsg.fontStyle = oopsStyle;
+            confirmMsg.horizontalOverflow = HorizontalWrapMode.Wrap;
+            SetRect(confirmMsg.rectTransform,
+                new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0.5f, 1f),
+                new Vector2(0f, -44f), new Vector2(580f, 96f));
+
+            // Color azul exacto de las flechas del HUD abajo izquierda con 75% de transparencia
+            Color playerArrowBlue = _tuning != null ? _tuning.playerHistoryHighlightColor : new Color(0.30f, 0.65f, 1.00f, 1f);
+            Color yesBgColor = new Color(playerArrowBlue.r, playerArrowBlue.g, playerArrowBlue.b, 0.75f);
+
+            // Color rojo exacto de las flechas del HUD abajo derecha con 75% de transparencia
+            Color noBgColor = new Color(ZombieHighlightColor.r, ZombieHighlightColor.g, ZombieHighlightColor.b, 0.75f);
+
+            // Botón izquierdo: "Sí" (misma fuente que "NIVEL")
+            var yesBtnImg = CreateImage(confirmBg.transform, "Yes Button", yesBgColor);
+            yesBtnImg.raycastTarget = true;
+            SetRect(yesBtnImg.rectTransform,
+                new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(0.5f, 0f),
+                new Vector2(-140f, 42f), new Vector2(220f, 58f));
+            var yesBtn = yesBtnImg.gameObject.AddComponent<Button>();
+            yesBtn.targetGraphic = yesBtnImg;
+            yesBtn.onClick.AddListener(ConfirmExitGame);
+
+            var yesBtnText = CreateText(yesBtnImg.transform, "Yes Label", "Sí", 28,
+                _tuning.hudTextColor, TextAnchor.MiddleCenter);
+            yesBtnText.font = nivelFont;
+            yesBtnText.fontStyle = nivelStyle;
+            Stretch(yesBtnText.rectTransform, 0f);
+
+            // Botón derecho: "No, perdón" (misma fuente que "NIVEL")
+            var noBtnImg = CreateImage(confirmBg.transform, "No Button", noBgColor);
+            noBtnImg.raycastTarget = true;
+            SetRect(noBtnImg.rectTransform,
+                new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(0.5f, 0f),
+                new Vector2(140f, 42f), new Vector2(220f, 58f));
+            var noBtn = noBtnImg.gameObject.AddComponent<Button>();
+            noBtn.targetGraphic = noBtnImg;
+            noBtn.onClick.AddListener(CancelExitAndReturnToMenu);
+
+            var noBtnText = CreateText(noBtnImg.transform, "No Label", "No, perdón", 28,
+                _tuning.hudTextColor, TextAnchor.MiddleCenter);
+            noBtnText.font = nivelFont;
+            noBtnText.fontStyle = nivelStyle;
+            Stretch(noBtnText.rectTransform, 0f);
+
+            _menuWindowRoot.SetActive(false);
+            _confirmWindowRoot.SetActive(false);
+        }
+
+        private Slider BuildVolumeSlider(RectTransform parent)
+        {
+            var sliderRect = CreateRect(parent, "Volume Slider",
+                new Vector2(0f, 0.5f), new Vector2(1f, 0.5f), new Vector2(0.5f, 0.5f),
+                new Vector2(72f, 0f), new Vector2(-144f, 32f));
+
+            var bgImg = CreateImage(sliderRect, "Background", new Color(0.18f, 0.20f, 0.24f, 0.95f));
+            bgImg.raycastTarget = true;
+            SetRect(bgImg.rectTransform,
+                new Vector2(0f, 0.5f), new Vector2(1f, 0.5f), new Vector2(0.5f, 0.5f),
+                Vector2.zero, new Vector2(0f, 12f));
+
+            var fillArea = CreateRect(sliderRect, "Fill Area",
+                new Vector2(0f, 0.5f), new Vector2(1f, 0.5f), new Vector2(0.5f, 0.5f),
+                Vector2.zero, new Vector2(-12f, 12f));
+
+            Color fillColor = _tuning != null ? _tuning.playerHistoryHighlightColor : new Color(0.30f, 0.65f, 1.00f, 1f);
+            var fillImg = CreateImage(fillArea, "Fill", fillColor);
+            Stretch(fillImg.rectTransform, 0f);
+
+            var handleArea = CreateRect(sliderRect, "Handle Slide Area",
+                new Vector2(0f, 0f), new Vector2(1f, 1f), new Vector2(0.5f, 0.5f),
+                Vector2.zero, new Vector2(-12f, 0f));
+
+            var handleImg = CreateImage(handleArea, "Handle", _tuning != null ? _tuning.hudTextColor : Color.white);
+            handleImg.raycastTarget = true;
+            SetRect(handleImg.rectTransform,
+                new Vector2(0f, 0.5f), new Vector2(0f, 0.5f), new Vector2(0.5f, 0.5f),
+                Vector2.zero, new Vector2(18f, 28f));
+
+            var slider = sliderRect.gameObject.AddComponent<Slider>();
+            slider.direction = Slider.Direction.LeftToRight;
+            slider.minValue = 0f;
+            slider.maxValue = 1f;
+            slider.wholeNumbers = false;
+            slider.fillRect = fillImg.rectTransform;
+            slider.handleRect = handleImg.rectTransform;
+            slider.targetGraphic = handleImg;
+
+            float initialVol = AudioManager.Instance != null ? AudioManager.Instance.SliderVolume : 1f;
+            slider.SetValueWithoutNotify(initialVol);
+            slider.onValueChanged.AddListener(OnVolumeSliderChanged);
+
+            return slider;
+        }
+
+        private void OnVolumeSliderChanged(float value)
+        {
+            AudioManager.Instance?.SetUserVolume(value);
+        }
+
+        private void HandleEscapeKey()
+        {
+            var keyboard = Keyboard.current;
+            if (keyboard == null || !keyboard[Key.Escape].wasPressedThisFrame) return;
+
+            bool confirmOpen = _confirmWindowRoot != null && _confirmWindowRoot.activeSelf;
+            bool menuOpen = _menuWindowRoot != null && _menuWindowRoot.activeSelf;
+
+            if (confirmOpen)
+            {
+                // 2. Si la 'Ventana Confirmación' está abierta al presionar Esc: ciérrala y regresa a la 'Ventana Menú' (manteniendo la pausa)
+                CancelExitAndReturnToMenu();
+            }
+            else if (menuOpen)
+            {
+                // 3. Si la 'Ventana Menú' está abierta al presionar Esc: cierra la 'Ventana Menú', reanuda el juego y restaura el volumen
+                ClosePauseMenuAndResume();
+            }
+            else
+            {
+                // 1. Si el menú está cerrado: Pausa el juego, abre la 'Ventana Menú' y atenúa la música al 20%
+                OpenPauseMenu();
+            }
+        }
+
+        public void OpenPauseMenu()
+        {
+            _isPaused = true;
+            IsPauseMenuOpen = true;
+            Time.timeScale = 0f;
+
+            if (_volumeSlider != null && AudioManager.Instance != null)
+            {
+                _volumeSlider.SetValueWithoutNotify(AudioManager.Instance.SliderVolume);
+            }
+
+            if (_confirmWindowRoot != null) _confirmWindowRoot.SetActive(false);
+            if (_menuWindowRoot != null)
+            {
+                _menuWindowRoot.SetActive(true);
+                _menuWindowRoot.transform.SetAsLastSibling();
+            }
+
+            AudioManager.Instance?.SetPauseDucking(true, 0.25f);
+        }
+
+        public void ClosePauseMenuAndResume()
+        {
+            if (_confirmWindowRoot != null) _confirmWindowRoot.SetActive(false);
+            if (_menuWindowRoot != null) _menuWindowRoot.SetActive(false);
+
+            _isPaused = false;
+            IsPauseMenuOpen = false;
+            Time.timeScale = 1f;
+
+            AudioManager.Instance?.SetPauseDucking(false, 0.25f);
+        }
+
+        private void OpenConfirmationWindow()
+        {
+            if (_menuWindowRoot != null) _menuWindowRoot.SetActive(false);
+            if (_confirmWindowRoot != null)
+            {
+                _confirmWindowRoot.SetActive(true);
+                _confirmWindowRoot.transform.SetAsLastSibling();
+            }
+        }
+
+        private void CancelExitAndReturnToMenu()
+        {
+            if (_confirmWindowRoot != null) _confirmWindowRoot.SetActive(false);
+            if (_menuWindowRoot != null)
+            {
+                _menuWindowRoot.SetActive(true);
+                _menuWindowRoot.transform.SetAsLastSibling();
+            }
+        }
+
+        private void ConfirmExitGame()
+        {
+            _isPaused = false;
+            IsPauseMenuOpen = false;
+            Time.timeScale = 1f;
+
+#if UNITY_EDITOR
+            UnityEditor.EditorApplication.isPlaying = false;
+#elif UNITY_WEBGL
+            UnityEngine.SceneManagement.SceneManager.LoadScene(0);
+#else
+            Application.Quit();
+#endif
+        }
+
+        private void KeepPauseMenuOnTop()
+        {
+            if (_menuWindowRoot != null) _menuWindowRoot.transform.SetAsLastSibling();
+            if (_confirmWindowRoot != null) _confirmWindowRoot.transform.SetAsLastSibling();
+        }
+
         public void SetLevelInfo(LevelDefinition level)
         {
             if (level == null) return;
             _playerConciencia = level.PlayerConciencia;
             _zombieConciencia = level.ZombieConciencia;
             _infected = false;
+            ResetAllArrowPulses();
 
             if (_levelLabel != null)
             {
@@ -565,6 +954,10 @@ namespace Oopsmeinfecto
         public void SetInfected(bool infected)
         {
             _infected = infected;
+            if (!infected)
+            {
+                ResetAllArrowPulses();
+            }
             UpdateEntityTitles();
         }
 
@@ -572,20 +965,330 @@ namespace Oopsmeinfecto
         {
         }
 
+        /// <summary>
+        /// Dispara el pulso diferencial de escala y brillo ligero sincronizado (alpha 0 -> 0.40 -> 0)
+        /// tanto en el cuadro de fondo (1.0 -> 1.25 -> 1.0) como en la flecha interior (escala local 1.0 -> 1.16 -> 1.0,
+        /// escala visual combinada ~1.45) correspondiente al paso actual de la secuencia de infección.
+        /// </summary>
+        public void PulsePlaybackArrow(int stepIndex, float duration = 0.26f)
+        {
+            ResetAllArrowPulses();
+
+            if (stepIndex < 0) return;
+
+            int zCount = Mathf.Clamp(_zombieHighlightedCount, 0, SlotCount);
+            int pCount = Mathf.Clamp(_playerHighlightedCount, 0, SlotCount);
+
+            if (stepIndex < zCount)
+            {
+                int slotIndex = (SlotCount - zCount) + stepIndex;
+                if (slotIndex >= 0 && slotIndex < SlotCount)
+                {
+                    _pulseActive = true;
+                    _pulseIsPlayer = false;
+                    _pulseSlotIndex = slotIndex;
+                    _pulseElapsed = 0f;
+                    _pulseDuration = Mathf.Max(0.10f, duration);
+                    if (_zombieSlotBorders[slotIndex] != null)
+                    {
+                        _zombieSlotBorders[slotIndex].transform.SetAsLastSibling();
+                    }
+                }
+            }
+            else
+            {
+                int playerOffset = stepIndex - zCount;
+                if (playerOffset >= 0 && playerOffset < pCount)
+                {
+                    int slotIndex = (SlotCount - pCount) + playerOffset;
+                    if (slotIndex >= 0 && slotIndex < SlotCount)
+                    {
+                        _pulseActive = true;
+                        _pulseIsPlayer = true;
+                        _pulseSlotIndex = slotIndex;
+                        _pulseElapsed = 0f;
+                        _pulseDuration = Mathf.Max(0.10f, duration);
+                        if (_playerSlotBorders[slotIndex] != null)
+                        {
+                            _playerSlotBorders[slotIndex].transform.SetAsLastSibling();
+                        }
+                    }
+                }
+            }
+        }
+
+        public void ResetAllArrowPulses()
+        {
+            _pulseActive = false;
+            _pulseSlotIndex = -1;
+            _pulseElapsed = 0f;
+
+            Color pColor = _tuning != null ? _tuning.playerHistoryHighlightColor : new Color(0.30f, 0.65f, 1.00f, 1f);
+            Color zColor = ZombieHighlightColor;
+
+            for (int i = 0; i < SlotCount; i++)
+            {
+                if (_playerSlotBorders[i] != null)
+                {
+                    _playerSlotBorders[i].rectTransform.localScale = Vector3.one;
+                }
+                if (_playerSlotBackgrounds[i] != null)
+                {
+                    _playerSlotBackgrounds[i].rectTransform.localScale = Vector3.one;
+                }
+                if (_playerBoxGlows[i] != null)
+                {
+                    _playerBoxGlows[i].rectTransform.localScale = Vector3.one;
+                    _playerBoxGlows[i].color = new Color(pColor.r, pColor.g, pColor.b, 0f);
+                    _playerBoxGlows[i].enabled = false;
+                }
+                if (_playerBoxOutlines[i] != null)
+                {
+                    _playerBoxOutlines[i].effectColor = new Color(pColor.r, pColor.g, pColor.b, 0f);
+                    _playerBoxOutlines[i].enabled = false;
+                }
+                if (_playerArrows[i] != null)
+                {
+                    _playerArrows[i].rectTransform.localScale = Vector3.one;
+                }
+                if (_playerArrowGlows[i] != null)
+                {
+                    _playerArrowGlows[i].rectTransform.localScale = Vector3.one;
+                    _playerArrowGlows[i].color = new Color(pColor.r, pColor.g, pColor.b, 0f);
+                    _playerArrowGlows[i].enabled = false;
+                }
+                if (_playerArrowShadows[i] != null)
+                {
+                    _playerArrowShadows[i].effectColor = new Color(pColor.r, pColor.g, pColor.b, 0f);
+                    _playerArrowShadows[i].enabled = false;
+                }
+
+                if (_zombieSlotBorders[i] != null)
+                {
+                    _zombieSlotBorders[i].rectTransform.localScale = Vector3.one;
+                }
+                if (_zombieSlotBackgrounds[i] != null)
+                {
+                    _zombieSlotBackgrounds[i].rectTransform.localScale = Vector3.one;
+                }
+                if (_zombieBoxGlows[i] != null)
+                {
+                    _zombieBoxGlows[i].rectTransform.localScale = Vector3.one;
+                    _zombieBoxGlows[i].color = new Color(zColor.r, zColor.g, zColor.b, 0f);
+                    _zombieBoxGlows[i].enabled = false;
+                }
+                if (_zombieBoxOutlines[i] != null)
+                {
+                    _zombieBoxOutlines[i].effectColor = new Color(zColor.r, zColor.g, zColor.b, 0f);
+                    _zombieBoxOutlines[i].enabled = false;
+                }
+                if (_zombieArrows[i] != null)
+                {
+                    _zombieArrows[i].rectTransform.localScale = Vector3.one;
+                }
+                if (_zombieArrowGlows[i] != null)
+                {
+                    _zombieArrowGlows[i].rectTransform.localScale = Vector3.one;
+                    _zombieArrowGlows[i].color = new Color(zColor.r, zColor.g, zColor.b, 0f);
+                    _zombieArrowGlows[i].enabled = false;
+                }
+                if (_zombieArrowShadows[i] != null)
+                {
+                    _zombieArrowShadows[i].effectColor = new Color(zColor.r, zColor.g, zColor.b, 0f);
+                    _zombieArrowShadows[i].enabled = false;
+                }
+            }
+        }
+
+        private void UpdateArrowPulse()
+        {
+            if (!_pulseActive || _pulseSlotIndex < 0 || _pulseSlotIndex >= SlotCount) return;
+
+            if (!_isPaused && !IsPauseMenuOpen)
+            {
+                _pulseElapsed += Time.unscaledDeltaTime;
+            }
+
+            float t = Mathf.Clamp01(_pulseElapsed / Mathf.Max(0.01f, _pulseDuration));
+            float curve = Mathf.Sin(t * Mathf.PI);
+
+            float boxScale = Mathf.Lerp(1.0f, PulseBoxMaxScale, curve);
+            float arrowLocalScale = Mathf.Lerp(1.0f, PulseArrowLocalMaxScale, curve);
+            float glowAlpha = Mathf.Lerp(0.0f, PulseMaxGlowAlpha, curve);
+
+            Image slotBorder = _pulseIsPlayer ? _playerSlotBorders[_pulseSlotIndex] : _zombieSlotBorders[_pulseSlotIndex];
+            Image boxGlow = _pulseIsPlayer ? _playerBoxGlows[_pulseSlotIndex] : _zombieBoxGlows[_pulseSlotIndex];
+            Outline boxOutline = _pulseIsPlayer ? _playerBoxOutlines[_pulseSlotIndex] : _zombieBoxOutlines[_pulseSlotIndex];
+            Image arrow = _pulseIsPlayer ? _playerArrows[_pulseSlotIndex] : _zombieArrows[_pulseSlotIndex];
+            Image arrowGlow = _pulseIsPlayer ? _playerArrowGlows[_pulseSlotIndex] : _zombieArrowGlows[_pulseSlotIndex];
+            Outline arrowShadow = _pulseIsPlayer ? _playerArrowShadows[_pulseSlotIndex] : _zombieArrowShadows[_pulseSlotIndex];
+
+            Color baseColor = _pulseIsPlayer
+                ? (_tuning != null ? _tuning.playerHistoryHighlightColor : new Color(0.30f, 0.65f, 1.00f, 1f))
+                : ZombieHighlightColor;
+
+            if (t >= 1.0f)
+            {
+                if (slotBorder != null) slotBorder.rectTransform.localScale = Vector3.one;
+                if (boxGlow != null)
+                {
+                    boxGlow.rectTransform.localScale = Vector3.one;
+                    boxGlow.color = new Color(baseColor.r, baseColor.g, baseColor.b, 0f);
+                    boxGlow.enabled = false;
+                }
+                if (boxOutline != null)
+                {
+                    boxOutline.effectColor = new Color(baseColor.r, baseColor.g, baseColor.b, 0f);
+                    boxOutline.enabled = false;
+                }
+                if (arrow != null) arrow.rectTransform.localScale = Vector3.one;
+                if (arrowGlow != null)
+                {
+                    arrowGlow.rectTransform.localScale = Vector3.one;
+                    arrowGlow.color = new Color(baseColor.r, baseColor.g, baseColor.b, 0f);
+                    arrowGlow.enabled = false;
+                }
+                if (arrowShadow != null)
+                {
+                    arrowShadow.effectColor = new Color(baseColor.r, baseColor.g, baseColor.b, 0f);
+                    arrowShadow.enabled = false;
+                }
+
+                _pulseActive = false;
+                _pulseSlotIndex = -1;
+                _pulseElapsed = 0f;
+                return;
+            }
+
+            if (slotBorder != null)
+            {
+                slotBorder.rectTransform.localScale = new Vector3(boxScale, boxScale, 1f);
+            }
+            if (boxGlow != null)
+            {
+                boxGlow.rectTransform.localScale = Vector3.one;
+                boxGlow.color = new Color(baseColor.r, baseColor.g, baseColor.b, glowAlpha);
+                boxGlow.enabled = glowAlpha > 0.001f;
+            }
+            if (boxOutline != null)
+            {
+                boxOutline.effectColor = new Color(baseColor.r, baseColor.g, baseColor.b, glowAlpha);
+                boxOutline.enabled = glowAlpha > 0.001f;
+            }
+
+            if (arrow != null)
+            {
+                arrow.rectTransform.localScale = new Vector3(arrowLocalScale, arrowLocalScale, 1f);
+            }
+            if (arrowGlow != null)
+            {
+                arrowGlow.rectTransform.localScale = new Vector3(arrowLocalScale, arrowLocalScale, 1f);
+                arrowGlow.color = new Color(baseColor.r, baseColor.g, baseColor.b, glowAlpha);
+                arrowGlow.enabled = glowAlpha > 0.001f;
+            }
+            if (arrowShadow != null)
+            {
+                arrowShadow.effectColor = new Color(baseColor.r, baseColor.g, baseColor.b, glowAlpha);
+                arrowShadow.enabled = glowAlpha > 0.001f;
+            }
+        }
+
+        private static Sprite GetOrCreateBoxGlowSprite()
+        {
+            if (_cachedBoxGlowSprite != null) return _cachedBoxGlowSprite;
+
+            const int size = 64;
+            var tex = new Texture2D(size, size, TextureFormat.RGBA32, false);
+            tex.filterMode = FilterMode.Bilinear;
+            tex.wrapMode = TextureWrapMode.Clamp;
+
+            float center = (size - 1) * 0.5f;
+            float maxRadius = center;
+            var pixels = new Color[size * size];
+
+            for (int y = 0; y < size; y++)
+            {
+                for (int x = 0; x < size; x++)
+                {
+                    float dx = Mathf.Abs(x - center) / maxRadius;
+                    float dy = Mathf.Abs(y - center) / maxRadius;
+                    // Distancia suave a un cuadrado con esquinas redondeadas
+                    float qx = Mathf.Max(0f, dx - 0.55f) / 0.45f;
+                    float qy = Mathf.Max(0f, dy - 0.55f) / 0.45f;
+                    float dist = Mathf.Sqrt(qx * qx + qy * qy);
+                    float falloff = Mathf.Clamp01(1f - dist);
+                    float alpha = falloff * falloff;
+                    pixels[y * size + x] = new Color(1f, 1f, 1f, alpha);
+                }
+            }
+
+            tex.SetPixels(pixels);
+            tex.Apply(false, false);
+
+            _cachedBoxGlowSprite = Sprite.Create(
+                tex,
+                new Rect(0f, 0f, size, size),
+                new Vector2(0.5f, 0.5f),
+                64f);
+            _cachedBoxGlowSprite.name = "HUDBoxPulseGlowSprite";
+            return _cachedBoxGlowSprite;
+        }
+
+        private static Sprite GetOrCreateArrowGlowSprite()
+        {
+            if (_cachedArrowGlowSprite != null) return _cachedArrowGlowSprite;
+
+            const int size = 64;
+            var tex = new Texture2D(size, size, TextureFormat.RGBA32, false);
+            tex.filterMode = FilterMode.Bilinear;
+            tex.wrapMode = TextureWrapMode.Clamp;
+
+            float center = (size - 1) * 0.5f;
+            float maxRadius = center;
+            var pixels = new Color[size * size];
+
+            for (int y = 0; y < size; y++)
+            {
+                for (int x = 0; x < size; x++)
+                {
+                    float dx = (x - center) / maxRadius;
+                    float dy = (y - center) / maxRadius;
+                    float dist = Mathf.Sqrt(dx * dx + dy * dy);
+                    float falloff = Mathf.Clamp01(1f - dist);
+                    float alpha = falloff * falloff;
+                    pixels[y * size + x] = new Color(1f, 1f, 1f, alpha);
+                }
+            }
+
+            tex.SetPixels(pixels);
+            tex.Apply(false, false);
+
+            _cachedArrowGlowSprite = Sprite.Create(
+                tex,
+                new Rect(0f, 0f, size, size),
+                new Vector2(0.5f, 0.5f),
+                64f);
+            _cachedArrowGlowSprite.name = "HUDArrowPulseGlowSprite";
+            return _cachedArrowGlowSprite;
+        }
+
         public void SetHistories(IReadOnlyList<Direction> playerHistory,
             IReadOnlyList<Direction> zombieHistory)
         {
             _playerHighlightedCount = UpdateSlots(
-                _playerArrows, _playerSlotBackgrounds, _playerSlotBorders, _playerArrowShadows, playerHistory,
+                _playerArrows, _playerArrowGlows, _playerBoxGlows, _playerBoxOutlines,
+                _playerSlotBackgrounds, _playerSlotBorders, _playerArrowShadows, playerHistory,
                 _tuning.playerHistoryColor, _tuning.playerHistoryHighlightColor,
                 _playerConciencia, true);
             _zombieHighlightedCount = UpdateSlots(
-                _zombieArrows, _zombieSlotBackgrounds, _zombieSlotBorders, _zombieArrowShadows, zombieHistory,
+                _zombieArrows, _zombieArrowGlows, _zombieBoxGlows, _zombieBoxOutlines,
+                _zombieSlotBackgrounds, _zombieSlotBorders, _zombieArrowShadows, zombieHistory,
                 _tuning.zombieHistoryColor, ZombieHighlightColor,
                 _zombieConciencia, false);
         }
 
-        private int UpdateSlots(Image[] arrows, Image[] backgrounds, Image[] borders, Shadow[] shadows,
+        private int UpdateSlots(Image[] arrows, Image[] arrowGlows, Image[] boxGlows, Outline[] boxOutlines,
+            Image[] backgrounds, Image[] borders, Outline[] shadows,
             IReadOnlyList<Direction> history, Color arrowColor, Color highlightColor,
             int highlightCount, bool isPlayer)
         {
@@ -597,6 +1300,8 @@ namespace Oopsmeinfecto
 
             for (int i = 0; i < SlotCount; i++)
             {
+                bool isCurrentlyPulsing = _pulseActive && (_pulseIsPlayer == isPlayer) && (_pulseSlotIndex == i);
+
                 bool filled = i >= firstSlot && i - firstSlot < visible;
                 if (filled)
                 {
@@ -607,9 +1312,38 @@ namespace Oopsmeinfecto
                     arrows[i].enabled = true;
                     arrows[i].rectTransform.localEulerAngles = new Vector3(0f, 0f, AngleFor(direction));
 
+                    if (!isCurrentlyPulsing)
+                    {
+                        borders[i].rectTransform.localScale = Vector3.one;
+                        backgrounds[i].rectTransform.localScale = Vector3.one;
+                        arrows[i].rectTransform.localScale = Vector3.one;
+                        if (boxGlows[i] != null)
+                        {
+                            boxGlows[i].rectTransform.localScale = Vector3.one;
+                            boxGlows[i].color = new Color(highlightColor.r, highlightColor.g, highlightColor.b, 0f);
+                            boxGlows[i].enabled = false;
+                        }
+                        if (boxOutlines[i] != null)
+                        {
+                            boxOutlines[i].effectColor = new Color(highlightColor.r, highlightColor.g, highlightColor.b, 0f);
+                            boxOutlines[i].enabled = false;
+                        }
+                        if (arrowGlows[i] != null)
+                        {
+                            arrowGlows[i].rectTransform.localScale = Vector3.one;
+                            arrowGlows[i].color = new Color(highlightColor.r, highlightColor.g, highlightColor.b, 0f);
+                            arrowGlows[i].enabled = false;
+                        }
+                        if (shadows[i] != null)
+                        {
+                            shadows[i].effectColor = new Color(highlightColor.r, highlightColor.g, highlightColor.b, 0f);
+                            shadows[i].enabled = false;
+                        }
+                    }
+
                     if (isHighlighted)
                     {
-                        // Flecha activa (con cuadro): conserva cuadro, relleno sólido y brillo sutil
+                        // Flecha activa (con cuadro): conserva cuadro y relleno sólido
                         arrows[i].sprite = PixelArtFactory.ArrowSprite;
                         arrows[i].color = isPlayer ? highlightColor : ZombieHighlightColor;
 
@@ -620,10 +1354,6 @@ namespace Oopsmeinfecto
                         backgrounds[i].color = isPlayer
                             ? Color.Lerp(_tuning.historySlotColor, highlightColor, 0.24f)
                             : ZombieBoxBgColor;
-
-                        shadows[i].enabled = true;
-                        shadows[i].effectDistance = Vector2.zero;
-                        shadows[i].effectColor = new Color(arrows[i].color.r, arrows[i].color.g, arrows[i].color.b, 0.40f);
                     }
                     else
                     {
@@ -635,16 +1365,35 @@ namespace Oopsmeinfecto
 
                         borders[i].enabled = false;
                         backgrounds[i].enabled = false;
-                        shadows[i].enabled = false;
                     }
                 }
                 else
                 {
                     // Casilla vacía (sin turno en el historial)
                     arrows[i].enabled = false;
+                    arrows[i].rectTransform.localScale = Vector3.one;
                     borders[i].enabled = false;
+                    borders[i].rectTransform.localScale = Vector3.one;
                     backgrounds[i].enabled = false;
-                    shadows[i].enabled = false;
+                    backgrounds[i].rectTransform.localScale = Vector3.one;
+                    if (boxGlows[i] != null)
+                    {
+                        boxGlows[i].rectTransform.localScale = Vector3.one;
+                        boxGlows[i].enabled = false;
+                    }
+                    if (boxOutlines[i] != null)
+                    {
+                        boxOutlines[i].enabled = false;
+                    }
+                    if (arrowGlows[i] != null)
+                    {
+                        arrowGlows[i].rectTransform.localScale = Vector3.one;
+                        arrowGlows[i].enabled = false;
+                    }
+                    if (shadows[i] != null)
+                    {
+                        shadows[i].enabled = false;
+                    }
                 }
             }
 
@@ -665,12 +1414,35 @@ namespace Oopsmeinfecto
 
         public void SetLoading(bool loading, string text = null)
         {
+            if (loading)
+            {
+                // El texto "Generando nivel..." NO debe mostrarse jamás mientras "bien" siga visible:
+                // si el banner sigue activo, oculta el banner por completo antes de activar el overlay.
+                if (_infectionBanner != null && _infectionBanner.gameObject.activeSelf)
+                {
+                    _infectionBanner.text = "";
+                    _infectionBanner.gameObject.SetActive(false);
+                }
+            }
+
             _loading = loading;
-            if (_loadingRoot != null) _loadingRoot.SetActive(loading);
+            if (_loadingRoot != null)
+            {
+                _loadingRoot.SetActive(loading);
+                if (loading)
+                {
+                    _loadingRoot.transform.SetAsLastSibling();
+                    KeepPauseMenuOnTop();
+                }
+            }
             if (loading)
             {
                 _loadingBase = string.IsNullOrEmpty(text) ? "Generando nivel" : text;
                 if (_loadingLabel != null) _loadingLabel.text = _loadingBase;
+            }
+            else if (_loadingLabel != null)
+            {
+                _loadingLabel.text = "";
             }
         }
 
@@ -683,6 +1455,19 @@ namespace Oopsmeinfecto
                 {
                     canvas.worldCamera = ResolveCamera(null);
                 }
+            }
+
+            HandleEscapeKey();
+            UpdateArrowPulse();
+
+            // Garantía estricta de exclusión mutua: nunca mostrar "Generando nivel..." si el banner ("bien") está visible
+            if (_infectionBanner != null && _infectionBanner.gameObject.activeSelf)
+            {
+                if (_loadingRoot != null && _loadingRoot.activeSelf)
+                {
+                    _loadingRoot.SetActive(false);
+                }
+                return;
             }
 
             if (!_loading || _loadingLabel == null) return;
@@ -779,6 +1564,12 @@ namespace Oopsmeinfecto
 
         private void OnDestroy()
         {
+            if (_isPaused)
+            {
+                _isPaused = false;
+                IsPauseMenuOpen = false;
+                Time.timeScale = 1f;
+            }
             if (_canvasObject != null) Destroy(_canvasObject);
         }
     }

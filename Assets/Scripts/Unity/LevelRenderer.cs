@@ -39,6 +39,7 @@ namespace Oopsmeinfecto
         private SpriteRenderer _playerRenderer;
         private SpriteRenderer _zombieRenderer;
         private PlayerVisualController _playerVisual;
+        private PlayerConcienciaVFX _playerConcienciaVfx;
         private readonly List<DamageTileEffect> _damageEffects = new List<DamageTileEffect>();
         private GoalGlowEffect _goalEffect;
 
@@ -64,6 +65,7 @@ namespace Oopsmeinfecto
         public AmbientInfectionVFX AmbientVfx => _vfx;
         public NPCFacingController ZombieFacing => _facing;
         public PlayerVisualController PlayerVisual => _playerVisual;
+        public PlayerConcienciaVFX PlayerConcienciaVfx => _playerConcienciaVfx;
         public bool IsTransforming => _transforming;
 
         private bool _cured;
@@ -123,6 +125,10 @@ namespace Oopsmeinfecto
         {
             _cured = true;
             _transforming = false;
+            if (_playerConcienciaVfx != null)
+            {
+                _playerConcienciaVfx.StopGlow();
+            }
             if (_playerVisual != null)
             {
                 _playerVisual.Purify();
@@ -190,6 +196,7 @@ namespace Oopsmeinfecto
             _playerRenderer = null;
             _zombieRenderer = null;
             _playerVisual = null;
+            _playerConcienciaVfx = null;
             _damageEffects.Clear();
             _goalEffect = null;
 
@@ -703,6 +710,10 @@ namespace Oopsmeinfecto
 
             _playerVisual = _playerRenderer.gameObject.AddComponent<PlayerVisualController>();
             _playerVisual.Initialize(_playerRenderer, _characterSprites);
+
+            _playerConcienciaVfx = _playerRenderer.gameObject.AddComponent<PlayerConcienciaVFX>();
+            Color playerBlue = _tuning != null ? _tuning.playerHistoryHighlightColor : new Color(0.30f, 0.65f, 1.00f, 1f);
+            _playerConcienciaVfx.Initialize(HUDController.ZombieHighlightColor, playerBlue);
 
             _facing = _zombieRenderer.gameObject.AddComponent<NPCFacingController>();
             _facing.Initialize(_zombieRenderer, _tuning, _characterSprites, InitialZombieFacing());

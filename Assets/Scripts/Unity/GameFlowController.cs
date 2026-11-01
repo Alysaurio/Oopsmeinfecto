@@ -100,7 +100,7 @@ namespace Oopsmeinfecto
             BeginLevel(_levelIndex, _levelSeed);
         }
 
-        private void BeginLevel(int levelIndex, int seed)
+        private void BeginLevel(int levelIndex, int seed, bool showLoadingOverlay = true)
         {
             if (_generating) return;
 
@@ -109,7 +109,19 @@ namespace Oopsmeinfecto
             _pendingSeed = seed;
             _levelSeed = seed;
             _turn.SetActive(false);
-            _hud.SetLoading(true, "Generando nivel " + levelIndex);
+
+            if (_hud != null)
+            {
+                _hud.HideVictoryBanner();
+                if (showLoadingOverlay)
+                {
+                    _hud.SetLoading(true, "Generando nivel " + levelIndex);
+                }
+                else
+                {
+                    _hud.SetLoading(false);
+                }
+            }
 
             if (_generationCoroutine != null)
             {
@@ -276,13 +288,18 @@ namespace Oopsmeinfecto
             if (_hud != null)
             {
                 _hud.HideVictoryBanner();
+                _hud.SetStatus("");
             }
+
+            // Esperar un frame tras ocultar "bien" antes de iniciar la generacion del siguiente nivel
+            // para garantizar que nunca se crucen ni solapen en pantalla "bien" y "Generando nivel..."
+            yield return null;
 
             // Fase 5 (Transicion): Llama a la funcion que genera y carga el siguiente nivel.
             _curaCoroutine = null;
             _levelIndex++;
             _levelSeed = SeedUtility.DeriveLevelSeed(_sessionSeed, _levelIndex);
-            BeginLevel(_levelIndex, _levelSeed);
+            BeginLevel(_levelIndex, _levelSeed, false);
         }
 
         private void HandleDefeat(DefeatReason reason)
@@ -301,7 +318,11 @@ namespace Oopsmeinfecto
                 return;
             }
 
-            _hud.SetStatus("mal");
+            if (_hud != null)
+            {
+                _hud.SetStatus("");
+                _hud.HideDefeatBanner();
+            }
             AudioManager.Instance?.PlayDefeat(reason);
             _defeat.Play("mal", "", _tuning.defeatDuration, RestartSameLevel);
         }
@@ -363,17 +384,22 @@ namespace Oopsmeinfecto
             }
 
             // Fase 4 (Resolucion):
-            // 1. Restaurar escala a 1.0
-            if (playerVisual != null)
+            // 1. Activar la animación de derrota idéntica a la derrota por zombi (achatamiento vertical suave del pescadito hasta 0.78)
+            if (_renderer != null && _renderer.PlayerVisual != null)
+            {
+                _renderer.PlayerVisual.PlayDefeat(DefeatReason.DamageTile, 1.4f);
+            }
+            else if (playerVisual != null)
             {
                 playerVisual.localScale = Vector3.one;
             }
 
-            // 2. Activar y mostrar el texto "mal" explícitamente en pantalla y disparar el oscurecimiento (fade a negro)
+            // 2. Activar y mostrar ÚNICAMENTE el texto progresivo "mal" junto con el oscurecimiento (fade a negro),
+            // eliminando el primer "mal" súbito de fuente pequeña (_hud.ShowDefeatBanner) para evitar duplicación.
             if (_hud != null)
             {
-                _hud.SetStatus("mal");
-                _hud.ShowDefeatBanner("mal");
+                _hud.SetStatus("");
+                _hud.HideDefeatBanner();
             }
             if (_defeat != null)
             {
@@ -388,7 +414,17 @@ namespace Oopsmeinfecto
                 _hud.HideDefeatBanner();
             }
 
-            // 4. Llamar a la función de reinicio de nivel
+            // 4. Restaurar limpiamente la escala a Vector3.one y llamar a la función de reinicio de nivel
+            if (playerVisual != null)
+            {
+                playerVisual.localScale = Vector3.one;
+                playerVisual.localPosition = new Vector3(0f, 0.25f, 0f);
+            }
+            if (_renderer != null && _renderer.PlayerVisual != null)
+            {
+                _renderer.PlayerVisual.ResetState();
+            }
+
             _muerteCoroutine = null;
             _defeatPlaying = false;
             RestartSameLevel();
@@ -404,6 +440,19 @@ namespace Oopsmeinfecto
             }
             _defeat.Hide();
             AudioManager.Instance?.RestoreMusicVolume();
+
+            if (_renderer != null)
+            {
+                if (_renderer.PlayerVisual != null)
+                {
+                    _renderer.PlayerVisual.ResetState();
+                }
+                if (_renderer.PlayerVisualTransform != null)
+                {
+                    _renderer.PlayerVisualTransform.localScale = Vector3.one;
+                    _renderer.PlayerVisualTransform.localPosition = new Vector3(0f, 0.25f, 0f);
+                }
+            }
             if (_currentLevel != null)
             {
                 // Reuse the exact level definition, including its seed and consciousness values.

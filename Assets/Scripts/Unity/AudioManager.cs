@@ -22,10 +22,18 @@ namespace Oopsmeinfecto
         [SerializeField] private AudioClip _win;
 
         private Coroutine _duckingCoroutine;
+        private Coroutine _pauseDuckingCoroutine;
         private bool _defeatAudioTriggered = false;
+
+        private float _sliderValue = 1f;
+        private float _volumenBase = 1f; // Mathf.Pow(_sliderValue, 2.5f)
+        private float _pauseDuckFactor = 1f; // 1.0f normal, 0.20f when paused
+        private float _eventDuckFactor = 1f; // 1.0f normal, 0.10f during win/lose ducking
 
         public AudioSource MusicSource => _musicSource;
         public AudioSource SfxSource => _sfxSource;
+        public float SliderVolume => _sliderValue;
+        public float BaseVolume => _volumenBase;
 
         private void Awake()
         {
@@ -90,6 +98,56 @@ namespace Oopsmeinfecto
             return clip;
         }
 
+        public void SetUserVolume(float valorSlider)
+        {
+            _sliderValue = Mathf.Clamp01(valorSlider);
+            // Curva perceptual no lineal obligatoria: volumenBase = Mathf.Pow(valorSlider, 2.5f)
+            _volumenBase = Mathf.Pow(_sliderValue, 2.5f);
+            ApplyVolumes();
+        }
+
+        public void SetPauseDucking(bool paused, float duration = 0.25f)
+        {
+            if (_pauseDuckingCoroutine != null)
+            {
+                StopCoroutine(_pauseDuckingCoroutine);
+                _pauseDuckingCoroutine = null;
+            }
+            float targetFactor = paused ? 0.20f : 1.0f;
+            _pauseDuckingCoroutine = StartCoroutine(PauseDuckMusicRoutine(targetFactor, Mathf.Max(0.05f, duration)));
+        }
+
+        private System.Collections.IEnumerator PauseDuckMusicRoutine(float targetPauseFactor, float duration)
+        {
+            float startFactor = _pauseDuckFactor;
+            float elapsed = 0f;
+
+            while (elapsed < duration)
+            {
+                elapsed += Time.unscaledDeltaTime;
+                float t = Mathf.Clamp01(elapsed / duration);
+                _pauseDuckFactor = Mathf.Lerp(startFactor, targetPauseFactor, t);
+                ApplyVolumes();
+                yield return null;
+            }
+
+            _pauseDuckFactor = targetPauseFactor;
+            ApplyVolumes();
+            _pauseDuckingCoroutine = null;
+        }
+
+        private void ApplyVolumes()
+        {
+            if (_musicSource != null)
+            {
+                _musicSource.volume = _volumenBase * _pauseDuckFactor * _eventDuckFactor;
+            }
+            if (_sfxSource != null)
+            {
+                _sfxSource.volume = _volumenBase;
+            }
+        }
+
         public void PlayMusic()
         {
             if (_musicSource == null) return;
@@ -100,7 +158,7 @@ namespace Oopsmeinfecto
                     _musicSource.clip = _musicLevelGame;
                 }
                 _musicSource.loop = true;
-                _musicSource.volume = 1f;
+                ApplyVolumes();
                 if (!_musicSource.isPlaying)
                 {
                     _musicSource.Play();
@@ -156,8 +214,8 @@ namespace Oopsmeinfecto
         {
             if (_musicSource == null) yield break;
 
-            float startVolume = _musicSource.volume;
-            float targetVolume = 0.1f;
+            float startFactor = _eventDuckFactor;
+            float targetFactor = 0.1f;
             float duration = 0.5f;
             float elapsed = 0f;
 
@@ -165,11 +223,13 @@ namespace Oopsmeinfecto
             {
                 elapsed += Time.unscaledDeltaTime;
                 float t = Mathf.Clamp01(elapsed / duration);
-                _musicSource.volume = Mathf.Lerp(startVolume, targetVolume, t);
+                _eventDuckFactor = Mathf.Lerp(startFactor, targetFactor, t);
+                ApplyVolumes();
                 yield return null;
             }
 
-            _musicSource.volume = targetVolume;
+            _eventDuckFactor = targetFactor;
+            ApplyVolumes();
             _duckingCoroutine = null;
         }
 
@@ -181,9 +241,10 @@ namespace Oopsmeinfecto
                 StopCoroutine(_duckingCoroutine);
                 _duckingCoroutine = null;
             }
+            _eventDuckFactor = 1f;
             if (_musicSource != null)
             {
-                _musicSource.volume = 1f;
+                ApplyVolumes();
                 if (!_musicSource.isPlaying && _musicLevelGame != null)
                 {
                     _musicSource.Play();
