@@ -66,15 +66,15 @@ namespace Oopsmeinfecto
                     {
                         Tier = 2,
                         MinManualMoves = 3,
-                        MaxManualMoves = 5,
+                        MaxManualMoves = 4,
                         MinTurns = 1,
                         MinDistinctDirections = 2,
-                        MaxStraightRun = 4,
+                        MaxStraightRun = 3,
                         MaxImmediateReversals = 0,
                         MaxRevisitedCells = 0,
                         MinInitialOptions = 2,
                         PreferredDistanceMin = 2,
-                        PreferredDistanceMax = 5,
+                        PreferredDistanceMax = 4,
                         AllowsBacktracking = false,
                         BacktrackChance = 0.0
                     };

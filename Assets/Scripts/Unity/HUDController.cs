@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -21,6 +22,7 @@ namespace Oopsmeinfecto
         private GameObject _canvasObject;
 
         private Text _levelLabel;
+        private TextMeshProUGUI _concienciaLabel;
         private Text _statusLabel;
         private Text _hintLabel;
         private Text _infectionBanner;
@@ -189,6 +191,28 @@ namespace Oopsmeinfecto
 
             BuildHalf(panel.transform, true);
             BuildHalf(panel.transform, false);
+
+            BuildConcienciaLabel(root, hudHeight);
+        }
+
+        private void BuildConcienciaLabel(RectTransform root, float hudHeight)
+        {
+            var go = new GameObject("Conciencia Label", typeof(RectTransform));
+            go.transform.SetParent(root, false);
+            var rt = go.GetComponent<RectTransform>();
+            rt.anchorMin = new Vector2(0.5f, 0f);
+            rt.anchorMax = new Vector2(0.5f, 0f);
+            rt.pivot = new Vector2(0.5f, 0f);
+            rt.anchoredPosition = new Vector2(0f, hudHeight + 8f);
+            rt.sizeDelta = new Vector2(300f, 40f);
+
+            _concienciaLabel = go.AddComponent<TextMeshProUGUI>();
+            _concienciaLabel.fontSize = 30;
+            _concienciaLabel.fontStyle = FontStyles.Bold;
+            _concienciaLabel.alignment = TextAlignmentOptions.Center;
+            _concienciaLabel.color = Color.white;
+            _concienciaLabel.richText = true;
+            _concienciaLabel.raycastTarget = false;
         }
 
         private void BuildHalf(Transform parent, bool player)
@@ -326,7 +350,18 @@ namespace Oopsmeinfecto
                 }
             }
 
+            UpdateConcienciaLabel();
             UpdateEntityTitles();
+        }
+
+        private void UpdateConcienciaLabel()
+        {
+            if (_concienciaLabel == null) return;
+            Color playerColor = _tuning != null ? _tuning.playerHistoryColor : new Color(0.35f, 0.80f, 1.00f, 1f);
+            Color zombieColor = ZombieHighlightColor;
+            string playerHex = ColorUtility.ToHtmlStringRGB(playerColor);
+            string zombieHex = ColorUtility.ToHtmlStringRGB(zombieColor);
+            _concienciaLabel.text = $"<color=#{playerHex}>{_playerConciencia}</color> | <color=#{zombieHex}>{_zombieConciencia}</color>";
         }
 
         public void SetStatus(string text)

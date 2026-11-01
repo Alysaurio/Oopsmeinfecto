@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("Oopsmeinfecto.CompileCheck")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+9315c72fbac74eb40540554b5500917294e4e322")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+7dc1653ac048fe8325f880aee985a9a1a1814374")]
 [assembly: System.Reflection.AssemblyProductAttribute("Oopsmeinfecto.CompileCheck")]
 [assembly: System.Reflection.AssemblyTitleAttribute("Oopsmeinfecto.CompileCheck")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

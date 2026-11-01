@@ -125,8 +125,7 @@ namespace Oopsmeinfecto
             _isMoving = false;
             _defeatDuration = Mathf.Max(0.5f, duration);
             _defeatTimer = 0f;
-            _defeatBasePosition = _targetPosition;
-            transform.position = _targetPosition;
+            transform.localPosition = new Vector3(0f, 0.25f, 0f);
 
             // Stop normal animations completely so Animator never overwrites the defeat sprite
             if (_animator != null)
@@ -154,6 +153,7 @@ namespace Oopsmeinfecto
             _animTimer = 0f;
             _defeatTimer = 0f;
             transform.localScale = _baseScale;
+            transform.localPosition = new Vector3(0f, 0.25f, 0f);
 
             if (_renderer != null)
             {
@@ -187,7 +187,7 @@ namespace Oopsmeinfecto
                 transform.localScale = new Vector3(_baseScale.x * scaleX, _baseScale.y * scaleY, _baseScale.z);
 
                 float dropY = Mathf.Lerp(0f, -0.12f, ease);
-                transform.position = new Vector3(_defeatBasePosition.x, _defeatBasePosition.y + dropY, _defeatBasePosition.z);
+                transform.localPosition = new Vector3(0f, 0.25f + dropY, 0f);
 
                 if (_renderer != null)
                 {

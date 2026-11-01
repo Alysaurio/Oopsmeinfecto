@@ -35,6 +35,7 @@
           "Unity.InputSystem": "1.20.1.0",
           "Unity.Scripting": "0.0.0.0",
           "Unity.SerializationLogic": "1.0.0.0",
+          "Unity.TextMeshPro": "0.0.0.0",
           "UnityEditor.AccessibilityModule": "0.0.0.0",
           "UnityEditor.AdaptivePerformanceModule": "0.0.0.0",
           "UnityEditor.AIModule": "0.0.0.0",
@@ -403,6 +404,14 @@
           "Unity.SerializationLogic.dll": {
             "assemblyVersion": "1.0.0.0",
             "fileVersion": "1.0.0.0"
+          }
+        }
+      },
+      "Unity.TextMeshPro/0.0.0.0": {
+        "runtime": {
+          "Unity.TextMeshPro.dll": {
+            "assemblyVersion": "0.0.0.0",
+            "fileVersion": "0.0.0.0"
           }
         }
       },
@@ -1677,6 +1686,14 @@
             "fileVersion": "1.0.0.0"
           }
         }
+      },
+      "Unity.InternalAPIEngineBridge.004/0.0.0.0": {
+        "runtime": {
+          "Unity.InternalAPIEngineBridge.004.dll": {
+            "assemblyVersion": "0.0.0.0",
+            "fileVersion": "0.0.0.0"
+          }
+        }
       }
     }
   },
@@ -1812,6 +1829,11 @@
       "sha512": ""
     },
     "Unity.SerializationLogic/1.0.0.0": {
+      "type": "reference",
+      "serviceable": false,
+      "sha512": ""
+    },
+    "Unity.TextMeshPro/0.0.0.0": {
       "type": "reference",
       "serviceable": false,
       "sha512": ""
@@ -2607,6 +2629,11 @@
       "sha512": ""
     },
     "UnityEditor.UI/1.0.0.0": {
+      "type": "reference",
+      "serviceable": false,
+      "sha512": ""
+    },
+    "Unity.InternalAPIEngineBridge.004/0.0.0.0": {
       "type": "reference",
       "serviceable": false,
       "sha512": ""

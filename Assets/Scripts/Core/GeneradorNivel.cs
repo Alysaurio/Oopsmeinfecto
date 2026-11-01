@@ -42,6 +42,7 @@ namespace Oopsmeinfecto
                 int height = rng.Range(settings.minHeight, settings.maxHeight);
                 var placement = GeneradorPatronMovimiento.Generate(width, height, rng);
                 if (placement == null) continue;
+                if (levelIndex <= 2 && placement.Route.Length > 4) continue;
 
                 int zombieConciencia;
                 int playerConciencia;
@@ -75,6 +76,17 @@ namespace Oopsmeinfecto
                             continue;
                         }
 
+                        if (levelIndex <= 2)
+                        {
+                            // Ruta Jugador -> Zombi: distancia estrictamente entre 3 y 4 casillas (al menos un giro, no linea recta)
+                            if (plan.ManualDirections.Count < 3 || plan.ManualDirections.Count > 4) continue;
+                            if (plan.ManualTurnCount < 1) continue;
+                            if (plan.MaxStraightRun >= plan.ManualDirections.Count) continue;
+
+                            // Ruta Jugador Infectado -> Meta: maximo 5 casillas de distancia
+                            if (plan.AutomaticSteps > 5) continue;
+                        }
+
                         int energy;
                         if (!TryChooseEnergy(plan, start, settings, rng, out energy))
                         {
@@ -94,6 +106,9 @@ namespace Oopsmeinfecto
                                 width, height, core, radii[r], settings.expansionDensity,
                                 rng, Math.Max(1, maxHazards) + 2);
                             if (geometry == null) continue;
+
+                            // Baldosas totales caminables: tope maximo de 21 o 22 casillas para mantener el mapa compacto
+                            if (levelIndex <= 2 && geometry.Board.CountWalkable() > 22) continue;
 
                             geometry.Board.SetTile(plan.SwitchPosition, TileType.Switch);
 

@@ -354,3 +354,7 @@ C:\Users\JAVIER\Desktop\AAAA\Oopsmeinfecto\Tools\CompileCheck\obj\Debug\netstand
 C:\Users\JAVIER\Desktop\AAAA\Oopsmeinfecto\Tools\CompileCheck\obj\Debug\netstandard2.1\CompileC.0771B227.Up2Date
 C:\Users\JAVIER\Desktop\AAAA\Oopsmeinfecto\Tools\CompileCheck\obj\Debug\netstandard2.1\Oopsmeinfecto.CompileCheck.dll
 C:\Users\JAVIER\Desktop\AAAA\Oopsmeinfecto\Tools\CompileCheck\obj\Debug\netstandard2.1\Oopsmeinfecto.CompileCheck.pdb
+C:\Users\JAVIER\Desktop\AAAA\Oopsmeinfecto\Tools\CompileCheck\bin\Debug\netstandard2.1\Unity.TextMeshPro.dll
+C:\Users\JAVIER\Desktop\AAAA\Oopsmeinfecto\Tools\CompileCheck\bin\Debug\netstandard2.1\Unity.InternalAPIEngineBridge.004.dll
+C:\Users\JAVIER\Desktop\AAAA\Oopsmeinfecto\Tools\CompileCheck\bin\Debug\netstandard2.1\Unity.TextMeshPro.pdb
+C:\Users\JAVIER\Desktop\AAAA\Oopsmeinfecto\Tools\CompileCheck\bin\Debug\netstandard2.1\Unity.InternalAPIEngineBridge.004.pdb

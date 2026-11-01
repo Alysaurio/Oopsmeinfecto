@@ -35,6 +35,7 @@ internal static class Program
         TestGeneration(seedCount: quick ? 2 : 20, requireUnique: true, attempts: quick ? 12 : 80);
         TestGeneration(seedCount: quick ? 1 : 5, requireUnique: false, attempts: quick ? 8 : 40);
         TestDeterminism();
+        TestInitialLevelsConstraints();
         Console.WriteLine(_failures == 0 ? "ALL CHECKS PASSED" : $"{_failures} CHECK(S) FAILED");
         Environment.ExitCode = _failures == 0 ? 0 : 1;
     }
@@ -485,5 +486,89 @@ internal static class Program
         Check(a.Level.Bounds.MinX == b.Level.Bounds.MinX && a.Level.Bounds.MaxY == b.Level.Bounds.MaxY,
             "bounds not deterministic");
         Console.WriteLine("Same seed reproduces the same level");
+    }
+
+    private static void TestInitialLevelsConstraints()
+    {
+        Console.WriteLine("\n-- Initial Levels Constraints (Levels 1 & 2) & Hazard Reachability --");
+        var settings = new GenerationSettings { maxGenerationAttempts = 40, requireUniqueSolution = false };
+        settings.Sanitize();
+
+        for (int lvl = 1; lvl <= 2; lvl++)
+        {
+            for (int s = 1; s <= 4; s++)
+            {
+                int seed = 1000 + lvl * 100 + s * 17;
+                var res = GeneradorNivel.Generate(lvl, seed, settings, allowEmergency: true);
+                Check(res != null && res.Success && res.Level != null, $"Lvl {lvl} seed {seed}: failed generation");
+                var level = res?.Level;
+                if (level == null) continue;
+
+                // 1. Player -> Zombie route: strictly 3 to 4 tiles
+                int manualLen = level.PlannedManualDirections.Length;
+                Check(manualLen >= 3 && manualLen <= 4,
+                    $"Lvl {lvl} seed {seed}: manual route length {manualLen} not in [3, 4]");
+
+                // 2. Requires at least one turn (avoiding straight lines)
+                Check(level.ManualTurnCount >= 1,
+                    $"Lvl {lvl} seed {seed}: manual turn count {level.ManualTurnCount} < 1");
+
+                // 3. Zombie's own route: max 4 tiles
+                Check(level.NpcRoute.Length <= 4,
+                    $"Lvl {lvl} seed {seed}: zombie route length {level.NpcRoute.Length} > 4");
+
+                // 4. Infected Player -> Goal: max 5 tiles distance
+                int autoSteps = level.PlannedAutoPositions.Length - 1;
+                Check(autoSteps <= 5,
+                    $"Lvl {lvl} seed {seed}: auto steps {autoSteps} > 5");
+
+                // 5. Total walkable tiles: max 22
+                int walkable = level.Board.CountWalkable();
+                Check(walkable <= 22,
+                    $"Lvl {lvl} seed {seed}: walkable tiles {walkable} > 22");
+
+                // 6. Hazard accessibility: reachable from start without crossing switch, and not encapsulated
+                if (level.HazardPositions != null)
+                {
+                    var reachable = new HashSet<GridPos>();
+                    var q = new Queue<GridPos>();
+                    if (level.Board.IsWalkable(level.PlayerStart) && !level.Board.IsSwitch(level.PlayerStart))
+                    {
+                        reachable.Add(level.PlayerStart);
+                        q.Enqueue(level.PlayerStart);
+                    }
+                    while (q.Count > 0)
+                    {
+                        var curr = q.Dequeue();
+                        for (int d = 0; d < Directions.All.Length; d++)
+                        {
+                            var n = curr + Directions.Delta(Directions.All[d]);
+                            if (!level.Board.IsWalkable(n) || level.Board.IsSwitch(n)) continue;
+                            if (reachable.Add(n)) q.Enqueue(n);
+                        }
+                    }
+
+                    for (int h = 0; h < level.HazardPositions.Length; h++)
+                    {
+                        var hz = level.HazardPositions[h];
+                        Check(reachable.Contains(hz),
+                            $"Lvl {lvl} seed {seed}: hazard at {hz} not reachable from start without crossing goal");
+
+                        int nonSwitchNeighbors = 0;
+                        for (int d = 0; d < Directions.All.Length; d++)
+                        {
+                            var n = hz + Directions.Delta(Directions.All[d]);
+                            if (level.Board.IsWalkable(n) && !level.Board.IsSwitch(n)) nonSwitchNeighbors++;
+                        }
+                        Check(nonSwitchNeighbors > 0,
+                            $"Lvl {lvl} seed {seed}: hazard at {hz} encapsulated by walls/switch");
+                    }
+                }
+
+                Console.WriteLine($"Lvl {lvl} seed {seed}: manualLen={manualLen} turns={level.ManualTurnCount} " +
+                                  $"npcRoute={level.NpcRoute.Length} autoSteps={autoSteps} walkable={walkable} " +
+                                  $"hazards={level.HazardPositions?.Length ?? 0} OK");
+            }
+        }
     }
 }

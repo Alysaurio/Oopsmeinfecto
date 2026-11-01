@@ -34,6 +34,8 @@ namespace Oopsmeinfecto
 
         private Transform _specialEffectsRoot;
 
+        private Transform _playerRoot;
+        private Transform _zombieRoot;
         private SpriteRenderer _playerRenderer;
         private SpriteRenderer _zombieRenderer;
         private PlayerVisualController _playerVisual;
@@ -107,6 +109,8 @@ namespace Oopsmeinfecto
             _wallsCornersTilemap = null;
             _specialEffectsRoot = null;
 
+            _playerRoot = null;
+            _zombieRoot = null;
             _playerRenderer = null;
             _zombieRenderer = null;
             _playerVisual = null;
@@ -605,9 +609,9 @@ namespace Oopsmeinfecto
                 : PixelArtFactory.ZombieSprite;
 
             _zombieRenderer = CreateEntity("Zombie", initialZombieSprite, 11,
-                new Vector3(_level.ZombieStart.X, _level.ZombieStart.Y, 0f));
+                new Vector3(_level.ZombieStart.X, _level.ZombieStart.Y, 0f), out _zombieRoot);
             _playerRenderer = CreateEntity("Player", initialPlayerSprite, 12,
-                new Vector3(_level.PlayerStart.X, _level.PlayerStart.Y, 0f));
+                new Vector3(_level.PlayerStart.X, _level.PlayerStart.Y, 0f), out _playerRoot);
 
             // Attach Animator components with their respective runtime controllers
             var playerAnimator = _playerRenderer.gameObject.AddComponent<Animator>();
@@ -631,8 +635,8 @@ namespace Oopsmeinfecto
             _energyBar = energyObject.AddComponent<SegmentedEnergyBar>();
             _energyBar.Initialize(_tuning, _level.MaxEnergy, _playerRenderer.transform);
 
-            _playerTarget = _playerRenderer.transform.position;
-            _zombieTarget = _zombieRenderer.transform.position;
+            _playerTarget = _playerRoot.position;
+            _zombieTarget = _zombieRoot.position;
         }
 
         private NpcFacing InitialZombieFacing()
@@ -659,15 +663,16 @@ namespace Oopsmeinfecto
         }
 
         private SpriteRenderer CreateEntity(string objectName, Sprite sprite, int sortingOrder,
-            Vector3 worldPosition)
+            Vector3 worldPosition, out Transform rootTransform)
         {
             var entityObject = new GameObject(objectName);
             entityObject.transform.SetParent(_contentRoot, false);
             entityObject.transform.localPosition = worldPosition;
+            rootTransform = entityObject.transform;
 
             var shadowObject = new GameObject("Shadow");
             shadowObject.transform.SetParent(entityObject.transform, false);
-            shadowObject.transform.localPosition = new Vector3(0f, -0.36f, 0f);
+            shadowObject.transform.localPosition = new Vector3(0f, -0.11f, 0f);
             shadowObject.transform.localScale = new Vector3(0.58f, 0.20f, 1f);
             var shadow = shadowObject.AddComponent<SpriteRenderer>();
             shadow.sprite = PixelArtFactory.WhiteSprite;
@@ -675,7 +680,11 @@ namespace Oopsmeinfecto
             shadow.sortingOrder = sortingOrder - 2;
             if (PixelArtFactory.SpriteMaterial != null) shadow.sharedMaterial = PixelArtFactory.SpriteMaterial;
 
-            var renderer = entityObject.AddComponent<SpriteRenderer>();
+            var visualObject = new GameObject("Visual");
+            visualObject.transform.SetParent(entityObject.transform, false);
+            visualObject.transform.localPosition = new Vector3(0f, 0.25f, 0f);
+
+            var renderer = visualObject.AddComponent<SpriteRenderer>();
             renderer.sprite = sprite;
             renderer.color = Color.white;
             renderer.sortingOrder = sortingOrder;
@@ -706,8 +715,8 @@ namespace Oopsmeinfecto
 
             if (instant)
             {
-                _playerRenderer.transform.position = _playerTarget;
-                _zombieRenderer.transform.position = _zombieTarget;
+                if (_playerRoot != null) _playerRoot.position = _playerTarget;
+                if (_zombieRoot != null) _zombieRoot.position = _zombieTarget;
                 if (_playerVisual != null) _playerVisual.ResetState();
                 if (_facing != null)
                 {
@@ -721,9 +730,9 @@ namespace Oopsmeinfecto
                 {
                     if (infected && _playerRenderer != null)
                     {
-                        RetroGhostTrail.Spawn(prevPlayerTarget, _playerRenderer.sprite, _playerRenderer.flipX, _playerRenderer.sortingOrder - 1, PixelArtFactory.SpriteMaterial);
+                        RetroGhostTrail.Spawn(prevPlayerTarget + new Vector3(0f, 0.25f, 0f), _playerRenderer.sprite, _playerRenderer.flipX, _playerRenderer.sortingOrder - 1, PixelArtFactory.SpriteMaterial);
                     }
-                    _playerVisual.OnMoveStarted(_playerRenderer.transform.position, _playerTarget);
+                    _playerVisual.OnMoveStarted(_playerRoot != null ? _playerRoot.position : prevPlayerTarget, _playerTarget);
                 }
                 if (Vector3.Distance(prevZombieTarget, _zombieTarget) > 0.01f && _facing != null)
                 {
@@ -806,7 +815,7 @@ namespace Oopsmeinfecto
             _transforming = true;
             _transformTimer = 0f;
             _transformDuration = Mathf.Max(0.1f, duration);
-            _transformBase = _playerRenderer != null ? _playerRenderer.transform.position : _playerTarget;
+            _transformBase = _playerRoot != null ? _playerRoot.position : _playerTarget;
             _transformComplete = onComplete;
             _transformCallbackInvoked = false;
 
@@ -860,18 +869,18 @@ namespace Oopsmeinfecto
 
         private void Update()
         {
-            if (_hasState && _playerRenderer != null && _zombieRenderer != null)
+            if (_hasState && _playerRoot != null && _zombieRoot != null)
             {
                 float blend = 1f - Mathf.Exp(-26f * Time.unscaledDeltaTime);
-                if (!_transforming && !_playerVisual.IsDefeated)
+                if (!_transforming && (_playerVisual == null || !_playerVisual.IsDefeated))
                 {
-                    _playerRenderer.transform.position =
-                        Vector3.Lerp(_playerRenderer.transform.position, _playerTarget, blend);
+                    _playerRoot.position =
+                        Vector3.Lerp(_playerRoot.position, _playerTarget, blend);
                 }
-                _zombieRenderer.transform.position =
-                    Vector3.Lerp(_zombieRenderer.transform.position, _zombieTarget, blend);
+                _zombieRoot.position =
+                    Vector3.Lerp(_zombieRoot.position, _zombieTarget, blend);
 
-                if (Vector3.Distance(_playerRenderer.transform.position, _playerTarget) < 0.02f)
+                if (Vector3.Distance(_playerRoot.position, _playerTarget) < 0.02f)
                 {
                     if (_playerVisual != null && _playerVisual.IsMoving)
                     {
@@ -879,7 +888,7 @@ namespace Oopsmeinfecto
                     }
                 }
 
-                if (Vector3.Distance(_zombieRenderer.transform.position, _zombieTarget) < 0.02f)
+                if (Vector3.Distance(_zombieRoot.position, _zombieTarget) < 0.02f)
                 {
                     if (_facing != null && _facing.IsMoving)
                     {
