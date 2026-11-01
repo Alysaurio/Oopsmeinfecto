@@ -362,17 +362,33 @@ namespace Oopsmeinfecto
                 yield return null;
             }
 
-            // Fase 4 (Resolucion): Restaura la escala a 1.0, muestra el texto 'mal', aplica la pausa (yield return new WaitForSeconds(0.7f))
-            // y procede con el reinicio / derrota habitual.
+            // Fase 4 (Resolucion):
+            // 1. Restaurar escala a 1.0
             if (playerVisual != null)
             {
                 playerVisual.localScale = Vector3.one;
             }
 
-            _hud.SetStatus("mal");
+            // 2. Activar y mostrar el texto "mal" explícitamente en pantalla y disparar el oscurecimiento (fade a negro)
+            if (_hud != null)
+            {
+                _hud.SetStatus("mal");
+                _hud.ShowDefeatBanner("mal");
+            }
+            if (_defeat != null)
+            {
+                _defeat.Play("mal", "", 1.4f, null);
+            }
 
-            yield return new WaitForSeconds(0.7f);
+            // 3. Ejecutar la pausa dramática extendida de 1.4s (igualando la duración de la pantalla de derrota del Zombi)
+            yield return new WaitForSeconds(1.4f);
 
+            if (_hud != null)
+            {
+                _hud.HideDefeatBanner();
+            }
+
+            // 4. Llamar a la función de reinicio de nivel
             _muerteCoroutine = null;
             _defeatPlaying = false;
             RestartSameLevel();
@@ -381,6 +397,11 @@ namespace Oopsmeinfecto
         private void RestartSameLevel()
         {
             _defeatPlaying = false;
+            if (_hud != null)
+            {
+                _hud.HideDefeatBanner();
+                _hud.HideVictoryBanner();
+            }
             _defeat.Hide();
             AudioManager.Instance?.RestoreMusicVolume();
             if (_currentLevel != null)

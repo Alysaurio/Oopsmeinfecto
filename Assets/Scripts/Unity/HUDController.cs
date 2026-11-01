@@ -470,6 +470,16 @@ namespace Oopsmeinfecto
             ShowInfectionBanner(false);
         }
 
+        public void ShowDefeatBanner(string message = "mal")
+        {
+            ShowInfectionBanner(true, message);
+        }
+
+        public void HideDefeatBanner()
+        {
+            ShowInfectionBanner(false);
+        }
+
         public void SetLevelInfo(LevelDefinition level)
         {
             if (level == null) return;
