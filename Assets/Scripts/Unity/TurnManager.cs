@@ -32,6 +32,9 @@ namespace Oopsmeinfecto
         private static readonly int InfectionProgressId = Shader.PropertyToID("_InfectionProgress");
         private static readonly int StepFlickerId = Shader.PropertyToID("_StepFlicker");
         private Coroutine _stepFlickerCoroutine;
+        private Coroutine _switchVictoryCoroutine;
+        private Coroutine _damageDefeatCoroutine;
+        private Coroutine _infectionSequenceCoroutine;
 
         public GameState State => _state;
         public bool IsActive => _active;
@@ -115,8 +118,35 @@ namespace Oopsmeinfecto
             }
         }
 
+        public void ClearInfectionVisuals()
+        {
+            if (_crtMaterial != null)
+            {
+                _crtMaterial.SetFloat(StepFlickerId, 0f);
+                _crtMaterial.SetFloat(InfectionProgressId, 0f);
+            }
+        }
+
         private void OnDestroy()
         {
+            if (_switchVictoryCoroutine != null)
+            {
+                StopCoroutine(_switchVictoryCoroutine);
+                _switchVictoryCoroutine = null;
+            }
+
+            if (_damageDefeatCoroutine != null)
+            {
+                StopCoroutine(_damageDefeatCoroutine);
+                _damageDefeatCoroutine = null;
+            }
+
+            if (_infectionSequenceCoroutine != null)
+            {
+                StopCoroutine(_infectionSequenceCoroutine);
+                _infectionSequenceCoroutine = null;
+            }
+
             if (_infectionPaused)
             {
                 Time.timeScale = 1f;
@@ -217,7 +247,8 @@ namespace Oopsmeinfecto
 
             if (result.Outcome == TurnOutcome.DamageDefeat)
             {
-                AudioManager.Instance?.PlayDefeat(DefeatReason.DamageTile);
+                AudioManager.Instance?.PlayMovePlayer();
+                AudioManager.Instance?.PlayMoveEnemy();
             }
             else if (result.Outcome == TurnOutcome.EnergyDefeat)
             {
@@ -245,14 +276,26 @@ namespace Oopsmeinfecto
                 _tuning.autoStepInterval + _tuning.playbackExtraDelay);
 
             _autoTimer -= Time.unscaledDeltaTime;
-            if (_autoTimer > 0f) return;
+
+            var keyboard = Keyboard.current;
+            bool manualStep = false;
+            if (keyboard != null)
+            {
+                var pressed = ReadPressedDirection(keyboard);
+                if (pressed.HasValue)
+                {
+                    manualStep = true;
+                }
+            }
+
+            if (_autoTimer > 0f && !manualStep) return;
             _autoTimer = stepInterval;
 
             var result = _state.AdvancePlaybackStep();
 
             if (result.Outcome == TurnOutcome.DamageDefeat)
             {
-                AudioManager.Instance?.PlayDefeat(DefeatReason.DamageTile);
+                AudioManager.Instance?.PlayMovePlayer();
             }
             else if (result.Outcome == TurnOutcome.PlaybackExhausted)
             {
@@ -307,6 +350,7 @@ namespace Oopsmeinfecto
                     _heldDirection = null;
                     _blockedDirection = null;
                     _repeatTimer = 0f;
+                    _active = false;
                     _hud.SetInfected(true);
                     _hud.SetStatus("¡CONTACTO! Secuencia congelada · " +
                                    _state.PlaybackSequence.Count + " pasos");
@@ -314,7 +358,11 @@ namespace Oopsmeinfecto
                     if (!hasShownInfectionPause)
                     {
                         hasShownInfectionPause = true;
-                        StartCoroutine(InfectionPauseRoutine());
+                        if (_infectionSequenceCoroutine != null)
+                        {
+                            StopCoroutine(_infectionSequenceCoroutine);
+                        }
+                        _infectionSequenceCoroutine = StartCoroutine(InfectionSequenceRoutine());
                     }
                     else
                     {
@@ -326,17 +374,22 @@ namespace Oopsmeinfecto
                 case TurnOutcome.SwitchVictory:
                     AudioManager.Instance?.PlayVictory();
                     _active = false;
-                    _hud.SetStatus("¡INTERRUPTOR ALCANZADO!");
-                    _onVictory?.Invoke();
+                    _hud.SetStatus("");
+                    if (_switchVictoryCoroutine != null)
+                    {
+                        StopCoroutine(_switchVictoryCoroutine);
+                    }
+                    _switchVictoryCoroutine = StartCoroutine(SwitchVictoryRoutine());
                     break;
 
                 case TurnOutcome.DamageDefeat:
-                    AudioManager.Instance?.PlayDefeat(DefeatReason.DamageTile);
                     _active = false;
-                    _renderer.PlayDrain(_tuning.barDrainDuration);
-                    _renderer.PlayerVisual?.PlayDefeat(DefeatReason.DamageTile, _tuning.defeatDuration);
-                    _hud.SetStatus("Derrota · casilla dañina");
-                    _onDefeat?.Invoke(DefeatReason.DamageTile);
+                    _hud.SetStatus("");
+                    if (_damageDefeatCoroutine != null)
+                    {
+                        StopCoroutine(_damageDefeatCoroutine);
+                    }
+                    _damageDefeatCoroutine = StartCoroutine(DamageDefeatRoutine());
                     break;
 
                 case TurnOutcome.EnergyDefeat:
@@ -370,8 +423,66 @@ namespace Oopsmeinfecto
             }
         }
 
-        private System.Collections.IEnumerator InfectionPauseRoutine()
+        private System.Collections.IEnumerator InfectionSequenceRoutine()
         {
+            _active = false;
+
+            // Esperar a que el jugador concluya el desplazamiento al punto de colisión
+            if (_renderer != null)
+            {
+                yield return _renderer.WaitForPlayerArrival();
+                _renderer.FreezeEntities();
+            }
+
+            Transform playerVisual = _renderer != null ? _renderer.PlayerVisualTransform : null;
+
+            // Fase 1 (Impacto Humano): Al chocar, bloquea el movimiento y haz que el sprite original del Player
+            // oscile suavemente (0.92 a 1.08) durante 0.5 segundos.
+            if (_renderer != null && _renderer.PlayerVisual != null)
+            {
+                _renderer.PlayerVisual.KeepHumanSprite();
+            }
+
+            float elapsed1 = 0f;
+            while (elapsed1 < 0.5f)
+            {
+                elapsed1 += Time.deltaTime;
+                float t = (Mathf.Sin(elapsed1 * Mathf.PI * 4f) + 1f) * 0.5f;
+                float scale = Mathf.Lerp(0.92f, 1.08f, t);
+                if (playerVisual != null)
+                {
+                    playerVisual.localScale = new Vector3(scale, scale, 1f);
+                }
+                yield return null;
+            }
+
+            // Fase 2 (Metamorfosis): Tras ese medio segundo, cambio directo al sprite 'playerinfected' (NUNCA pescadito)
+            if (_renderer != null && _renderer.PlayerVisual != null)
+            {
+                _renderer.PlayerVisual.SwitchToInfectedSprite();
+            }
+
+            // Fase 3 (Asimilacion): Continua oscilando el sprite infectado durante 0.5 segundos adicionales.
+            float elapsed2 = 0f;
+            while (elapsed2 < 0.5f)
+            {
+                elapsed2 += Time.deltaTime;
+                float t = (Mathf.Sin(elapsed2 * Mathf.PI * 4f) + 1f) * 0.5f;
+                float scale = Mathf.Lerp(0.92f, 1.08f, t);
+                if (playerVisual != null)
+                {
+                    playerVisual.localScale = new Vector3(scale, scale, 1f);
+                }
+                yield return null;
+            }
+
+            // Fase 4 (Mensaje): Restaura la escala a 1.0, y en este instante exacto, dispara la logica existente
+            // que muestra el mensaje "Oops me infecto" y continua con el flujo que ya tenias programado para este estado.
+            if (playerVisual != null)
+            {
+                playerVisual.localScale = Vector3.one;
+            }
+
             _infectionPaused = true;
             Time.timeScale = 0f;
             if (_hud != null) _hud.ShowInfectionBanner(true, "Oops, me infectó");
@@ -382,8 +493,18 @@ namespace Oopsmeinfecto
             Time.timeScale = 1f;
             _infectionPaused = false;
 
-            _autoTimer = Mathf.Max(0.03f,
-                _tuning.autoStepInterval + _tuning.playbackExtraDelay);
+            if (_renderer != null && _renderer.PlayerVisual != null)
+            {
+                _renderer.PlayerVisual.EndAgonyAndSetInfected(true);
+            }
+
+            // REACTIVACIÓN OBLIGATORIA DEL CONTROL Y DEL FLUJO DEL JUEGO
+            _active = true;
+            _heldDirection = null;
+            _blockedDirection = null;
+            _repeatTimer = 0f;
+            _infectionSequenceCoroutine = null;
+            _autoTimer = 0.05f;
         }
 
         private static Direction? ReadPressedDirection(Keyboard keyboard)
@@ -423,6 +544,39 @@ namespace Oopsmeinfecto
                 default:
                     return false;
             }
+        }
+
+        private System.Collections.IEnumerator SwitchVictoryRoutine()
+        {
+            _active = false;
+
+            // Esperar estrictamente a que concluya la interpolación espacial hacia la meta
+            if (_renderer != null)
+            {
+                yield return _renderer.WaitForPlayerArrival();
+            }
+
+            // Pausa breve para ver al jugador infectado detenerse por completo sobre el brillo cian de la meta
+            yield return new WaitForSeconds(0.12f);
+
+            _switchVictoryCoroutine = null;
+            _onVictory?.Invoke();
+        }
+
+        private System.Collections.IEnumerator DamageDefeatRoutine()
+        {
+            _active = false;
+
+            // Esperar estrictamente a que concluya la interpolación espacial hacia la casilla letal
+            if (_renderer != null)
+            {
+                yield return _renderer.WaitForPlayerArrival();
+                _renderer.SnapPlayerToTarget();
+            }
+
+            _damageDefeatCoroutine = null;
+            AudioManager.Instance?.PlayDefeat(DefeatReason.DamageTile);
+            _onDefeat?.Invoke(DefeatReason.DamageTile);
         }
 
         private void ResolveCrtMaterial()

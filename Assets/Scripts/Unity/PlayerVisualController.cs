@@ -22,6 +22,7 @@ namespace Oopsmeinfecto
         private bool _isMoving;
         private bool _isInfected;
         private bool _isDefeated;
+        private bool _isAgony;
         private bool _facingRight = true;
 
         private float _animTimer;
@@ -46,6 +47,7 @@ namespace Oopsmeinfecto
             _isMoving = false;
             _isInfected = false;
             _isDefeated = false;
+            _isAgony = false;
             _facingRight = true;
             _animTimer = 0f;
             _defeatTimer = 0f;
@@ -60,10 +62,14 @@ namespace Oopsmeinfecto
 
         private void ApplyInitialSprite()
         {
-            if (_renderer == null || _config == null) return;
-            if (_config.playerIdle != null && _config.playerIdle.Length > 0 && _config.playerIdle[0] != null)
+            if (_renderer == null) return;
+            if (_config != null && _config.playerIdle != null && _config.playerIdle.Length > 0 && _config.playerIdle[0] != null)
             {
                 _renderer.sprite = _config.playerIdle[0];
+            }
+            else
+            {
+                _renderer.sprite = PixelArtFactory.PlayerSprite;
             }
         }
 
@@ -144,8 +150,121 @@ namespace Oopsmeinfecto
             }
         }
 
+        public void Purify()
+        {
+            _isAgony = false;
+            _isInfected = false;
+            _isDefeated = false;
+            _isMoving = false;
+            _animTimer = 0f;
+            transform.localScale = _baseScale;
+            transform.localPosition = new Vector3(0f, 0.25f, 0f);
+
+            if (_animator != null)
+            {
+                _animator.enabled = true;
+                _animator.SetBool("IsInfected", false);
+                _animator.SetBool("IsMoving", false);
+                _animator.SetBool("IsDefeated", false);
+                _animator.Play("PlayerIdle", 0, 0f);
+            }
+
+            if (_renderer != null)
+            {
+                _renderer.color = Color.white;
+                ApplyInitialSprite();
+            }
+        }
+
+        public void KeepHumanSprite()
+        {
+            _isAgony = true;
+            _isDefeated = false;
+            _isMoving = false;
+            _isInfected = false;
+            transform.localScale = _baseScale;
+            transform.localPosition = new Vector3(0f, 0.25f, 0f);
+
+            if (_animator != null)
+            {
+                _animator.enabled = false;
+            }
+
+            if (_renderer != null)
+            {
+                _renderer.flipX = false;
+                _renderer.color = Color.white;
+                ApplyInitialSprite();
+            }
+        }
+
+        public void PlayAgonyLimitTime()
+        {
+            _isAgony = true;
+            _isDefeated = false;
+            _isMoving = false;
+            _isInfected = false;
+            transform.localScale = _baseScale;
+            transform.localPosition = new Vector3(0f, 0.25f, 0f);
+
+            if (_animator != null)
+            {
+                _animator.enabled = false;
+            }
+
+            if (_renderer != null)
+            {
+                _renderer.flipX = false;
+                if (_config != null && _config.playerLimitTime != null)
+                {
+                    _renderer.sprite = _config.playerLimitTime;
+                }
+            }
+        }
+
+        public void SwitchToInfectedSprite()
+        {
+            _isAgony = true;
+            _isDefeated = false;
+            _isMoving = false;
+            _isInfected = true;
+            transform.localScale = _baseScale;
+            transform.localPosition = new Vector3(0f, 0.25f, 0f);
+
+            if (_animator != null)
+            {
+                _animator.enabled = false;
+            }
+
+            if (_renderer != null)
+            {
+                _renderer.flipX = false;
+                if (_config != null && _config.playerInfected != null && _config.playerInfected.Length > 0 && _config.playerInfected[0] != null)
+                {
+                    _renderer.sprite = _config.playerInfected[0];
+                }
+            }
+        }
+
+        public void EndAgonyAndSetInfected(bool infected)
+        {
+            _isAgony = false;
+            _isDefeated = false;
+            _isMoving = false;
+            transform.localScale = _baseScale;
+            transform.localPosition = new Vector3(0f, 0.25f, 0f);
+
+            if (_animator != null)
+            {
+                _animator.enabled = true;
+            }
+
+            SetInfected(infected);
+        }
+
         public void ResetState()
         {
+            _isAgony = false;
             _isDefeated = false;
             _isMoving = false;
             _isInfected = false;
@@ -174,6 +293,7 @@ namespace Oopsmeinfecto
         private void Update()
         {
             if (_renderer == null || _config == null) return;
+            if (_isAgony) return;
 
             if (_isDefeated)
             {
@@ -263,6 +383,10 @@ namespace Oopsmeinfecto
                 {
                     _renderer.sprite = _config.playerLimitTime;
                 }
+            }
+            else if (_isAgony)
+            {
+                _renderer.flipX = false;
             }
             else
             {

@@ -174,6 +174,8 @@ namespace Oopsmeinfecto
             _levelSeed = level.Seed;
             _victoryDelay = -1f;
             _defeatPlaying = false;
+            _curaCoroutine = null;
+            _muerteCoroutine = null;
 
             _state = level.CreateGameState();
 
@@ -185,6 +187,7 @@ namespace Oopsmeinfecto
             _hud.SetInfected(false);
             _hud.SetHistories(_state.Player.History, _state.Zombie.History);
             _hud.SetLoading(false);
+            _hud.HideVictoryBanner();
             _defeat.Hide();
             AudioManager.Instance?.RestoreMusicVolume();
 
@@ -208,19 +211,78 @@ namespace Oopsmeinfecto
             _hud.SetStatus(status);
         }
 
+        private Coroutine _curaCoroutine;
+        private Coroutine _muerteCoroutine;
+
         private void HandleVictory()
         {
-            if (_victoryDelay >= 0f || _defeatPlaying || _generating) return;
+            if (_victoryDelay >= 0f || _defeatPlaying || _generating || _curaCoroutine != null) return;
 
+            _curaCoroutine = StartCoroutine(SecuenciaCura());
+        }
+
+        private System.Collections.IEnumerator SecuenciaCura()
+        {
+            // Fase 1 (Bloqueo): Deshabilita el control del jugador y detiene el movimiento del zombi.
             _turn.SetActive(false);
-            _hud.SetStatus("Bien");
-            AudioManager.Instance?.PlayVictory();
-            _defeat.Play("Bien", "", 1.2f, () =>
+            if (_renderer != null)
             {
-                _levelIndex++;
-                _levelSeed = SeedUtility.DeriveLevelSeed(_sessionSeed, _levelIndex);
-                BeginLevel(_levelIndex, _levelSeed);
-            });
+                yield return _renderer.WaitForPlayerArrival();
+                _renderer.FreezeEntities();
+            }
+
+            // Fase 2 (Oscilacion suave entre 0.92 y 1.08):
+            Transform playerVisual = _renderer != null ? _renderer.PlayerVisualTransform : null;
+            float duration = 1.0f;
+            float elapsed = 0f;
+
+            while (elapsed < duration)
+            {
+                elapsed += Time.deltaTime;
+                float t = (Mathf.Sin(elapsed * Mathf.PI * 4f) + 1f) * 0.5f;
+                float scale = Mathf.Lerp(0.92f, 1.08f, t);
+
+                if (playerVisual != null)
+                {
+                    playerVisual.localScale = new Vector3(scale, scale, 1f);
+                }
+                yield return null;
+            }
+
+            // Fase 3 (Purificacion): Restaura la escala a 1.0. Cambia el sprite del Player por su sprite original (sano) y restaura su color a Color.white.
+            if (playerVisual != null)
+            {
+                playerVisual.localScale = Vector3.one;
+            }
+            if (_renderer != null)
+            {
+                _renderer.PurifyPlayer();
+            }
+            if (_turn != null)
+            {
+                _turn.ClearInfectionVisuals();
+            }
+
+            // Asignación y activación explícita del mensaje de victoria "bien" (visible en pantalla)
+            if (_hud != null)
+            {
+                _hud.SetStatus("bien");
+                _hud.ShowVictoryBanner("bien");
+            }
+
+            // Fase 4 (Pausa de visualizacion): Pausa de 1.5s estrictamente posterior a la asignacion y activacion
+            yield return new WaitForSeconds(1.5f);
+
+            if (_hud != null)
+            {
+                _hud.HideVictoryBanner();
+            }
+
+            // Fase 5 (Transicion): Llama a la funcion que genera y carga el siguiente nivel.
+            _curaCoroutine = null;
+            _levelIndex++;
+            _levelSeed = SeedUtility.DeriveLevelSeed(_sessionSeed, _levelIndex);
+            BeginLevel(_levelIndex, _levelSeed);
         }
 
         private void HandleDefeat(DefeatReason reason)
@@ -229,9 +291,91 @@ namespace Oopsmeinfecto
             _defeatPlaying = true;
             _turn.SetActive(false);
 
-            _hud.SetStatus("Mal");
+            if (reason == DefeatReason.DamageTile)
+            {
+                if (_muerteCoroutine != null)
+                {
+                    StopCoroutine(_muerteCoroutine);
+                }
+                _muerteCoroutine = StartCoroutine(SecuenciaMuerte());
+                return;
+            }
+
+            _hud.SetStatus("mal");
             AudioManager.Instance?.PlayDefeat(reason);
-            _defeat.Play("Mal", "", _tuning.defeatDuration, RestartSameLevel);
+            _defeat.Play("mal", "", _tuning.defeatDuration, RestartSameLevel);
+        }
+
+        private System.Collections.IEnumerator SecuenciaMuerte()
+        {
+            // Bloqueo de controles y congelación de entidades
+            _turn.SetActive(false);
+            if (_renderer != null)
+            {
+                yield return _renderer.WaitForPlayerArrival();
+                _renderer.FreezeEntities();
+            }
+
+            // Desactiva cualquier texto debug como "Mal"
+            _hud.SetStatus("");
+
+            Transform playerVisual = _renderer != null ? _renderer.PlayerVisualTransform : null;
+
+            // Fase 1 (Agonia Humana): Manten el sprite original del Player y ejecuta la oscilacion suave (0.92 a 1.08)
+            // durante exactamente 0.5 segundos.
+            if (_renderer != null && _renderer.PlayerVisual != null)
+            {
+                _renderer.PlayerVisual.KeepHumanSprite();
+            }
+
+            float elapsed1 = 0f;
+            while (elapsed1 < 0.5f)
+            {
+                elapsed1 += Time.deltaTime;
+                float t = (Mathf.Sin(elapsed1 * Mathf.PI * 4f) + 1f) * 0.5f;
+                float scale = Mathf.Lerp(0.92f, 1.08f, t);
+                if (playerVisual != null)
+                {
+                    playerVisual.localScale = new Vector3(scale, scale, 1f);
+                }
+                yield return null;
+            }
+
+            // Fase 2 (Metamorfosis): Justo al terminar ese medio segundo, cambia el sprite a 'PlayerLimitTime' (pescadito).
+            if (_renderer != null && _renderer.PlayerVisual != null)
+            {
+                _renderer.PlayerVisual.PlayAgonyLimitTime();
+            }
+
+            // Fase 3 (Agonia Infecciosa del Pescadito): Frecuencia acelerada x3.0 para sincronizar con el ritmo rápido del audio
+            float elapsed2 = 0f;
+            const float fastFrequency = Mathf.PI * 4f * 3.0f; // Multiplicador x3.0
+            while (elapsed2 < 0.5f)
+            {
+                elapsed2 += Time.deltaTime;
+                float t = (Mathf.Sin(elapsed2 * fastFrequency) + 1f) * 0.5f;
+                float scale = Mathf.Lerp(0.92f, 1.08f, t);
+                if (playerVisual != null)
+                {
+                    playerVisual.localScale = new Vector3(scale, scale, 1f);
+                }
+                yield return null;
+            }
+
+            // Fase 4 (Resolucion): Restaura la escala a 1.0, muestra el texto 'mal', aplica la pausa (yield return new WaitForSeconds(0.7f))
+            // y procede con el reinicio / derrota habitual.
+            if (playerVisual != null)
+            {
+                playerVisual.localScale = Vector3.one;
+            }
+
+            _hud.SetStatus("mal");
+
+            yield return new WaitForSeconds(0.7f);
+
+            _muerteCoroutine = null;
+            _defeatPlaying = false;
+            RestartSameLevel();
         }
 
         private void RestartSameLevel()
@@ -252,6 +396,18 @@ namespace Oopsmeinfecto
 
         private void OnDestroy()
         {
+            if (_curaCoroutine != null)
+            {
+                StopCoroutine(_curaCoroutine);
+                _curaCoroutine = null;
+            }
+
+            if (_muerteCoroutine != null)
+            {
+                StopCoroutine(_muerteCoroutine);
+                _muerteCoroutine = null;
+            }
+
             if (_generationCoroutine != null)
             {
                 StopCoroutine(_generationCoroutine);

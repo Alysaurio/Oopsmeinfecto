@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.IO;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -23,6 +24,8 @@ namespace Oopsmeinfecto
 
         private Text _levelLabel;
         private TextMeshProUGUI _concienciaLabel;
+        private Image _playerIconImage;
+        private Image _zombieIconImage;
         private Text _statusLabel;
         private Text _hintLabel;
         private Text _infectionBanner;
@@ -193,6 +196,7 @@ namespace Oopsmeinfecto
             BuildHalf(panel.transform, false);
 
             BuildConcienciaLabel(root, hudHeight);
+            BuildIcons(root);
         }
 
         private void BuildConcienciaLabel(RectTransform root, float hudHeight)
@@ -202,9 +206,9 @@ namespace Oopsmeinfecto
             var rt = go.GetComponent<RectTransform>();
             rt.anchorMin = new Vector2(0.5f, 0f);
             rt.anchorMax = new Vector2(0.5f, 0f);
-            rt.pivot = new Vector2(0.5f, 0f);
-            rt.anchoredPosition = new Vector2(0f, hudHeight + 12f);
-            rt.sizeDelta = new Vector2(400f, 60f);
+            rt.pivot = new Vector2(0.5f, 0.5f);
+            rt.anchoredPosition = new Vector2(0f, 121f);
+            rt.sizeDelta = new Vector2(600f, 50f);
 
             _concienciaLabel = go.AddComponent<TextMeshProUGUI>();
 
@@ -214,7 +218,7 @@ namespace Oopsmeinfecto
                 _concienciaLabel.font = fontAsset;
             }
 
-            _concienciaLabel.fontSize = 38;
+            _concienciaLabel.fontSize = 36;
             _concienciaLabel.fontStyle = FontStyles.Bold;
             _concienciaLabel.alignment = TextAlignmentOptions.Center;
             _concienciaLabel.color = Color.white;
@@ -222,7 +226,136 @@ namespace Oopsmeinfecto
             _concienciaLabel.raycastTarget = false;
 
             go.transform.SetAsLastSibling();
-            go.transform.localPosition = new Vector3(0f, hudHeight + 12f, -10f);
+        }
+
+        private void BuildIcons(RectTransform root)
+        {
+            var pSprite = LoadIconSprite("iconoplayer");
+            var zSprite = LoadIconSprite("iconozombi");
+
+            var playerIconGo = new GameObject("Icono Player", typeof(RectTransform), typeof(Image));
+            playerIconGo.transform.SetParent(root, false);
+            var pRt = playerIconGo.GetComponent<RectTransform>();
+            pRt.anchorMin = new Vector2(0.5f, 0f);
+            pRt.anchorMax = new Vector2(0.5f, 0f);
+            pRt.pivot = new Vector2(0.5f, 0.5f);
+            pRt.sizeDelta = new Vector2(36f, 36f);
+            pRt.anchoredPosition = new Vector2(-88f, 78f);
+
+            _playerIconImage = playerIconGo.GetComponent<Image>();
+            _playerIconImage.sprite = pSprite;
+            _playerIconImage.preserveAspect = true;
+            _playerIconImage.raycastTarget = false;
+
+            var zombieIconGo = new GameObject("Icono Zombi", typeof(RectTransform), typeof(Image));
+            zombieIconGo.transform.SetParent(root, false);
+            var zRt = zombieIconGo.GetComponent<RectTransform>();
+            zRt.anchorMin = new Vector2(0.5f, 0f);
+            zRt.anchorMax = new Vector2(0.5f, 0f);
+            zRt.pivot = new Vector2(0.5f, 0.5f);
+            zRt.sizeDelta = new Vector2(36f, 36f);
+            zRt.anchoredPosition = new Vector2(88f, 78f);
+
+            _zombieIconImage = zombieIconGo.GetComponent<Image>();
+            _zombieIconImage.sprite = zSprite;
+            _zombieIconImage.preserveAspect = true;
+            _zombieIconImage.raycastTarget = false;
+
+            playerIconGo.transform.SetAsLastSibling();
+            zombieIconGo.transform.SetAsLastSibling();
+        }
+
+        private static Sprite LoadIconSprite(string name)
+        {
+            var resSprite = Resources.Load<Sprite>("Iconos/" + name) ?? Resources.Load<Sprite>(name);
+            if (resSprite != null) return resSprite;
+
+#if UNITY_EDITOR
+            string editorPath = "Assets/Sprites/Iconos/" + name + ".png";
+            var assets = UnityEditor.AssetDatabase.LoadAllAssetsAtPath(editorPath);
+            if (assets != null)
+            {
+                foreach (var a in assets)
+                {
+                    if (a is Sprite s) return s;
+                }
+            }
+#endif
+
+            string[] candidatePaths = {
+                Path.Combine(Application.dataPath, "Sprites/Iconos", name + ".png"),
+                Path.Combine(Directory.GetCurrentDirectory(), "Assets/Sprites/Iconos", name + ".png"),
+                Path.Combine(Application.dataPath, "Resources/Iconos", name + ".png")
+            };
+            foreach (var p in candidatePaths)
+            {
+                if (File.Exists(p))
+                {
+                    byte[] bytes = File.ReadAllBytes(p);
+                    var tex = new Texture2D(2, 2, TextureFormat.RGBA32, false);
+                    tex.filterMode = FilterMode.Point;
+                    if (tex.LoadImage(bytes))
+                    {
+                        var sprite = Sprite.Create(tex, new Rect(0, 0, tex.width, tex.height), new Vector2(0.5f, 0.5f), 16f);
+                        sprite.name = name;
+                        return sprite;
+                    }
+                }
+            }
+            return null;
+        }
+
+        private void UpdateIconPositions()
+        {
+            if (_concienciaLabel == null) return;
+
+            float playerX = -88f;
+            float zombieX = 88f;
+
+            try
+            {
+                _concienciaLabel.ForceMeshUpdate();
+                var textInfo = _concienciaLabel.textInfo;
+                if (textInfo != null && textInfo.characterCount > 0)
+                {
+                    int firstVisible = -1;
+                    int lastVisible = -1;
+                    for (int i = 0; i < textInfo.characterCount; i++)
+                    {
+                        if (textInfo.characterInfo[i].isVisible)
+                        {
+                            if (firstVisible == -1) firstVisible = i;
+                            lastVisible = i;
+                        }
+                    }
+
+                    if (firstVisible >= 0 && lastVisible >= 0 && firstVisible != lastVisible)
+                    {
+                        var charP = textInfo.characterInfo[firstVisible];
+                        var charZ = textInfo.characterInfo[lastVisible];
+                        playerX = (charP.bottomLeft.x + charP.topRight.x) * 0.5f;
+                        zombieX = (charZ.bottomLeft.x + charZ.topRight.x) * 0.5f;
+                    }
+                }
+            }
+            catch
+            {
+                // Fallback to precomputed default offsets
+            }
+
+            const float exactIconY = 78f;
+
+            if (_playerIconImage != null)
+            {
+                _playerIconImage.rectTransform.anchoredPosition = new Vector2(playerX, exactIconY);
+                _playerIconImage.transform.SetAsLastSibling();
+            }
+
+            if (_zombieIconImage != null)
+            {
+                _zombieIconImage.rectTransform.anchoredPosition = new Vector2(zombieX, exactIconY);
+                _zombieIconImage.transform.SetAsLastSibling();
+            }
         }
 
         private void BuildHalf(Transform parent, bool player)
@@ -320,7 +453,21 @@ namespace Oopsmeinfecto
                     _infectionBanner.text = message;
                 }
                 _infectionBanner.gameObject.SetActive(show);
+                if (show)
+                {
+                    _infectionBanner.transform.SetAsLastSibling();
+                }
             }
+        }
+
+        public void ShowVictoryBanner(string message = "bien")
+        {
+            ShowInfectionBanner(true, message);
+        }
+
+        public void HideVictoryBanner()
+        {
+            ShowInfectionBanner(false);
         }
 
         public void SetLevelInfo(LevelDefinition level)
@@ -370,9 +517,16 @@ namespace Oopsmeinfecto
             _zombieConciencia = zombiConciencia;
             if (_concienciaLabel != null)
             {
-                _concienciaLabel.text = "<color=#4A90E2>" + playerConciencia + "</color> | <color=#E24A4A>" + zombiConciencia + "</color>";
+                var rt = _concienciaLabel.rectTransform;
+                rt.anchorMin = new Vector2(0.5f, 0f);
+                rt.anchorMax = new Vector2(0.5f, 0f);
+                rt.pivot = new Vector2(0.5f, 0.5f);
+                rt.anchoredPosition = new Vector2(0f, 121f);
+
+                _concienciaLabel.text = "<color=#4A90E2>" + playerConciencia + "</color>          |          <color=#E24A4A>" + zombiConciencia + "</color>";
                 _concienciaLabel.gameObject.SetActive(true);
                 _concienciaLabel.transform.SetAsLastSibling();
+                UpdateIconPositions();
             }
         }
 

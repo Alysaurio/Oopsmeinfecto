@@ -66,6 +66,82 @@ namespace Oopsmeinfecto
         public PlayerVisualController PlayerVisual => _playerVisual;
         public bool IsTransforming => _transforming;
 
+        private bool _cured;
+
+        public Transform PlayerVisualTransform => _playerRenderer != null ? _playerRenderer.transform : _playerRoot;
+        public SpriteRenderer PlayerRenderer => _playerRenderer;
+        public Transform PlayerRoot => _playerRoot;
+
+        public bool IsPlayerMovingToTarget
+        {
+            get
+            {
+                if (_playerRoot == null) return false;
+                return Vector3.Distance(_playerRoot.position, _playerTarget) > 0.01f;
+            }
+        }
+
+        public void SnapPlayerToTarget()
+        {
+            if (_playerRoot != null)
+            {
+                _playerRoot.position = _playerTarget;
+                if (_playerVisual != null && _playerVisual.IsMoving)
+                {
+                    _playerVisual.OnMoveFinished();
+                }
+            }
+        }
+
+        public System.Collections.IEnumerator WaitForPlayerArrival()
+        {
+            if (_playerRoot == null) yield break;
+
+            float timeout = 1.0f;
+            while (Vector3.Distance(_playerRoot.position, _playerTarget) > 0.015f && timeout > 0f)
+            {
+                timeout -= Time.deltaTime;
+                yield return null;
+            }
+
+            SnapPlayerToTarget();
+        }
+
+        public void FreezeEntities()
+        {
+            if (_playerRoot != null)
+            {
+                _playerRoot.position = _playerTarget;
+            }
+            if (_zombieRoot != null)
+            {
+                _zombieTarget = _zombieRoot.position;
+            }
+        }
+
+        public void PurifyPlayer()
+        {
+            _cured = true;
+            _transforming = false;
+            if (_playerVisual != null)
+            {
+                _playerVisual.Purify();
+            }
+            if (_playerRenderer != null)
+            {
+                _playerRenderer.color = Color.white;
+                if (_characterSprites != null && _characterSprites.playerIdle != null &&
+                    _characterSprites.playerIdle.Length > 0 && _characterSprites.playerIdle[0] != null)
+                {
+                    _playerRenderer.sprite = _characterSprites.playerIdle[0];
+                }
+                else
+                {
+                    _playerRenderer.sprite = PixelArtFactory.PlayerSprite;
+                }
+            }
+        }
+
         [Header("Camera Framing")]
         [SerializeField] private float cameraYOffset = 0.35f;
 
@@ -126,6 +202,7 @@ namespace Oopsmeinfecto
             _characterSprites = null;
             _hasState = false;
             _transforming = false;
+            _cured = false;
             _transformComplete = null;
             _transformCallbackInvoked = false;
         }
@@ -734,11 +811,15 @@ namespace Oopsmeinfecto
                 }
             }
 
-            if (!_transforming)
+            if (!_transforming && !_cured)
             {
                 _playerRenderer.color = infected
                     ? Color.Lerp(Color.white, _tuning.infectedDesaturation, 0.65f)
                     : Color.white;
+            }
+            else if (_cured && _playerRenderer != null)
+            {
+                _playerRenderer.color = Color.white;
             }
 
             if (_energyBar != null)
