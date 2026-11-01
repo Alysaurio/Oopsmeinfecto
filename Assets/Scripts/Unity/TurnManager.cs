@@ -120,6 +120,11 @@ namespace Oopsmeinfecto
 
         public void ClearInfectionVisuals()
         {
+            if (_renderer != null && _renderer.PlayerConcienciaVfx != null)
+            {
+                _renderer.PlayerConcienciaVfx.StopGlow();
+            }
+
             if (_crtMaterial != null)
             {
                 _crtMaterial.SetFloat(StepFlickerId, 0f);
@@ -162,6 +167,14 @@ namespace Oopsmeinfecto
 
         private void Update()
         {
+            if (HUDController.IsPauseMenuOpen || (_hud != null && _hud.IsPaused))
+            {
+                _heldDirection = null;
+                _blockedDirection = null;
+                _repeatTimer = 0f;
+                return;
+            }
+
             if (_infectionPaused) return;
 
             UpdateCrtInfectionProgress();
@@ -277,6 +290,21 @@ namespace Oopsmeinfecto
 
             _autoTimer -= Time.unscaledDeltaTime;
 
+            if (_renderer != null && _renderer.PlayerConcienciaVfx != null && _renderer.PlayerConcienciaVfx.IsActive)
+            {
+                int zombieSteps = Mathf.Max(1, _state.ZombieConciencia);
+                float timeUntilZombieStepsEnd = (zombieSteps - _state.PlaybackIndex) * stepInterval + Mathf.Max(0f, _autoTimer);
+                if (_state.PlaybackIndex >= zombieSteps || timeUntilZombieStepsEnd <= 0.45f)
+                {
+                    _renderer.PlayerConcienciaVfx.BeginTransitionToBlue(0.40f);
+                }
+
+                if (_state.PlaybackIndex >= _state.PlaybackSequence.Count && !_renderer.IsPlayerMovingToTarget)
+                {
+                    _renderer.PlayerConcienciaVfx.StopGlow();
+                }
+            }
+
             var keyboard = Keyboard.current;
             bool manualStep = false;
             if (keyboard != null)
@@ -292,6 +320,16 @@ namespace Oopsmeinfecto
             _autoTimer = stepInterval;
 
             var result = _state.AdvancePlaybackStep();
+
+            if (_renderer != null && _renderer.PlayerConcienciaVfx != null && _renderer.PlayerConcienciaVfx.IsActive)
+            {
+                int zombieSteps = Mathf.Max(1, _state.ZombieConciencia);
+                float timeUntilZombieStepsEnd = (zombieSteps - _state.PlaybackIndex) * stepInterval + Mathf.Max(0f, _autoTimer);
+                if (_state.PlaybackIndex >= zombieSteps || timeUntilZombieStepsEnd <= 0.45f)
+                {
+                    _renderer.PlayerConcienciaVfx.BeginTransitionToBlue(0.40f);
+                }
+            }
 
             if (result.Outcome == TurnOutcome.DamageDefeat)
             {
@@ -414,12 +452,25 @@ namespace Oopsmeinfecto
                     break;
 
                 case TurnOutcome.PlaybackExhausted:
+                    if (_renderer != null)
+                    {
+                        StartCoroutine(StopGlowWhenPlayerArrivesRoutine());
+                    }
                     AudioManager.Instance?.PlayDefeat(DefeatReason.PlaybackExhausted);
                     _active = false;
                     _renderer.PlayerVisual?.PlayDefeat(DefeatReason.PlaybackExhausted, _tuning.defeatDuration);
                     _hud.SetStatus("Derrota · secuencia agotada");
                     _onDefeat?.Invoke(DefeatReason.PlaybackExhausted);
                     break;
+            }
+        }
+
+        private System.Collections.IEnumerator StopGlowWhenPlayerArrivesRoutine()
+        {
+            if (_renderer != null)
+            {
+                yield return _renderer.WaitForPlayerArrival();
+                _renderer.PlayerConcienciaVfx?.StopGlow();
             }
         }
 
@@ -461,6 +512,10 @@ namespace Oopsmeinfecto
             {
                 _renderer.PlayerVisual.SwitchToInfectedSprite();
             }
+            if (_renderer != null && _renderer.PlayerConcienciaVfx != null)
+            {
+                _renderer.PlayerConcienciaVfx.StartInfectionGlow();
+            }
 
             // Fase 3 (Asimilacion): Continua oscilando el sprite infectado durante 0.5 segundos adicionales.
             float elapsed2 = 0f;
@@ -487,10 +542,22 @@ namespace Oopsmeinfecto
             Time.timeScale = 0f;
             if (_hud != null) _hud.ShowInfectionBanner(true, "Oops, me infectó");
 
-            yield return new WaitForSecondsRealtime(1f);
+            float bannerWait = 0f;
+            while (bannerWait < 1.0f)
+            {
+                if (!HUDController.IsPauseMenuOpen && (_hud == null || !_hud.IsPaused))
+                {
+                    bannerWait += Time.unscaledDeltaTime;
+                }
+                Time.timeScale = 0f;
+                yield return null;
+            }
 
             if (_hud != null) _hud.ShowInfectionBanner(false);
-            Time.timeScale = 1f;
+            if (!HUDController.IsPauseMenuOpen && (_hud == null || !_hud.IsPaused))
+            {
+                Time.timeScale = 1f;
+            }
             _infectionPaused = false;
 
             if (_renderer != null && _renderer.PlayerVisual != null)
@@ -554,6 +621,7 @@ namespace Oopsmeinfecto
             if (_renderer != null)
             {
                 yield return _renderer.WaitForPlayerArrival();
+                _renderer.PlayerConcienciaVfx?.StopGlow();
             }
 
             // Pausa breve para ver al jugador infectado detenerse por completo sobre el brillo cian de la meta
@@ -572,6 +640,7 @@ namespace Oopsmeinfecto
             {
                 yield return _renderer.WaitForPlayerArrival();
                 _renderer.SnapPlayerToTarget();
+                _renderer.PlayerConcienciaVfx?.StopGlow();
             }
 
             _damageDefeatCoroutine = null;

@@ -100,7 +100,7 @@ namespace Oopsmeinfecto
             BeginLevel(_levelIndex, _levelSeed);
         }
 
-        private void BeginLevel(int levelIndex, int seed)
+        private void BeginLevel(int levelIndex, int seed, bool showLoadingOverlay = true)
         {
             if (_generating) return;
 
@@ -109,7 +109,19 @@ namespace Oopsmeinfecto
             _pendingSeed = seed;
             _levelSeed = seed;
             _turn.SetActive(false);
-            _hud.SetLoading(true, "Generando nivel " + levelIndex);
+
+            if (_hud != null)
+            {
+                _hud.HideVictoryBanner();
+                if (showLoadingOverlay)
+                {
+                    _hud.SetLoading(true, "Generando nivel " + levelIndex);
+                }
+                else
+                {
+                    _hud.SetLoading(false);
+                }
+            }
 
             if (_generationCoroutine != null)
             {
@@ -276,13 +288,18 @@ namespace Oopsmeinfecto
             if (_hud != null)
             {
                 _hud.HideVictoryBanner();
+                _hud.SetStatus("");
             }
+
+            // Esperar un frame tras ocultar "bien" antes de iniciar la generacion del siguiente nivel
+            // para garantizar que nunca se crucen ni solapen en pantalla "bien" y "Generando nivel..."
+            yield return null;
 
             // Fase 5 (Transicion): Llama a la funcion que genera y carga el siguiente nivel.
             _curaCoroutine = null;
             _levelIndex++;
             _levelSeed = SeedUtility.DeriveLevelSeed(_sessionSeed, _levelIndex);
-            BeginLevel(_levelIndex, _levelSeed);
+            BeginLevel(_levelIndex, _levelSeed, false);
         }
 
         private void HandleDefeat(DefeatReason reason)
@@ -301,7 +318,11 @@ namespace Oopsmeinfecto
                 return;
             }
 
-            _hud.SetStatus("mal");
+            if (_hud != null)
+            {
+                _hud.SetStatus("");
+                _hud.HideDefeatBanner();
+            }
             AudioManager.Instance?.PlayDefeat(reason);
             _defeat.Play("mal", "", _tuning.defeatDuration, RestartSameLevel);
         }
@@ -369,11 +390,12 @@ namespace Oopsmeinfecto
                 playerVisual.localScale = Vector3.one;
             }
 
-            // 2. Activar y mostrar el texto "mal" explícitamente en pantalla y disparar el oscurecimiento (fade a negro)
+            // 2. Activar y mostrar ÚNICAMENTE el texto progresivo "mal" junto con el oscurecimiento (fade a negro),
+            // eliminando el primer "mal" súbito de fuente pequeña (_hud.ShowDefeatBanner) para evitar duplicación.
             if (_hud != null)
             {
-                _hud.SetStatus("mal");
-                _hud.ShowDefeatBanner("mal");
+                _hud.SetStatus("");
+                _hud.HideDefeatBanner();
             }
             if (_defeat != null)
             {

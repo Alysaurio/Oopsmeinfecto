@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using System.IO;
 using TMPro;
 using UnityEngine;
+using UnityEngine.InputSystem;
 using UnityEngine.UI;
 
 namespace Oopsmeinfecto
@@ -14,7 +15,7 @@ namespace Oopsmeinfecto
     {
         private const int SlotCount = 6;
 
-        private static readonly Color ZombieHighlightColor = new Color(0.70f, 0.25f, 0.25f, 1f);
+        public static readonly Color ZombieHighlightColor = new Color(0.70f, 0.25f, 0.25f, 1f);
         private static readonly Color ZombieBoxBgColor = new Color(0.290f, 0.125f, 0.125f, 0.90f);
         private static readonly Color ZombieBoxBorderColor = new Color(0.45f, 0.20f, 0.20f, 0.95f);
 
@@ -28,7 +29,16 @@ namespace Oopsmeinfecto
         private Image _zombieIconImage;
         private Text _statusLabel;
         private Text _hintLabel;
+        private Text _escHintLabel;
         private Text _infectionBanner;
+
+        private GameObject _menuWindowRoot;
+        private GameObject _confirmWindowRoot;
+        private Slider _volumeSlider;
+        private bool _isPaused;
+
+        public bool IsPaused => _isPaused;
+        public static bool IsPauseMenuOpen { get; private set; }
 
         private GameObject _tooltipRoot;
         private Text _tooltipSeedLabel;
@@ -96,6 +106,7 @@ namespace Oopsmeinfecto
             BuildHistoryPanel(root);
             BuildInfectionBanner(root);
             BuildLoadingOverlay(root);
+            BuildPauseMenu(root);
         }
 
         private static Camera ResolveCamera(Camera candidate)
@@ -121,7 +132,7 @@ namespace Oopsmeinfecto
             var border = CreateImage(root, "Info Tooltip Border", new Color(0.42f, 0.18f, 0.18f, 0.90f));
             SetRect(border.rectTransform,
                 new Vector2(1f, 1f), new Vector2(1f, 1f), new Vector2(1f, 1f),
-                new Vector2(-28f, -86f), new Vector2(460f, 124f));
+                new Vector2(-28f, -114f), new Vector2(460f, 124f));
             _tooltipRoot = border.gameObject;
 
             var panel = CreateImage(border.transform, "Info Tooltip Panel", new Color(0.290f, 0.125f, 0.125f, 0.88f));
@@ -151,13 +162,25 @@ namespace Oopsmeinfecto
 
         private void BuildHint(RectTransform root)
         {
+            Color hintColor = Color.Lerp(_tuning.hudTextColor, _tuning.hudBorderColor, 0.35f);
+
             _hintLabel = CreateText(root, "Controls Hint",
                 "WASD / ← ↑ ↓ →\nInfo (i)", 21,
-                Color.Lerp(_tuning.hudTextColor, _tuning.hudBorderColor, 0.35f), TextAnchor.MiddleRight);
+                hintColor, TextAnchor.MiddleRight);
             _hintLabel.raycastTarget = true;
             SetRect(_hintLabel.rectTransform,
                 new Vector2(1f, 1f), new Vector2(1f, 1f), new Vector2(1f, 1f),
                 new Vector2(-28f, -22f), new Vector2(400f, 56f));
+
+            // Justo debajo de "info (i)", añade un texto con exactamente la misma fuente, estilo y color: "Esc - menú"
+            _escHintLabel = CreateText(root, "Esc Menu Hint",
+                "Esc - menú", _hintLabel.fontSize,
+                _hintLabel.color, TextAnchor.MiddleRight);
+            _escHintLabel.font = _hintLabel.font;
+            _escHintLabel.fontStyle = _hintLabel.fontStyle;
+            SetRect(_escHintLabel.rectTransform,
+                new Vector2(1f, 1f), new Vector2(1f, 1f), new Vector2(1f, 1f),
+                new Vector2(-28f, -78f), new Vector2(400f, 28f));
 
             var infoHitArea = CreateRect(_hintLabel.transform, "Info (i) Area",
                 new Vector2(1f, 0f), new Vector2(1f, 0.5f), new Vector2(1f, 0f),
@@ -448,14 +471,27 @@ namespace Oopsmeinfecto
         {
             if (_infectionBanner != null)
             {
-                if (show && !string.IsNullOrEmpty(message))
-                {
-                    _infectionBanner.text = message;
-                }
-                _infectionBanner.gameObject.SetActive(show);
                 if (show)
                 {
+                    if (!string.IsNullOrEmpty(message))
+                    {
+                        _infectionBanner.text = message;
+                    }
+                    // Asegura que "Generando nivel..." jamás coincida en pantalla mientras el banner sea visible
+                    if (_loadingRoot != null)
+                    {
+                        _loadingRoot.SetActive(false);
+                    }
+                    _loading = false;
+
+                    _infectionBanner.gameObject.SetActive(true);
                     _infectionBanner.transform.SetAsLastSibling();
+                    KeepPauseMenuOnTop();
+                }
+                else
+                {
+                    _infectionBanner.text = "";
+                    _infectionBanner.gameObject.SetActive(false);
                 }
             }
         }
@@ -478,6 +514,310 @@ namespace Oopsmeinfecto
         public void HideDefeatBanner()
         {
             ShowInfectionBanner(false);
+        }
+
+        private void BuildPauseMenu(RectTransform root)
+        {
+            _isPaused = false;
+            IsPauseMenuOpen = false;
+
+            Font oopsFont = _infectionBanner != null && _infectionBanner.font != null ? _infectionBanner.font : _font;
+            FontStyle oopsStyle = _infectionBanner != null ? _infectionBanner.fontStyle : FontStyle.Bold;
+
+            Font nivelFont = _levelLabel != null && _levelLabel.font != null ? _levelLabel.font : _font;
+            FontStyle nivelStyle = _levelLabel != null ? _levelLabel.fontStyle : FontStyle.Bold;
+
+            Color windowBgColor = new Color(0f, 0f, 0f, 0.75f);
+
+            // =========================================================
+            // 1. VENTANA MENÚ
+            // =========================================================
+            var menuBg = CreateImage(root, "Ventana Menu", windowBgColor);
+            menuBg.raycastTarget = true;
+            SetRect(menuBg.rectTransform,
+                new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
+                Vector2.zero, new Vector2(560f, 430f));
+            _menuWindowRoot = menuBg.gameObject;
+
+            // Esquina superior derecha: Botón "X" en color rojo exacto de las flechas inferiores derechas del HUD (ZombieHighlightColor)
+            var closeBtnImg = CreateImage(menuBg.transform, "Close Button X", new Color(0f, 0f, 0f, 0f));
+            closeBtnImg.raycastTarget = true;
+            SetRect(closeBtnImg.rectTransform,
+                new Vector2(1f, 1f), new Vector2(1f, 1f), new Vector2(1f, 1f),
+                new Vector2(-14f, -14f), new Vector2(48f, 48f));
+            var closeBtn = closeBtnImg.gameObject.AddComponent<Button>();
+            closeBtn.targetGraphic = closeBtnImg;
+            closeBtn.onClick.AddListener(ClosePauseMenuAndResume);
+
+            var closeBtnText = CreateText(closeBtnImg.transform, "X Label", "X", 34,
+                ZombieHighlightColor, TextAnchor.MiddleCenter);
+            closeBtnText.font = nivelFont;
+            closeBtnText.fontStyle = FontStyle.Bold;
+            Stretch(closeBtnText.rectTransform, 0f);
+
+            // 1) Título superior centrado horizontalmente: "Menú"
+            var titleText = CreateText(menuBg.transform, "Menu Title", "Menú", 38,
+                _tuning.hudTextColor, TextAnchor.MiddleCenter);
+            titleText.font = nivelFont;
+            titleText.fontStyle = FontStyle.Bold;
+            SetRect(titleText.rectTransform,
+                new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0.5f, 1f),
+                new Vector2(0f, -24f), new Vector2(360f, 52f));
+
+            // 2) Control de Audio: "Volumen" a la izquierda + UI Slider horizontal (0 a 1) a su derecha
+            var volRow = CreateRect(menuBg.transform, "Volume Row",
+                new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0.5f, 0.5f),
+                new Vector2(0f, -120f), new Vector2(460f, 48f));
+
+            var volLabel = CreateText(volRow, "Volume Label", "Volumen", 26,
+                _tuning.hudTextColor, TextAnchor.MiddleLeft);
+            volLabel.font = nivelFont;
+            volLabel.fontStyle = FontStyle.Bold;
+            SetRect(volLabel.rectTransform,
+                new Vector2(0f, 0.5f), new Vector2(0f, 0.5f), new Vector2(0f, 0.5f),
+                new Vector2(0f, 0f), new Vector2(140f, 40f));
+
+            _volumeSlider = BuildVolumeSlider(volRow);
+
+            // 3) Sección de Créditos con salto de línea exacto
+            string creditsContent = "Créditos:\n- Aly Quispe Borda.\n- Anderson Estrada Barzola.";
+            var creditsText = CreateText(menuBg.transform, "Credits Label", creditsContent, 24,
+                _tuning.hudTextColor, TextAnchor.MiddleCenter);
+            creditsText.font = _font;
+            creditsText.lineSpacing = 1.18f;
+            SetRect(creditsText.rectTransform,
+                new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
+                new Vector2(0f, -22f), new Vector2(460f, 110f));
+
+            // 4) Botón "Salir": Fondo verde muy desaturado (#4A6B53) con texto centrado "Salir"
+            Color desaturatedGreen = new Color(0x4A / 255f, 0x6B / 255f, 0x53 / 255f, 1f);
+            var exitBtnImg = CreateImage(menuBg.transform, "Salir Button", desaturatedGreen);
+            exitBtnImg.raycastTarget = true;
+            SetRect(exitBtnImg.rectTransform,
+                new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(0.5f, 0f),
+                new Vector2(0f, 28f), new Vector2(200f, 54f));
+            var exitBtn = exitBtnImg.gameObject.AddComponent<Button>();
+            exitBtn.targetGraphic = exitBtnImg;
+            exitBtn.onClick.AddListener(OpenConfirmationWindow);
+
+            var exitBtnText = CreateText(exitBtnImg.transform, "Salir Label", "Salir", 28,
+                _tuning.hudTextColor, TextAnchor.MiddleCenter);
+            exitBtnText.font = nivelFont;
+            exitBtnText.fontStyle = nivelStyle;
+            Stretch(exitBtnText.rectTransform, 0f);
+
+            // =========================================================
+            // 2. VENTANA CONFIRMACIÓN (¿Salir?)
+            // =========================================================
+            var confirmBg = CreateImage(root, "Ventana Confirmacion", windowBgColor);
+            confirmBg.raycastTarget = true;
+            SetRect(confirmBg.rectTransform,
+                new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
+                Vector2.zero, new Vector2(640f, 300f));
+            _confirmWindowRoot = confirmBg.gameObject;
+
+            // Mensaje superior centrado con EXACTAMENTE la misma fuente que "Oops, me infectó"
+            var confirmMsg = CreateText(confirmBg.transform, "Confirm Question",
+                "¿Estás seguro que quieres salir?", 34,
+                _tuning.hudTextColor, TextAnchor.MiddleCenter);
+            confirmMsg.font = oopsFont;
+            confirmMsg.fontStyle = oopsStyle;
+            confirmMsg.horizontalOverflow = HorizontalWrapMode.Wrap;
+            SetRect(confirmMsg.rectTransform,
+                new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0.5f, 1f),
+                new Vector2(0f, -44f), new Vector2(580f, 96f));
+
+            // Color azul exacto de las flechas del HUD abajo izquierda con 75% de transparencia
+            Color playerArrowBlue = _tuning != null ? _tuning.playerHistoryHighlightColor : new Color(0.30f, 0.65f, 1.00f, 1f);
+            Color yesBgColor = new Color(playerArrowBlue.r, playerArrowBlue.g, playerArrowBlue.b, 0.75f);
+
+            // Color rojo exacto de las flechas del HUD abajo derecha con 75% de transparencia
+            Color noBgColor = new Color(ZombieHighlightColor.r, ZombieHighlightColor.g, ZombieHighlightColor.b, 0.75f);
+
+            // Botón izquierdo: "Sí" (misma fuente que "NIVEL")
+            var yesBtnImg = CreateImage(confirmBg.transform, "Yes Button", yesBgColor);
+            yesBtnImg.raycastTarget = true;
+            SetRect(yesBtnImg.rectTransform,
+                new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(0.5f, 0f),
+                new Vector2(-140f, 42f), new Vector2(220f, 58f));
+            var yesBtn = yesBtnImg.gameObject.AddComponent<Button>();
+            yesBtn.targetGraphic = yesBtnImg;
+            yesBtn.onClick.AddListener(ConfirmExitGame);
+
+            var yesBtnText = CreateText(yesBtnImg.transform, "Yes Label", "Sí", 28,
+                _tuning.hudTextColor, TextAnchor.MiddleCenter);
+            yesBtnText.font = nivelFont;
+            yesBtnText.fontStyle = nivelStyle;
+            Stretch(yesBtnText.rectTransform, 0f);
+
+            // Botón derecho: "No, perdón" (misma fuente que "NIVEL")
+            var noBtnImg = CreateImage(confirmBg.transform, "No Button", noBgColor);
+            noBtnImg.raycastTarget = true;
+            SetRect(noBtnImg.rectTransform,
+                new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(0.5f, 0f),
+                new Vector2(140f, 42f), new Vector2(220f, 58f));
+            var noBtn = noBtnImg.gameObject.AddComponent<Button>();
+            noBtn.targetGraphic = noBtnImg;
+            noBtn.onClick.AddListener(CancelExitAndReturnToMenu);
+
+            var noBtnText = CreateText(noBtnImg.transform, "No Label", "No, perdón", 28,
+                _tuning.hudTextColor, TextAnchor.MiddleCenter);
+            noBtnText.font = nivelFont;
+            noBtnText.fontStyle = nivelStyle;
+            Stretch(noBtnText.rectTransform, 0f);
+
+            _menuWindowRoot.SetActive(false);
+            _confirmWindowRoot.SetActive(false);
+        }
+
+        private Slider BuildVolumeSlider(RectTransform parent)
+        {
+            var sliderRect = CreateRect(parent, "Volume Slider",
+                new Vector2(0f, 0.5f), new Vector2(1f, 0.5f), new Vector2(0.5f, 0.5f),
+                new Vector2(72f, 0f), new Vector2(-144f, 32f));
+
+            var bgImg = CreateImage(sliderRect, "Background", new Color(0.18f, 0.20f, 0.24f, 0.95f));
+            bgImg.raycastTarget = true;
+            SetRect(bgImg.rectTransform,
+                new Vector2(0f, 0.5f), new Vector2(1f, 0.5f), new Vector2(0.5f, 0.5f),
+                Vector2.zero, new Vector2(0f, 12f));
+
+            var fillArea = CreateRect(sliderRect, "Fill Area",
+                new Vector2(0f, 0.5f), new Vector2(1f, 0.5f), new Vector2(0.5f, 0.5f),
+                Vector2.zero, new Vector2(-12f, 12f));
+
+            Color fillColor = _tuning != null ? _tuning.playerHistoryHighlightColor : new Color(0.30f, 0.65f, 1.00f, 1f);
+            var fillImg = CreateImage(fillArea, "Fill", fillColor);
+            Stretch(fillImg.rectTransform, 0f);
+
+            var handleArea = CreateRect(sliderRect, "Handle Slide Area",
+                new Vector2(0f, 0f), new Vector2(1f, 1f), new Vector2(0.5f, 0.5f),
+                Vector2.zero, new Vector2(-12f, 0f));
+
+            var handleImg = CreateImage(handleArea, "Handle", _tuning != null ? _tuning.hudTextColor : Color.white);
+            handleImg.raycastTarget = true;
+            SetRect(handleImg.rectTransform,
+                new Vector2(0f, 0.5f), new Vector2(0f, 0.5f), new Vector2(0.5f, 0.5f),
+                Vector2.zero, new Vector2(18f, 28f));
+
+            var slider = sliderRect.gameObject.AddComponent<Slider>();
+            slider.direction = Slider.Direction.LeftToRight;
+            slider.minValue = 0f;
+            slider.maxValue = 1f;
+            slider.wholeNumbers = false;
+            slider.fillRect = fillImg.rectTransform;
+            slider.handleRect = handleImg.rectTransform;
+            slider.targetGraphic = handleImg;
+
+            float initialVol = AudioManager.Instance != null ? AudioManager.Instance.SliderVolume : 1f;
+            slider.SetValueWithoutNotify(initialVol);
+            slider.onValueChanged.AddListener(OnVolumeSliderChanged);
+
+            return slider;
+        }
+
+        private void OnVolumeSliderChanged(float value)
+        {
+            AudioManager.Instance?.SetUserVolume(value);
+        }
+
+        private void HandleEscapeKey()
+        {
+            var keyboard = Keyboard.current;
+            if (keyboard == null || !keyboard[Key.Escape].wasPressedThisFrame) return;
+
+            bool confirmOpen = _confirmWindowRoot != null && _confirmWindowRoot.activeSelf;
+            bool menuOpen = _menuWindowRoot != null && _menuWindowRoot.activeSelf;
+
+            if (confirmOpen)
+            {
+                // 2. Si la 'Ventana Confirmación' está abierta al presionar Esc: ciérrala y regresa a la 'Ventana Menú' (manteniendo la pausa)
+                CancelExitAndReturnToMenu();
+            }
+            else if (menuOpen)
+            {
+                // 3. Si la 'Ventana Menú' está abierta al presionar Esc: cierra la 'Ventana Menú', reanuda el juego y restaura el volumen
+                ClosePauseMenuAndResume();
+            }
+            else
+            {
+                // 1. Si el menú está cerrado: Pausa el juego, abre la 'Ventana Menú' y atenúa la música al 20%
+                OpenPauseMenu();
+            }
+        }
+
+        public void OpenPauseMenu()
+        {
+            _isPaused = true;
+            IsPauseMenuOpen = true;
+            Time.timeScale = 0f;
+
+            if (_volumeSlider != null && AudioManager.Instance != null)
+            {
+                _volumeSlider.SetValueWithoutNotify(AudioManager.Instance.SliderVolume);
+            }
+
+            if (_confirmWindowRoot != null) _confirmWindowRoot.SetActive(false);
+            if (_menuWindowRoot != null)
+            {
+                _menuWindowRoot.SetActive(true);
+                _menuWindowRoot.transform.SetAsLastSibling();
+            }
+
+            AudioManager.Instance?.SetPauseDucking(true, 0.25f);
+        }
+
+        public void ClosePauseMenuAndResume()
+        {
+            if (_confirmWindowRoot != null) _confirmWindowRoot.SetActive(false);
+            if (_menuWindowRoot != null) _menuWindowRoot.SetActive(false);
+
+            _isPaused = false;
+            IsPauseMenuOpen = false;
+            Time.timeScale = 1f;
+
+            AudioManager.Instance?.SetPauseDucking(false, 0.25f);
+        }
+
+        private void OpenConfirmationWindow()
+        {
+            if (_menuWindowRoot != null) _menuWindowRoot.SetActive(false);
+            if (_confirmWindowRoot != null)
+            {
+                _confirmWindowRoot.SetActive(true);
+                _confirmWindowRoot.transform.SetAsLastSibling();
+            }
+        }
+
+        private void CancelExitAndReturnToMenu()
+        {
+            if (_confirmWindowRoot != null) _confirmWindowRoot.SetActive(false);
+            if (_menuWindowRoot != null)
+            {
+                _menuWindowRoot.SetActive(true);
+                _menuWindowRoot.transform.SetAsLastSibling();
+            }
+        }
+
+        private void ConfirmExitGame()
+        {
+            _isPaused = false;
+            IsPauseMenuOpen = false;
+            Time.timeScale = 1f;
+
+#if UNITY_EDITOR
+            UnityEditor.EditorApplication.isPlaying = false;
+#elif UNITY_WEBGL
+            UnityEngine.SceneManagement.SceneManager.LoadScene(0);
+#else
+            Application.Quit();
+#endif
+        }
+
+        private void KeepPauseMenuOnTop()
+        {
+            if (_menuWindowRoot != null) _menuWindowRoot.transform.SetAsLastSibling();
+            if (_confirmWindowRoot != null) _confirmWindowRoot.transform.SetAsLastSibling();
         }
 
         public void SetLevelInfo(LevelDefinition level)
@@ -665,12 +1005,35 @@ namespace Oopsmeinfecto
 
         public void SetLoading(bool loading, string text = null)
         {
+            if (loading)
+            {
+                // El texto "Generando nivel..." NO debe mostrarse jamás mientras "bien" siga visible:
+                // si el banner sigue activo, oculta el banner por completo antes de activar el overlay.
+                if (_infectionBanner != null && _infectionBanner.gameObject.activeSelf)
+                {
+                    _infectionBanner.text = "";
+                    _infectionBanner.gameObject.SetActive(false);
+                }
+            }
+
             _loading = loading;
-            if (_loadingRoot != null) _loadingRoot.SetActive(loading);
+            if (_loadingRoot != null)
+            {
+                _loadingRoot.SetActive(loading);
+                if (loading)
+                {
+                    _loadingRoot.transform.SetAsLastSibling();
+                    KeepPauseMenuOnTop();
+                }
+            }
             if (loading)
             {
                 _loadingBase = string.IsNullOrEmpty(text) ? "Generando nivel" : text;
                 if (_loadingLabel != null) _loadingLabel.text = _loadingBase;
+            }
+            else if (_loadingLabel != null)
+            {
+                _loadingLabel.text = "";
             }
         }
 
@@ -683,6 +1046,18 @@ namespace Oopsmeinfecto
                 {
                     canvas.worldCamera = ResolveCamera(null);
                 }
+            }
+
+            HandleEscapeKey();
+
+            // Garantía estricta de exclusión mutua: nunca mostrar "Generando nivel..." si el banner ("bien") está visible
+            if (_infectionBanner != null && _infectionBanner.gameObject.activeSelf)
+            {
+                if (_loadingRoot != null && _loadingRoot.activeSelf)
+                {
+                    _loadingRoot.SetActive(false);
+                }
+                return;
             }
 
             if (!_loading || _loadingLabel == null) return;
@@ -779,6 +1154,12 @@ namespace Oopsmeinfecto
 
         private void OnDestroy()
         {
+            if (_isPaused)
+            {
+                _isPaused = false;
+                IsPauseMenuOpen = false;
+                Time.timeScale = 1f;
+            }
             if (_canvasObject != null) Destroy(_canvasObject);
         }
     }
