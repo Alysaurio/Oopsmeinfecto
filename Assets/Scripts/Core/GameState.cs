@@ -68,6 +68,8 @@ namespace Oopsmeinfecto
         public BoardData Board { get; }
         public EntityState Player { get; }
         public EntityState Zombie { get; }
+        public int PlayerConciencia => Player.Conciencia;
+        public int ZombieConciencia => Zombie.Conciencia;
         public IMovementPattern Pattern { get; }
         public int ZombiePhase { get; private set; }
         public int MaxEnergy { get; }

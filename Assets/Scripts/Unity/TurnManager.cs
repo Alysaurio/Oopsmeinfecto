@@ -72,6 +72,7 @@ namespace Oopsmeinfecto
             }
 
             _renderer.SyncFromState(_state, true);
+            _hud.SetConciencia(_state.PlayerConciencia, _state.ZombieConciencia);
             _hud.SetInfected(_state.Player.Infected);
             _hud.SetHistories(_state.Player.History, _state.Zombie.History);
             _hud.SetStatus("Turno 0 · Energía " + _state.CurrentEnergy + "/" + _state.MaxEnergy +

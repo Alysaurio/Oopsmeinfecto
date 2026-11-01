@@ -13,7 +13,7 @@ namespace Oopsmeinfecto
         public int minHeight = 6;
         public int maxHeight = 16;
 
-        public int minZombieConciencia = 2;
+        public int minZombieConciencia = 1;
         public int maxZombieConciencia = 5;
         public int minPlayerConciencia = 2;
         public int maxPlayerConciencia = 5;
@@ -44,9 +44,9 @@ namespace Oopsmeinfecto
             maxWidth = Math.Max(minWidth, Math.Min(16, maxWidth));
             minHeight = Math.Max(6, minHeight);
             maxHeight = Math.Max(minHeight, Math.Min(16, maxHeight));
-            minZombieConciencia = Math.Max(2, Math.Min(5, minZombieConciencia));
+            minZombieConciencia = Math.Max(1, Math.Min(5, minZombieConciencia));
             maxZombieConciencia = Math.Max(minZombieConciencia, Math.Min(5, maxZombieConciencia));
-            minPlayerConciencia = Math.Max(2, Math.Min(5, minPlayerConciencia));
+            minPlayerConciencia = Math.Max(1, Math.Min(5, minPlayerConciencia));
             maxPlayerConciencia = Math.Max(minPlayerConciencia, Math.Min(5, maxPlayerConciencia));
             historyCapacity = Math.Max(7, historyCapacity);
             minEnergy = Math.Max(1, minEnergy);

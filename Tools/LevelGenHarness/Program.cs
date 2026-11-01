@@ -404,7 +404,7 @@ internal static class Program
                 Check(level.HazardPositions != null && level.HazardPositions.Length >= 1, $"seed {i}: no hazard");
                 Check(level.Width >= 6 && level.Width <= 16 && level.Height >= 6 && level.Height <= 16, $"seed {i}: bad dimensions");
                 Check(level.MaxEnergy >= 5 && level.MaxEnergy <= 10, $"seed {i}: bad energy");
-                Check(level.ZombieConciencia >= 2 && level.ZombieConciencia <= 5, $"seed {i}: bad zombie conciencia");
+                Check(level.ZombieConciencia >= 1 && level.ZombieConciencia <= 5, $"seed {i}: bad zombie conciencia");
                 Check(level.PlayerConciencia >= 2 && level.PlayerConciencia <= 5, $"seed {i}: bad player conciencia");
                 Check(level.PlannedSequence.Length == level.ZombieConciencia + level.PlayerConciencia, $"seed {i}: wrong sequence length");
                 Check(level.PlannedAutoPositions.Length - 1 == level.PlannedSequence.Length,
@@ -522,12 +522,32 @@ internal static class Program
                 Check(autoSteps <= 5,
                     $"Lvl {lvl} seed {seed}: auto steps {autoSteps} > 5");
 
-                // 5. Total walkable tiles: max 22
+                // 5. Total walkable tiles: N=1 -> max 12, N=2 -> max 15
+                int maxExpectedWalkable = GeneradorNivel.GetMaxWalkableTiles(lvl);
                 int walkable = level.Board.CountWalkable();
-                Check(walkable <= 22,
-                    $"Lvl {lvl} seed {seed}: walkable tiles {walkable} > 22");
+                Check(walkable <= maxExpectedWalkable,
+                    $"Lvl {lvl} seed {seed}: walkable tiles {walkable} > {maxExpectedWalkable}");
 
-                // 6. Hazard accessibility: reachable from start without crossing switch, and not encapsulated
+                // 6. Conciencia rules:
+                if (lvl == 1)
+                {
+                    Check(level.ZombieConciencia == 1, $"Lvl 1 seed {seed}: zombie conciencia {level.ZombieConciencia} != 1");
+                    Check(level.PlayerConciencia >= 2 && level.PlayerConciencia <= 3,
+                        $"Lvl 1 seed {seed}: player conciencia {level.PlayerConciencia} not in [2, 3]");
+                }
+                else if (lvl == 2)
+                {
+                    Check(level.ZombieConciencia == 2, $"Lvl 2 seed {seed}: zombie conciencia {level.ZombieConciencia} != 2");
+                    Check(level.PlayerConciencia >= 2 && level.PlayerConciencia <= 3,
+                        $"Lvl 2 seed {seed}: player conciencia {level.PlayerConciencia} not in [2, 3]");
+                }
+
+                // 7. Topological complexity: At least 2 distinct spatial sequences to contact
+                int pathsToZombie = GeneradorNivel.CountManualPathsToContact(level);
+                Check(pathsToZombie >= 2,
+                    $"Lvl {lvl} seed {seed}: paths to zombie {pathsToZombie} < 2 (needs choice / not a single corridor)");
+
+                // 8. Hazard accessibility: reachable from start without crossing switch, and not encapsulated
                 if (level.HazardPositions != null)
                 {
                     var reachable = new HashSet<GridPos>();

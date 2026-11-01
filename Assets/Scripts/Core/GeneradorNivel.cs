@@ -38,15 +38,19 @@ namespace Oopsmeinfecto
 
                 var rng = new SeededRandom(SeedUtility.DeriveAttemptSeed(seed, attempt, levelIndex));
 
-                int width = rng.Range(settings.minWidth, settings.maxWidth);
-                int height = rng.Range(settings.minHeight, settings.maxHeight);
+                int widthMin = levelIndex <= 2 ? 6 : settings.minWidth;
+                int widthMax = levelIndex <= 2 ? 8 : settings.maxWidth;
+                int heightMin = levelIndex <= 2 ? 6 : settings.minHeight;
+                int heightMax = levelIndex <= 2 ? 8 : settings.maxHeight;
+                int width = rng.Range(widthMin, widthMax);
+                int height = rng.Range(heightMin, heightMax);
                 var placement = GeneradorPatronMovimiento.Generate(width, height, rng);
                 if (placement == null) continue;
                 if (levelIndex <= 2 && placement.Route.Length > 4) continue;
 
                 int zombieConciencia;
                 int playerConciencia;
-                if (!TryPickConsciousness(settings, rng, out zombieConciencia, out playerConciencia))
+                if (!TryPickConsciousness(levelIndex, settings, rng, out zombieConciencia, out playerConciencia))
                     continue;
 
                 int planningEnergy = settings.maxEnergy;
@@ -94,21 +98,26 @@ namespace Oopsmeinfecto
                             continue;
                         }
 
-                        var core = BuildCore(plan, placement.Route, start);
+                        var core = BuildCore(plan, placement.Route, start, levelIndex);
                         if (core == null) continue;
 
                         int maxHazards = HazardPlacer.GetMaxHazards(width, height, settings.maxHazardsCap);
-                        var radii = BuildRadii(settings.maxLateralExpansion);
+                        if (levelIndex <= 1) maxHazards = 1;
+                        else if (levelIndex == 2) maxHazards = Math.Min(2, maxHazards);
+
+                        int minOptional = levelIndex <= 1 ? 2 : (levelIndex == 2 ? 3 : Math.Max(1, maxHazards) + 2);
+                        var radii = BuildRadii(settings.maxLateralExpansion, levelIndex);
 
                         for (int r = 0; r < radii.Count; r++)
                         {
                             var geometry = GeneradorGeometria.Build(
                                 width, height, core, radii[r], settings.expansionDensity,
-                                rng, Math.Max(1, maxHazards) + 2);
+                                rng, minOptional);
                             if (geometry == null) continue;
 
-                            // Baldosas totales caminables: tope maximo de 21 o 22 casillas para mantener el mapa compacto
-                            if (levelIndex <= 2 && geometry.Board.CountWalkable() > 22) continue;
+                            // Limite Total de Baldosas: N=1 -> max 12, N=2 -> max 15, N>2 -> +2 por nivel hasta original
+                            int maxWalkable = GetMaxWalkableTiles(levelIndex);
+                            if (geometry.Board.CountWalkable() > maxWalkable) continue;
 
                             geometry.Board.SetTile(plan.SwitchPosition, TileType.Switch);
 
@@ -132,6 +141,17 @@ namespace Oopsmeinfecto
                                 levelIndex, seed, width, height, geometry.Board,
                                 start, placement, zombieConciencia, playerConciencia, energy,
                                 settings, plan, hazards, attempts);
+
+                            // Complejidad Topológica: asegurar que existan al menos 2 posibles secuencias espaciales al zombi
+                            if (levelIndex <= 2)
+                            {
+                                int pathsToZombie = CountManualPathsToContact(level);
+                                if (pathsToZombie < 2)
+                                {
+                                    Log?.Invoke($"    rejected: paths to zombie ({pathsToZombie}) < 2 for level <= 2");
+                                    continue;
+                                }
+                            }
 
                             var structural = ValidadorNivel.Validate(level, settings, false);
                             if (!structural.Valid)
@@ -260,28 +280,32 @@ namespace Oopsmeinfecto
             });
         }
 
-        private static bool TryPickConsciousness(
-            GenerationSettings settings, SeededRandom rng, out int zombie, out int player)
+        public static int GetMaxWalkableTiles(int levelIndex)
         {
-            zombie = 0;
-            player = 0;
+            if (levelIndex <= 1) return 12;
+            if (levelIndex == 2) return 15;
+            return Math.Min(48, 15 + 2 * (levelIndex - 2));
+        }
 
-            var zombies = new List<int>();
-            for (int z = settings.minZombieConciencia; z <= settings.maxZombieConciencia; z++)
-                zombies.Add(z);
-            rng.Shuffle(zombies);
+        private static bool TryPickConsciousness(
+            int levelIndex, GenerationSettings settings, SeededRandom rng, out int zombie, out int player)
+        {
+            // Conciencia Zombi: Para N=1 debe ser 1. Para N=2 debe ser 2. Para niveles superiores aumenta en +1 por nivel hasta su limite original (5).
+            zombie = Math.Min(settings.maxZombieConciencia, Math.Max(1, levelIndex));
 
-            for (int i = 0; i < zombies.Count; i++)
+            // Conciencia Player: Para N=1 y N=2, debe ser aleatorio entre 2 y 3. A partir del nivel 3, aumenta en +1 por nivel hasta su tope original (5).
+            if (levelIndex <= 2)
             {
-                int z = zombies[i];
-                int minPlayer = Math.Max(settings.minPlayerConciencia, z - 1);
-                if (minPlayer > settings.maxPlayerConciencia) continue;
-                zombie = z;
-                player = rng.Range(minPlayer, settings.maxPlayerConciencia);
-                return true;
+                player = rng.Range(2, 3);
+            }
+            else
+            {
+                int minP = Math.Min(settings.maxPlayerConciencia, 2 + (levelIndex - 2));
+                int maxP = Math.Min(settings.maxPlayerConciencia, 3 + (levelIndex - 2));
+                player = rng.Range(minP, maxP);
             }
 
-            return false;
+            return true;
         }
 
         private static bool TryChooseEnergy(
@@ -304,7 +328,7 @@ namespace Oopsmeinfecto
             return true;
         }
 
-        private static HashSet<GridPos> BuildCore(SolutionPlan plan, GridPos[] route, GridPos start)
+        private static HashSet<GridPos> BuildCore(SolutionPlan plan, GridPos[] route, GridPos start, int levelIndex)
         {
             var core = new HashSet<GridPos>();
             for (int i = 0; i < plan.ManualPositions.Count; i++) core.Add(plan.ManualPositions[i]);
@@ -312,7 +336,83 @@ namespace Oopsmeinfecto
             for (int i = 0; i < plan.AutoPositions.Count; i++) core.Add(plan.AutoPositions[i]);
             core.Add(start);
             core.Add(plan.SwitchPosition);
+
+            // Para los primeros niveles (N <= 2), ensanchar el camino creando zonas 2x2 o una bifurcación adyacente
+            if (levelIndex <= 2 && plan.ManualPositions.Count >= 3)
+            {
+                bool widened = false;
+                for (int i = 0; i < plan.ManualDirections.Count - 1; i++)
+                {
+                    var d1 = plan.ManualDirections[i];
+                    var d2 = plan.ManualDirections[i + 1];
+                    if (d1 != d2)
+                    {
+                        var pTurn = plan.ManualPositions[i];
+                        var pDiag = pTurn + Directions.Delta(d2);
+                        core.Add(pDiag);
+                        widened = true;
+                        break;
+                    }
+                }
+
+                if (!widened)
+                {
+                    for (int d = 0; d < Directions.All.Length; d++)
+                    {
+                        var branch = start + Directions.Delta(Directions.All[d]);
+                        if (!core.Contains(branch))
+                        {
+                            core.Add(branch);
+                            break;
+                        }
+                    }
+                }
+            }
+
             return core;
+        }
+
+        public static int CountManualPathsToContact(LevelDefinition level)
+        {
+            if (level == null || level.PlannedManualDirections == null) return 0;
+            var state = level.CreateGameState();
+            int targetTurn = level.PlannedManualDirections.Length;
+            int paths = 0;
+
+            void Dfs(GameState current, int turn)
+            {
+                if (turn == targetTurn)
+                {
+                    if (current.Player.Position == current.Zombie.Position)
+                    {
+                        paths++;
+                    }
+                    return;
+                }
+
+                for (int i = 0; i < Directions.All.Length; i++)
+                {
+                    var nextState = current.Clone();
+                    var outcome = nextState.TryManualMove(Directions.All[i]);
+                    if (turn + 1 < targetTurn)
+                    {
+                        if (outcome.Outcome == TurnOutcome.Moved)
+                        {
+                            Dfs(nextState, turn + 1);
+                        }
+                    }
+                    else
+                    {
+                        if (outcome.Outcome == TurnOutcome.Infected)
+                        {
+                            paths++;
+                        }
+                    }
+                }
+            }
+
+            Dfs(state, 0);
+            return paths;
         }
 
         private static List<GridPos> BuildStartCandidates(
@@ -403,7 +503,7 @@ namespace Oopsmeinfecto
             return best;
         }
 
-        private static List<int> BuildRadii(int maxRadius)
+        private static List<int> BuildRadii(int maxRadius, int levelIndex)
         {
             var radii = new List<int>();
             void Add(int value)
@@ -412,10 +512,24 @@ namespace Oopsmeinfecto
                 if (!radii.Contains(value)) radii.Add(value);
             }
 
-            Add(maxRadius);
-            Add(maxRadius + 1);
-            Add(Math.Max(0, maxRadius / 2));
-            Add(0);
+            if (levelIndex <= 1)
+            {
+                Add(0);
+                Add(1);
+            }
+            else if (levelIndex == 2)
+            {
+                Add(0);
+                Add(1);
+                Add(2);
+            }
+            else
+            {
+                Add(maxRadius);
+                Add(maxRadius + 1);
+                Add(Math.Max(0, maxRadius / 2));
+                Add(0);
+            }
             return radii;
         }
 

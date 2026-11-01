@@ -181,6 +181,7 @@ namespace Oopsmeinfecto
             _renderer.SyncFromState(_state, true);
 
             _hud.SetLevelInfo(level);
+            _hud.SetConciencia(level.PlayerConciencia, level.ZombieConciencia);
             _hud.SetInfected(false);
             _hud.SetHistories(_state.Player.History, _state.Zombie.History);
             _hud.SetLoading(false);

@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("LevelGenHarness")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+7dc1653ac048fe8325f880aee985a9a1a1814374")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+72530932ad527703e7e405f6852cbebcbbc08947")]
 [assembly: System.Reflection.AssemblyProductAttribute("LevelGenHarness")]
 [assembly: System.Reflection.AssemblyTitleAttribute("LevelGenHarness")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

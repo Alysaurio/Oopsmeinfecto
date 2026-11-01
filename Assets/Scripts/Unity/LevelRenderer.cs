@@ -670,16 +670,6 @@ namespace Oopsmeinfecto
             entityObject.transform.localPosition = worldPosition;
             rootTransform = entityObject.transform;
 
-            var shadowObject = new GameObject("Shadow");
-            shadowObject.transform.SetParent(entityObject.transform, false);
-            shadowObject.transform.localPosition = new Vector3(0f, -0.11f, 0f);
-            shadowObject.transform.localScale = new Vector3(0.58f, 0.20f, 1f);
-            var shadow = shadowObject.AddComponent<SpriteRenderer>();
-            shadow.sprite = PixelArtFactory.WhiteSprite;
-            shadow.color = new Color(0f, 0f, 0f, 0.38f);
-            shadow.sortingOrder = sortingOrder - 2;
-            if (PixelArtFactory.SpriteMaterial != null) shadow.sharedMaterial = PixelArtFactory.SpriteMaterial;
-
             var visualObject = new GameObject("Visual");
             visualObject.transform.SetParent(entityObject.transform, false);
             visualObject.transform.localPosition = new Vector3(0f, 0.25f, 0f);

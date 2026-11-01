@@ -203,16 +203,26 @@ namespace Oopsmeinfecto
             rt.anchorMin = new Vector2(0.5f, 0f);
             rt.anchorMax = new Vector2(0.5f, 0f);
             rt.pivot = new Vector2(0.5f, 0f);
-            rt.anchoredPosition = new Vector2(0f, hudHeight + 8f);
-            rt.sizeDelta = new Vector2(300f, 40f);
+            rt.anchoredPosition = new Vector2(0f, hudHeight + 12f);
+            rt.sizeDelta = new Vector2(400f, 60f);
 
             _concienciaLabel = go.AddComponent<TextMeshProUGUI>();
-            _concienciaLabel.fontSize = 30;
+
+            var fontAsset = Resources.Load<TMP_FontAsset>("Fonts & Materials/LiberationSans SDF") ?? TMP_Settings.defaultFontAsset;
+            if (fontAsset != null)
+            {
+                _concienciaLabel.font = fontAsset;
+            }
+
+            _concienciaLabel.fontSize = 38;
             _concienciaLabel.fontStyle = FontStyles.Bold;
             _concienciaLabel.alignment = TextAlignmentOptions.Center;
             _concienciaLabel.color = Color.white;
             _concienciaLabel.richText = true;
             _concienciaLabel.raycastTarget = false;
+
+            go.transform.SetAsLastSibling();
+            go.transform.localPosition = new Vector3(0f, hudHeight + 12f, -10f);
         }
 
         private void BuildHalf(Transform parent, bool player)
@@ -350,18 +360,20 @@ namespace Oopsmeinfecto
                 }
             }
 
-            UpdateConcienciaLabel();
+            SetConciencia(level.PlayerConciencia, level.ZombieConciencia);
             UpdateEntityTitles();
         }
 
-        private void UpdateConcienciaLabel()
+        public void SetConciencia(int playerConciencia, int zombiConciencia)
         {
-            if (_concienciaLabel == null) return;
-            Color playerColor = _tuning != null ? _tuning.playerHistoryColor : new Color(0.35f, 0.80f, 1.00f, 1f);
-            Color zombieColor = ZombieHighlightColor;
-            string playerHex = ColorUtility.ToHtmlStringRGB(playerColor);
-            string zombieHex = ColorUtility.ToHtmlStringRGB(zombieColor);
-            _concienciaLabel.text = $"<color=#{playerHex}>{_playerConciencia}</color> | <color=#{zombieHex}>{_zombieConciencia}</color>";
+            _playerConciencia = playerConciencia;
+            _zombieConciencia = zombiConciencia;
+            if (_concienciaLabel != null)
+            {
+                _concienciaLabel.text = "<color=#4A90E2>" + playerConciencia + "</color> | <color=#E24A4A>" + zombiConciencia + "</color>";
+                _concienciaLabel.gameObject.SetActive(true);
+                _concienciaLabel.transform.SetAsLastSibling();
+            }
         }
 
         public void SetStatus(string text)

@@ -29,10 +29,10 @@ namespace Oopsmeinfecto
                 report.AddError("board dimensions do not match level dimensions");
             if (level.MaxEnergy < 5 || level.MaxEnergy > 10)
                 report.AddError("max energy outside 5..10");
-            if (level.ZombieConciencia < 2 || level.ZombieConciencia > 5)
-                report.AddError("zombie conciencia outside 2..5");
-            if (level.PlayerConciencia < 2 || level.PlayerConciencia > 5)
-                report.AddError("player conciencia outside 2..5");
+            if (level.ZombieConciencia < 1 || level.ZombieConciencia > 5)
+                report.AddError("zombie conciencia outside 1..5");
+            if (level.PlayerConciencia < 1 || level.PlayerConciencia > 5)
+                report.AddError("player conciencia outside 1..5");
             if (level.ZombieConciencia + level.PlayerConciencia < level.ZombieConciencia + 2)
                 report.AddError("automatic sequence is shorter than zombie conciencia + 2");
             if (level.HistoryCapacity < 7)
