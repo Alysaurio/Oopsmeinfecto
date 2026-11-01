@@ -384,8 +384,12 @@ namespace Oopsmeinfecto
             }
 
             // Fase 4 (Resolucion):
-            // 1. Restaurar escala a 1.0
-            if (playerVisual != null)
+            // 1. Activar la animación de derrota idéntica a la derrota por zombi (achatamiento vertical suave del pescadito hasta 0.78)
+            if (_renderer != null && _renderer.PlayerVisual != null)
+            {
+                _renderer.PlayerVisual.PlayDefeat(DefeatReason.DamageTile, 1.4f);
+            }
+            else if (playerVisual != null)
             {
                 playerVisual.localScale = Vector3.one;
             }
@@ -410,7 +414,17 @@ namespace Oopsmeinfecto
                 _hud.HideDefeatBanner();
             }
 
-            // 4. Llamar a la función de reinicio de nivel
+            // 4. Restaurar limpiamente la escala a Vector3.one y llamar a la función de reinicio de nivel
+            if (playerVisual != null)
+            {
+                playerVisual.localScale = Vector3.one;
+                playerVisual.localPosition = new Vector3(0f, 0.25f, 0f);
+            }
+            if (_renderer != null && _renderer.PlayerVisual != null)
+            {
+                _renderer.PlayerVisual.ResetState();
+            }
+
             _muerteCoroutine = null;
             _defeatPlaying = false;
             RestartSameLevel();
@@ -426,6 +440,19 @@ namespace Oopsmeinfecto
             }
             _defeat.Hide();
             AudioManager.Instance?.RestoreMusicVolume();
+
+            if (_renderer != null)
+            {
+                if (_renderer.PlayerVisual != null)
+                {
+                    _renderer.PlayerVisual.ResetState();
+                }
+                if (_renderer.PlayerVisualTransform != null)
+                {
+                    _renderer.PlayerVisualTransform.localScale = Vector3.one;
+                    _renderer.PlayerVisualTransform.localPosition = new Vector3(0f, 0.25f, 0f);
+                }
+            }
             if (_currentLevel != null)
             {
                 // Reuse the exact level definition, including its seed and consciousness values.

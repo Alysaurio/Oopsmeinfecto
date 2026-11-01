@@ -127,11 +127,13 @@ namespace Oopsmeinfecto
 
         public void PlayDefeat(DefeatReason reason, float duration = 0.6f)
         {
+            _isAgony = false;
             _isDefeated = true;
             _isMoving = false;
             _defeatDuration = Mathf.Max(0.5f, duration);
             _defeatTimer = 0f;
             transform.localPosition = new Vector3(0f, 0.25f, 0f);
+            transform.localScale = _baseScale;
 
             // Stop normal animations completely so Animator never overwrites the defeat sprite
             if (_animator != null)
